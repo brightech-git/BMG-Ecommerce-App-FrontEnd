@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "jewelia",
+    "slug": "jewelia",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode":"cover",
+      "backgroundColor": "#70747D"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "requireFullScreen": true,
+      "splash": {
+        "image": "./assets/splash.png",
+        "resizeMode": "cover",
+        "backgroundColor": "#70747D"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.w3itexperts.jewelia"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "df01eda5-b046-4c48-9f97-6ea0e3e42927"
+      }
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
+          "recordAudioAndroid": true
+        }
+      ],
+      [
+        "expo-screen-orientation",
+        {
+          "initialOrientation": "DEFAULT"
+        }
+      ]
+    ]
+  }
+}
