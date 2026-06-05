@@ -163,7 +163,7 @@ const Sidebar = ({navigation} : any) => {
                             borderTopColor: colors.border
                         }}
                     >
-                        <Text style={{ ...FONTS.fontSemiBold, fontSize: 13, color: colors.title, marginBottom: 4 }}>jewelia<Text style={{ ...FONTS.fontRegular, fontSize: 13 }}> Cosmetic Store</Text></Text>
+                        <Text style={{ ...FONTS.fontSemiBold, fontSize: 13, color: colors.title, marginBottom: 4 }}>BMG Jewels Store<Text style={{ ...FONTS.fontRegular, fontSize: 13 }}> Cosmetic Store</Text></Text>
                         <Text style={{ ...FONTS.fontRegular, fontSize: 13, color: colors.title }}>App Version 1.0</Text>
                     </View>
                 </ScrollView>

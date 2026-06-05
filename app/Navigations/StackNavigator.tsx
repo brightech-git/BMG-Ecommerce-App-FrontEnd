@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
 import { StatusBar } from "react-native";
 import { useTheme } from "@react-navigation/native";
@@ -64,10 +65,20 @@ const Stack = createStackNavigator<RootStackParamList>();
 
 const StackNavigator = () => {
 
+  const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | null>(null);
+
+  useEffect(() => {
+    AsyncStorage.getItem('hasOnboarded').then(value => {
+      setInitialRoute(value ? 'SignIn' : 'Onbording');
+    });
+  }, []);
+
+  if (!initialRoute) return null;
+
   return (
     <>
       <Stack.Navigator
-        initialRouteName={"Onbording"}
+        initialRouteName={initialRoute}
         screenOptions={{
           headerShown: false,
           cardStyle: { backgroundColor: "transparent" },

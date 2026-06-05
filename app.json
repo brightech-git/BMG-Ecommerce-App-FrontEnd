@@ -1,58 +1,62 @@
 {
   "expo": {
-    "name": "jewelia",
-    "slug": "jewelia",
-    "version": "1.0.0",
+    "name": "BMG Jewels Store",
+    "slug": "bmg-jewels-store",
+    "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode":"cover",
-      "backgroundColor": "#70747D"
-    },
+
     "assetBundlePatterns": [
       "**/*"
     ],
-    "ios": {
-      "supportsTablet": true,
-      "requireFullScreen": true,
-      "splash": {
-        "image": "./assets/splash.png",
-        "resizeMode": "cover",
-        "backgroundColor": "#70747D"
-      }
-    },
+
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.w3itexperts.jewelia"
+      "package": "com.brightech.bmgjewellersfinal",
+      "versionCode": 5,
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
+
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/icon.png"
     },
+
     "extra": {
       "eas": {
-        "projectId": "df01eda5-b046-4c48-9f97-6ea0e3e42927"
+        "projectId": "11172f61-1dac-4232-840c-21f1dd887139"
       }
     },
+
     "plugins": [
-      [
-        "expo-camera",
-        {
-          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
-          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
-          "recordAudioAndroid": true
-        }
-      ],
-      [
-        "expo-screen-orientation",
-        {
-          "initialOrientation": "DEFAULT"
-        }
-      ]
-    ]
+  [
+    "expo-camera",
+    {
+      "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
+      "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
+      "recordAudioAndroid": true
+    }
+  ],
+  [
+    "expo-screen-orientation",
+    {
+      "initialOrientation": "DEFAULT"
+    }
+  ],
+  "expo-build-properties",
+  "expo-location",
+  "expo-notifications",
+  "expo-image-picker",
+  "expo-document-picker"
+],
+
+    "owner": "brightech"
   }
 }

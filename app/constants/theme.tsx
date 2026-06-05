@@ -2,9 +2,9 @@ import { Dimensions } from "react-native";
 const { width, height } = Dimensions.get('screen');
 
 export const COLORS = {
-	primary: "#C37B5F",
-	primaryLight: "rgba(195, 123, 95, 0.1)",
-	secondary: "#8C462A",
+	primary: "#FF971D",
+	primaryLight: "rgba(255, 151, 29, 0.1)",
+	secondary: "#C9B15D",
 	success: "#159E42",
 	danger: "#FF3131",
 	warning: "#ffb02c",
@@ -16,28 +16,27 @@ export const COLORS = {
 	backgroundColor: "#fff",
 	black: "#000",
 
-	//light theme
+	// light theme
 	card: "#fff",
-	background: "#F9F5F3",
+	background: "#FFF8F0",
 	text: "#000000",
 	textLight: "#8A8A8A",
 	title: "#000000",
-	borderColor: "#E0D1C9",
-	input: "#F9F9F9",
-	placeholder: 'rgba(0, 0, 0, 0.50)',
+	borderColor: "#F0DFC0",
+	input: "#FFF9F4",
+	placeholder: "rgba(0, 0, 0, 0.50)",
 
-	//dark theme
-	darkCard: "#1C212E",
-	darkBackground: "#0C101C",
+	// dark theme
+	darkCard: "#1C1A12",
+	darkBackground: "#0C0A04",
 	darkText: "#B8B8B8",
 	darkTextLight: "#6C6E77",
 	darkTitle: "#fff",
 	darkBorder: "rgba(255,255,255,0.2)",
-	darkInput: "#151A28",
+	darkInput: "#1A1810",
 	darkborderColor: "rgba(255, 255, 255, .1)",
 	darkPlaceholder: "rgba(255,255,255,.5)",
-
-}
+};
 
 export const SIZES = {
 	fontLg: 16,

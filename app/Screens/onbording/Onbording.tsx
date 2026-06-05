@@ -7,6 +7,7 @@ import { IMAGES } from '../../constants/Images';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { GlobalStyleSheet } from '../../constants/StyleSheet';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 const DATA = [
@@ -31,23 +32,25 @@ const Onbording = ({navigation} : OnbordingScreenProps) => {
 
     const theme = useTheme();
     const { colors } : {colors : any} = theme;
-    const scrollRef = useRef<any>();
+    const scrollRef = useRef<any>(null);
     const scrollX = useRef(new Animated.Value(0)).current;
 
-    const [sliderIndex , setSliderIndex] = useState(1);
+    const [currentIndex, setCurrentIndex] = useState(0);
 
-    const onScroll = (val:any) => {
-        if(sliderIndex == 3){
-            navigation.navigate('SignIn')
+    const handleNext = async () => {
+        if (currentIndex === DATA.length - 1) {
+            await AsyncStorage.setItem('hasOnboarded', 'true');
+            navigation.navigate('SignIn');
+            return;
         }
-        // console.log(scrollX);
-        scrollRef.current?.scrollTo({
-            // x: val.nativeEvent.contentOffset.x,
-            x : SIZES.width * val,
-            animated: true,
-        });
+        const nextIndex = currentIndex + 1;
+        scrollRef.current?.scrollTo({ x: SIZES.width * nextIndex, animated: true });
+        setCurrentIndex(nextIndex);
+    }
 
-        setSliderIndex(sliderIndex + 1);
+    const handleSwipe = (e: any) => {
+        const index = Math.round(e.nativeEvent.contentOffset.x / SIZES.width);
+        setCurrentIndex(index);
     }
 
     return (
@@ -151,7 +154,10 @@ const Onbording = ({navigation} : OnbordingScreenProps) => {
                 <View style={[GlobalStyleSheet.container,{paddingHorizontal:40}]}>
                     <View style={[GlobalStyleSheet.row,{justifyContent:'space-between',alignItems:'center'}]}>
                         <TouchableOpacity
-                           onPress={() => navigation.navigate('SignIn')}
+                           onPress={async () => {
+                               await AsyncStorage.setItem('hasOnboarded', 'true');
+                               navigation.navigate('SignIn');
+                           }}
                         >
                             <Text style={{...FONTS.fontRegular,fontSize:16,color:colors.title,textDecorationLine:'underline'}}>Skip</Text>
                         </TouchableOpacity>

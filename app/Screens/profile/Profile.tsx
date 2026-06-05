@@ -104,7 +104,7 @@ const Profile = ({ navigation } : ProfileScreenProps) => {
                             style={{ height: 30, width: 30, resizeMode: 'contain', }}
                             source={IMAGES.logo}
                         />
-                        <Text style={{ ...FONTS.Marcellus, fontSize: 24, color: colors.title }}>jewelia</Text>
+                        <Text style={{ ...FONTS.Marcellus, fontSize: 24, color: colors.title }}>BMG Jewels Store</Text>
                     </View>
                     <TouchableOpacity 
                         onPress={() => navigation.navigate('SignIn')}

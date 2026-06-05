@@ -27,36 +27,36 @@ const QuestionsAccordion = () => {
             content: 'Package have the HTML files, SCSS files, CSS files, JS files, Well Define Documentation, Fonts and Icons, Responsive Designs, Image Assets, Customization Options, and many more.',
         },
         {
-            title: 'What features does jewelia offer?',
-            content: 'jewelia offers a wide range of features including responsive design, customizable layouts, product catalog pages, shopping cart functionality, checkout pages, user account management, and more.',
+            title: 'What features does BMG Jewels Store offer?',
+            content: 'BMG Jewels Store offers a wide range of features including responsive design, customizable layouts, product catalog pages, shopping cart functionality, checkout pages, user account management, and more.',
 
         },
         {
             title: "Can I customize the template's design?",
-            content: 'Absolutely! jewelia is built using Bootstrap, which makes it highly customizable. You can easily adjust colors, fonts, layout structures, and more to match your brand identity.',
+            content: 'Absolutely! BMG Jewels Store is built using Bootstrap, which makes it highly customizable. You can easily adjust colors, fonts, layout structures, and more to match your brand identity.',
 
         },
         {
             title: 'Is the template SEO-friendly?',
-            content: "jewelia is built with best practices in mind, including SEO optimization. You can optimize your product pages, meta tags, and other elements to improve your website's search engine visibility.",
+            content: "BMG Jewels Store is built with best practices in mind, including SEO optimization. You can optimize your product pages, meta tags, and other elements to improve your website's search engine visibility.",
         },
         {
             title: 'Are there pre-designed page templates included?',
-            content: 'Yes, jewelia typically includes pre-designed templates for essential pages like the homepage, product listings, product details, shopping cart, checkout, and user account pages.',
+            content: 'Yes, BMG Jewels Store typically includes pre-designed templates for essential pages like the homepage, product listings, product details, shopping cart, checkout, and user account pages.',
         },
         {
-            title: 'Does jewelia provide customer support?',
-            content: 'jewelia offers customer support options for their clients. Check the template documentation or you can directly contact to our support team from here - Click Here',
+            title: 'Does BMG Jewels Store provide customer support?',
+            content: 'BMG Jewels Store offers customer support options for their clients. Check the template documentation or you can directly contact to our support team from here - Click Here',
 
         },
         {
-            title: "Is coding knowledge required to use jewelia?",
-            content: "Basic knowledge of HTML, CSS, and Bootstrap can be helpful for customizing jewelia to your needs. However, it's designed to be user- friendly and doesn't necessarily require extensive coding skills.",
+            title: "Is coding knowledge required to use BMG Jewels Store?",
+            content: "Basic knowledge of HTML, CSS, and Bootstrap can be helpful for customizing BMG Jewels Store to your needs. However, it's designed to be user- friendly and doesn't necessarily require extensive coding skills.",
 
         },
         {
-            title: 'How can I get started with jewelia?',
-            content: "To get started, purchase and download the jewelia template. Then, follow the included documentation to set up and customize your e-commerce website based on your specific requirements.",
+            title: 'How can I get started with BMG Jewels Store?',
+            content: "To get started, purchase and download the BMG Jewels Store template. Then, follow the included documentation to set up and customize your e-commerce website based on your specific requirements.",
         },
     ];
 

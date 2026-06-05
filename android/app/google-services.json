@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "81961961051",
+    "project_id": "bmg-jewels-store",
+    "storage_bucket": "bmg-jewels-store.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:81961961051:android:c79d9d26dadbb5b1b4217e",
+        "android_client_info": {
+          "package_name": "com.brightech.bmgjewellersfinal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAAN0LGYK85ggM23O9z04dSbJTVZTbcHpk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
