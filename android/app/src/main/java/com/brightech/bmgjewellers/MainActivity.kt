@@ -1,4 +1,4 @@
-package com.brightech.bmgjewellersfinal
+package com.brightech.bmgjewellers
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

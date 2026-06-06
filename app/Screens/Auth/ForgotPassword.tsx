@@ -12,9 +12,9 @@ import { IMAGES } from '../../constants/Images';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
 
-type ForgatPasswordScreenProps = StackScreenProps<RootStackParamList, 'ForgatPassword'>;
+type ForgotPasswordScreenProps = StackScreenProps<RootStackParamList, 'ForgotPassword'>;
 
-const ForgatPassword = ({ navigation } : ForgatPasswordScreenProps) => {
+const ForgotPassword = ({ navigation } : ForgotPasswordScreenProps) => {
 
     const theme = useTheme();
     const { colors }: {colors: any} = theme;
@@ -92,4 +92,4 @@ const ForgatPassword = ({ navigation } : ForgatPasswordScreenProps) => {
     )
 }
 
-export default ForgatPassword;
+export default ForgotPassword;

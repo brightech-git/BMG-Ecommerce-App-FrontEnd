@@ -69,7 +69,7 @@ const EnterCode = ({ navigation } : EnterCodeScreenProps) => {
                                     <View style={{ flexDirection: 'row', marginTop: 10 }}>
                                         <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title }}>If you don't receive code! </Text>
                                         <TouchableOpacity
-                                            onPress={() => navigation.navigate('ForgatPassword')}
+                                            onPress={() => navigation.navigate('ForgotPassword')}
                                         >
                                             <Text style={{ ...FONTS.fontMedium, borderBottomWidth: 1, borderBottomColor:COLORS.danger, color:COLORS.danger }}>Resend</Text>
                                         </TouchableOpacity>

@@ -8,6 +8,9 @@ import ThemeBtn from '../components/ThemeBtn';
 import { IMAGES } from '../constants/Images';
 import { useDispatch } from 'react-redux';
 import { closeDrawer } from '../redux/actions/drawerAction';
+import { logout } from '../redux/reducer/authReducer';
+import { AsyncStorageHelper } from '../utils/AsyncStorageHelper';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 const Sidebar = ({navigation} : any) => {
 
@@ -16,7 +19,13 @@ const Sidebar = ({navigation} : any) => {
 
     const dispatch = useDispatch();
 
-   // const navigation = useNavigation<any>();
+    const handleLogout = async () => {
+        dispatch(closeDrawer());
+        try { await GoogleSignin.signOut(); } catch { }
+        await AsyncStorageHelper.clearSession();
+        dispatch(logout());
+        navigation.reset({ index: 0, routes: [{ name: 'SignIn' }] });
+    };
 
     const navItem = [
         {
@@ -115,7 +124,11 @@ const Sidebar = ({navigation} : any) => {
                             return (
                                 <TouchableOpacity
                                     //onPress={() => {data.navigate && navigation.navigate(data.navigate); navigation.closeDrawer()}}
-                                    onPress={() => { data.navigate === "DrawerNavigation" ? dispatch(closeDrawer()) : dispatch(closeDrawer());  navigation.navigate(data.navigate)}}
+                                    onPress={() => {
+                                        if (data.name === 'Logout') { handleLogout(); return; }
+                                        dispatch(closeDrawer());
+                                        navigation.navigate(data.navigate);
+                                    }}
                                     //onPress={() => {data.navigate === "DrawerNavigation" ? dispatch(closeDrawer()) : dispatch(closeDrawer()); navigation.navigate(data.navigate)}}
                                     key={index}
                                     style={{

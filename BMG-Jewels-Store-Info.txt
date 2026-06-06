@@ -11,6 +11,6 @@ Project Name :BMG-Jewels-Store
 
 //Google Login 
 Email : hkirubakarandeveloper08@gmail.com
-Web client ID :1038057958960-gg9fji7abv6php2ahfi6kf3ttmu33nea.apps.googleusercontent.com
-Android client ID : 1038057958960-5p5hffm04v9pr8d74259sjr8qpti9m8i.apps.googleusercontent.com
+Web client ID :900212830464-2lm2h9j2h617d5ijt1dtm4940h3d5q5t.apps.googleusercontent.com
+Android client ID : 900212830464-oboha1tmhqe2umq0g3pupnfmd7v3aevg.apps.googleusercontent.com
 

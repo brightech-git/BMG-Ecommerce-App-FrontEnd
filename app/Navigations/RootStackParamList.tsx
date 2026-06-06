@@ -11,8 +11,11 @@ export type RootStackParamList = {
     Onbording: undefined;
     Login: undefined;
     Register: undefined;
-    ForgatPassword: undefined;
+    ForgotPassword: undefined;
     EnterCode: undefined;
+    SignUpVerifyOTP: { contactNumber: string };
+    GoogleContactUpload: undefined;
+    GoogleContactVerify: { contactNumber: string; userId: number };
     EmailVerify: undefined;
     NewPassword: undefined;
     ResetPassword: undefined;

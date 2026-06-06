@@ -15,13 +15,13 @@ const Customotp = ({code,setCode,maximumLength,setIsPinReady} : props) => {
     
     const boxArray = new Array(maximumLength).fill(0);
 
-    const inputRef = useRef<any>();
+    const inputRef = useRef<any>(null);
 
     const theme = useTheme();
     const {colors}:{colors : any} = theme;
 
 
-    const boxDigit = (_, index:any) => {
+    const boxDigit = (_: any, index:any) => {
         const emptyInput = "";
         const digit = code[index] || emptyInput;
 
@@ -44,7 +44,7 @@ const Customotp = ({code,setCode,maximumLength,setIsPinReady} : props) => {
 
     const handleOnPress = () => {
         setIsInputBoxFocused(true);
-        inputRef.current.focus();
+        inputRef.current?.focus();
       };
      
       const handleOnBlur = () => {
@@ -61,7 +61,7 @@ const Customotp = ({code,setCode,maximumLength,setIsPinReady} : props) => {
         <TextInput 
             style={styles.TextInputHidden}
             value={code}
-            onChangeText={setCode}
+        onChangeText={(text) => { setCode(text); setIsPinReady(text.length === maximumLength); }}
             maxLength={maximumLength}
             ref={inputRef}
             onFocus={handleOnPress}
@@ -87,11 +87,11 @@ const styles = StyleSheet.create({
         flexDirection:'row',
         justifyContent:'space-evenly',
         paddingTop:10,
-        gap:25,
-        paddingHorizontal:40
+        gap:8,
+        paddingHorizontal:10
     },
     SplitBoxes :{
-        width:61,
+        width:45,
         height:48,
         backgroundColor:COLORS.background,
         alignItems:'center',

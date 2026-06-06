@@ -9,6 +9,8 @@ dist/
 web-build/
 
 # Native
+android/.gradle/
+android/build/
 *.orig.*
 *.jks
 *.p8

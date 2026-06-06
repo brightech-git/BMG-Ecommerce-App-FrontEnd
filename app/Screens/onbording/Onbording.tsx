@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { useTheme } from '@react-navigation/native';
 import { View, SafeAreaView, Text, Image, Animated, ScrollView, StyleSheet, Platform,TouchableOpacity } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
@@ -7,7 +7,7 @@ import { IMAGES } from '../../constants/Images';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { GlobalStyleSheet } from '../../constants/StyleSheet';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AsyncStorageHelper } from '../../utils/AsyncStorageHelper';
 
 
 const DATA = [
@@ -39,7 +39,7 @@ const Onbording = ({navigation} : OnbordingScreenProps) => {
 
     const handleNext = async () => {
         if (currentIndex === DATA.length - 1) {
-            await AsyncStorage.setItem('hasOnboarded', 'true');
+            await AsyncStorageHelper.setOnboarded();
             navigation.navigate('SignIn');
             return;
         }
@@ -134,7 +134,8 @@ const Onbording = ({navigation} : OnbordingScreenProps) => {
                                 [{ nativeEvent: { contentOffset: { x: scrollX } } }],
                                 { useNativeDriver: false },
                             )
-                        }    
+                        }
+                        onMomentumScrollEnd={handleSwipe}
                     >
                         {DATA.map((data, index) => (
 
@@ -155,18 +156,18 @@ const Onbording = ({navigation} : OnbordingScreenProps) => {
                     <View style={[GlobalStyleSheet.row,{justifyContent:'space-between',alignItems:'center'}]}>
                         <TouchableOpacity
                            onPress={async () => {
-                               await AsyncStorage.setItem('hasOnboarded', 'true');
+                               await AsyncStorageHelper.setOnboarded();
                                navigation.navigate('SignIn');
                            }}
                         >
                             <Text style={{...FONTS.fontRegular,fontSize:16,color:colors.title,textDecorationLine:'underline'}}>Skip</Text>
                         </TouchableOpacity>
                         <TouchableOpacity 
-                            style={{width:'30%'}}
+                            style={{width: currentIndex === DATA.length - 1 ? '45%' : '30%'}}
                         >
                             <Button
-                                onPress={() => onScroll(sliderIndex)}
-                                title={'Next'}
+                                onPress={handleNext}
+                                title={currentIndex === DATA.length - 1 ? 'Get Started' : 'Next'}
                                 btnRounded
                                 color={COLORS.primary}
                             />
@@ -180,14 +181,13 @@ const Onbording = ({navigation} : OnbordingScreenProps) => {
 
 function Indicator({ i, scrollValue } : any) {
 
-
     const theme = useTheme();
     const { colors }: {colors : any} = theme;
 
-    const translateX = scrollValue.interpolate({
+    const translateX = useMemo(() => scrollValue.interpolate({
         inputRange: [-SIZES.width + i * SIZES.width, i * SIZES.width, SIZES.width + i * SIZES.width],
         outputRange: [-20, 0, 20],
-    });
+    }), [scrollValue, i]);
     return (
         <View style={[styles.indicator, { backgroundColor:theme.dark ? 'rgba(255,255,255,0.20)':'rgba(195, 123, 95, 0.20)', borderColor:theme.dark ? 'rgba(255,255,255,0.20)':'rgba(195, 123, 95, 0.20)' }]}>
             <Animated.View

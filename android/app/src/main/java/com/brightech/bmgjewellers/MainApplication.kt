@@ -1,4 +1,4 @@
-package com.brightech.bmgjewellersfinal
+package com.brightech.bmgjewellers
 
 import android.app.Application
 import android.content.res.Configuration

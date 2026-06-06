@@ -1,18 +1,21 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useTheme } from '@react-navigation/native';
-import { View, Text, Image, TouchableOpacity, SafeAreaView, Platform } from 'react-native';
-import {  FONTS, COLORS } from '../../constants/theme';
+import { View, Text, Image, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator } from 'react-native';
+import { FONTS, COLORS } from '../../constants/theme';
 import { GlobalStyleSheet } from '../../constants/StyleSheet';
 import CustomInput from '../../components/Input/CustomInput';
 import Button from '../../components/Button/Button';
-import { Feather ,FontAwesome } from '@expo/vector-icons';
+import { Feather, FontAwesome } from '@expo/vector-icons';
 import SocialBtn from '../../components/Socials/SocialBtn';
 import { Checkbox } from 'react-native-paper';
 import { ScrollView } from 'react-native-gesture-handler';
-
 import { IMAGES } from '../../constants/Images';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
+import { useRegister } from '../../api/hooks/useRegister';
+import { useGoogleLogin } from '../../api/hooks/useGoogleLogin';
+import { useToast } from '../../components/commoncomponents/Toast';
+import { getHash } from 'react-native-otp-verify';
 
 type SignUpScreenProps = StackScreenProps<RootStackParamList, 'SignUp'>;
 
@@ -22,6 +25,48 @@ const SignUp = ({ navigation } : SignUpScreenProps) => {
     const { colors } : {colors : any} = theme;
 
     const [isChecked, setisChecked] = useState(false);
+    const [form, setForm] = useState({ username: '', email: '', password: '', contactNumber: '' });
+    const [hashKey, setHashKey] = useState<string | undefined>(undefined);
+    const { register, loading, error, pendingOtpUser, clearError } = useRegister();
+    const { signInWithGoogle, googleLoading, error: googleError, clearError: clearGoogleError } = useGoogleLogin();
+    const toast = useToast();
+
+    const initializeAppHash = useCallback(async () => {
+        try {
+            if (Platform.OS === 'android') {
+                const hash = await getHash();
+                if (hash?.[0]) setHashKey(hash[0]);
+            }
+        } catch { }
+    }, []);
+
+    useEffect(() => {
+        initializeAppHash();
+    }, []);
+
+    useEffect(() => {
+        if (pendingOtpUser) navigation.navigate('SignUpVerifyOTP', { contactNumber: pendingOtpUser.contactNumber });
+    }, [pendingOtpUser]);
+
+    useEffect(() => {
+        if (error) { toast.error(error, { position: 'top', duration: 4000 }); clearError(); }
+    }, [error]);
+
+    useEffect(() => {
+        if (googleError) { toast.error(googleError, { position: 'top', duration: 4000 }); clearGoogleError(); }
+    }, [googleError]);
+
+    const handleRegister = () => {
+        if (!form.username || !form.email || !form.password || !form.contactNumber) {
+            toast.warning('Please fill all fields', { position: 'top' });
+            return;
+        }
+        if (!isChecked) {
+            toast.warning('Please accept the terms', { position: 'top' });
+            return;
+        }
+        register({ ...form, hashKey });
+    };
 
     return (
         <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
@@ -56,22 +101,37 @@ const SignUp = ({ navigation } : SignUpScreenProps) => {
                         <View style={{backgroundColor:colors.card,padding:30,borderRadius:40,paddingBottom:40}}>
                             <Text style={{...FONTS.Marcellus,fontSize:20,color:colors.title,lineHeight:28}}>Welcome Back! Please Enter{"\n"}Your Deails</Text>
                             <View style={{ marginBottom: 15, marginTop: 20 }}>
-                                <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title }}>Name<Text style={{ color: '#FF0000' }}>*</Text></Text>
+                                <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title }}>Username<Text style={{ color: '#FF0000' }}>*</Text></Text>
                                 <CustomInput
-                                    onChangeText={(value:any) => console.log(value)}
+                                    inputSm
+                                    
+                                    value={form.username}
+                                    onChangeText={(value: string) => setForm(f => ({ ...f, username: value }))}
+                                />
+                            </View>
+                            <View style={{ marginBottom: 15 }}>
+                                <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title }}>Contact Number<Text style={{ color: '#FF0000' }}>*</Text></Text>
+                                <CustomInput
+                                    inputSm
+                                    value={form.contactNumber}
+                                    onChangeText={(value: string) => setForm(f => ({ ...f, contactNumber: value }))}
                                 />
                             </View>
                             <View style={{ marginBottom: 15 }}>
                                 <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title }}>Email Address<Text style={{ color: '#FF0000' }}>*</Text></Text>
                                 <CustomInput
-                                    onChangeText={(value:any) => console.log(value)}
+                                    inputSm
+                                    value={form.email}
+                                    onChangeText={(value: string) => setForm(f => ({ ...f, email: value }))}
                                 />
                             </View>
                             <View>
                                 <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title }}>Password<Text style={{ color: '#FF0000' }}>*</Text></Text>
                                 <CustomInput
+                                    inputSm
                                     type={'password'}
-                                    onChangeText={(value:any) => console.log(value)}
+                                    value={form.password}
+                                    onChangeText={(value: string) => setForm(f => ({ ...f, password: value }))}
                                 />
                                 <View>
                                     <Checkbox.Item
@@ -98,11 +158,13 @@ const SignUp = ({ navigation } : SignUpScreenProps) => {
                     </View>
                     <View style={{paddingHorizontal:60,marginTop:-30}}>
                         <Button
-                            title={'Sign Up'}
+                            title={loading ? 'Signing Up...' : 'Sign Up'}
                             btnRounded
                             fullWidth
-                            onPress={() => navigation.navigate('SignIn')}
-                            icon={<Feather size={24} color={COLORS.primary} name={'arrow-right'} />}
+                            onPress={handleRegister}
+                            icon={loading
+                                ? <ActivityIndicator size={20} color={COLORS.primary} />
+                                : <Feather size={24} color={COLORS.primary} name={'arrow-right'} />}
                             color={COLORS.primary}
                         />
                     </View>
@@ -137,22 +199,22 @@ const SignUp = ({ navigation } : SignUpScreenProps) => {
                         />
                     </View>
                     <View>
-                        <View style={{ marginBottom: 20 }}>
+                        {Platform.OS === 'android' ? (
                             <SocialBtn
                                 icon={<Image style={{ height: 20, width: 20, resizeMode: 'contain' }} source={IMAGES.google2} />}
                                 rounded
                                 color={theme.dark ? '#000':'#FFFFFF'}
-                                text={'Sign in with google'}
+                                text={googleLoading ? 'Signing in...' : 'Sign in with google'}
+                                onPress={signInWithGoogle}
                             />
-                        </View>
-                        <View>
+                        ) : (
                             <SocialBtn
                                 icon={<FontAwesome name='apple' size={20} color={colors.title} />}
                                 rounded
                                 color={theme.dark ? '#000':'#FFFFFF'}
                                 text={'Sign in with apple'}
                             />
-                        </View>
+                        )}
                     </View>
                 </View>
                 <View style={{ alignItems: 'center', flexDirection: 'row', justifyContent: 'center',flex:1,paddingBottom:10 }}>

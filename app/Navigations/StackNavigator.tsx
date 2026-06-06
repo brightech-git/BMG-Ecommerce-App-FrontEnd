@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
+import { AsyncStorageHelper } from '../utils/AsyncStorageHelper';
 import { StatusBar } from "react-native";
 import { useTheme } from "@react-navigation/native";
 
@@ -8,8 +8,11 @@ import Onbording from "../Screens/onbording/Onbording";
 import { RootStackParamList } from "./RootStackParamList";
 import SignIn from "../Screens/Auth/SignIn";
 import SignUp from "../Screens/Auth/SignUp";
-import ForgatPassword from "../Screens/Auth/ForgatPassword";
+import ForgotPassword from "../Screens/Auth/ForgotPassword";
 import EnterCode from "../Screens/Auth/EnterCode";
+import SignUpVerifyOTP from "../Screens/Auth/SignUpVerifyOTP";
+import GoogleContactUpload from "../Screens/Auth/GoogleContactUpload";
+import GoogleContactVerify from "../Screens/Auth/GoogleContactVerify";
 import NewPassword from "../Screens/Auth/NewPassword";
 import DrawerNavigation from "./DrawerNavigation";
 import Notification from "../Screens/Notification/Notification";
@@ -68,9 +71,15 @@ const StackNavigator = () => {
   const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | null>(null);
 
   useEffect(() => {
-    AsyncStorage.getItem('hasOnboarded').then(value => {
-      setInitialRoute(value ? 'SignIn' : 'Onbording');
-    });
+    (async () => {
+      const [onboarded, token] = await Promise.all([
+        AsyncStorageHelper.isOnboarded(),
+        AsyncStorageHelper.getToken(),
+      ]);
+      if (!onboarded) setInitialRoute('Onbording');
+      else if (token)  setInitialRoute('DrawerNavigation');
+      else             setInitialRoute('SignIn');
+    })();
   }, []);
 
   if (!initialRoute) return null;
@@ -88,8 +97,11 @@ const StackNavigator = () => {
         <Stack.Screen name="Onbording" component={Onbording} />
         <Stack.Screen name={"SignIn"} component={SignIn} />
         <Stack.Screen name={"SignUp"} component={SignUp} />
-        <Stack.Screen name={"ForgatPassword"} component={ForgatPassword} />
+        <Stack.Screen name={"ForgotPassword"} component={ForgotPassword} />
         <Stack.Screen name={"EnterCode"} component={EnterCode} />
+        <Stack.Screen name={"SignUpVerifyOTP"} component={SignUpVerifyOTP} />
+        <Stack.Screen name={"GoogleContactUpload"} component={GoogleContactUpload} />
+        <Stack.Screen name={"GoogleContactVerify"} component={GoogleContactVerify} />
         <Stack.Screen name={"NewPassword"} component={NewPassword} />
         <Stack.Screen name={"DrawerNavigation"} component={DrawerNavigation} />
         <Stack.Screen name={"Notification"} component={Notification} />

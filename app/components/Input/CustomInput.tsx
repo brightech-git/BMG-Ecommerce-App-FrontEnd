@@ -1,11 +1,25 @@
 import React, { useState } from 'react';
-import { Platform, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardTypeOptions, Platform, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import FeatherIcon from 'react-native-vector-icons/Feather';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 
+interface CustomInputProps {
+    type?: 'password' | 'text';
+    placeholder?: string;
+    value?: string;
+    defaultValue?: string;
+    onChangeText?: (text: string) => void;
+    icon?: React.ReactNode;
+    background?: boolean;
+    inputLg?: boolean;
+    inputSm?: boolean;
+    inputRounded?: boolean;
+    inputBorder?: boolean;
+    keyboardType?: KeyboardTypeOptions;
+}
 
-const CustomInput = (props) => {
+const CustomInput = (props: CustomInputProps) => {
 
      const theme = useTheme();
     const { colors }:{colors : any} = theme;
@@ -58,7 +72,7 @@ const CustomInput = (props) => {
                             backgroundColor:props.background ? colors.card : colors.background,
                             paddingHorizontal: 15,
                             borderRadius: 10,
-                        }, props.icon && {
+                        }, !!props.icon && {
                             paddingLeft: 50,
                         }, props.inputLg && {
                             height: 98,
