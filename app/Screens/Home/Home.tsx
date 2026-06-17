@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useTheme } from '@react-navigation/native'
-import { View, Text, SafeAreaView, Image, TouchableOpacity, StyleSheet, Platform, TextInput } from 'react-native'
+import { View, Text, SafeAreaView, Image, TouchableOpacity, StyleSheet, Platform } from 'react-native'
 import { GlobalStyleSheet } from '../../constants/StyleSheet';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { ScrollView } from 'react-native-gesture-handler';
@@ -15,9 +15,11 @@ import ImageSwper2 from '../../components/ImageSwper2';
 import { IMAGES } from '../../constants/Images';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
+
 import { useDispatch, useSelector } from 'react-redux';
 import { addTowishList } from '../../redux/reducer/wishListReducer';
 import { addToCart } from '../../redux/reducer/cartReducer';
+import HomeHeader from '../../components/Headers/HomeHeader';
 
 
 
@@ -429,8 +431,6 @@ const SliderData = [
 type HomeScreenProps = StackScreenProps<RootStackParamList, 'Home'>;
 
 const Home = ({navigation} : HomeScreenProps) => {
-
-
     const theme = useTheme();
     const { colors }:{colors :any}  = theme;
 
@@ -476,85 +476,8 @@ const Home = ({navigation} : HomeScreenProps) => {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{paddingBottom:80 }}
             >
-                <View style={[GlobalStyleSheet.container, { marginHorizontal: 5, marginVertical: 5,backgroundColor:colors.background,marginBottom:0,paddingBottom:0 }]}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',height:45 }}>
-                        <TouchableOpacity
-                            // onPress={() => dispatch(openDrawer())}
-                             onPress={() => navigation.openDrawer()}
-                        >
-                            <View style={{
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexDirection: 'row',
-                                gap: 10,
-                                paddingRight: 15
-                            }}>
-                                <Image
-                                    style={{ height: 45, width:45, borderRadius: 15 }}
-                                    source={IMAGES.small1}
-                                />
-                                <Text style={{ ...FONTS.Marcellus, fontSize: 14, color: colors.title }}>Hello{"\n"}<Text style={{fontSize:18}}>Elizabeth</Text></Text>
-                            </View>
-                        </TouchableOpacity>
-                        <View
-                            style={[{
-                                shadowColor: 'rgba(195, 123, 95, 0.20)',
-                                shadowOffset: {
-                                    width: 2,
-                                    height: 20,
-                                },
-                                shadowOpacity: .1,
-                                shadowRadius: 5,
-                            }]}
-                        >
-                            <TouchableOpacity
-                                onPress={() => navigation.navigate('Notification')}
-                                style={{ height:45,width:45,backgroundColor:colors.card,borderRadius:15,alignItems:'center',justifyContent:'center' }}
-                            >
-                                <Image
-                                    style={[GlobalStyleSheet.image, { tintColor:colors.title }]}
-                                    source={IMAGES.bell}
-                                />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                    
-                    <View
-                        style={[{
-                            shadowColor: "rgba(195, 123, 95, 0.25)",
-                            shadowOffset: {
-                                width: 2,
-                                height: 20,
-                            },
-                            shadowOpacity: .1,
-                            shadowRadius: 5,
-                            marginTop:20
-                        }]}
-                    >
-                        <View style={{}}>
-                            <View>
-                                <TextInput
-                                    style={{...FONTS.fontRegular,fontSize:16,height:52,backgroundColor:colors.card,borderRadius:15,paddingLeft:20,color:colors.title}}
-                                    placeholder='Search'
-                                    placeholderTextColor={theme.dark ? 'rgba(255,255,255,0.8)':'#666666'}
-                                />
-                                <View style={{position:'absolute',right:15,top:15}}>
-                                    <Image
-                                        style={{height:20,width:20,tintColor:COLORS.primary}}
-                                        source={IMAGES.search}
-                                    />
-                                </View>
-                            </View>
-                        </View>
-                    </View>
-                    <View style={{height:50,
-                        backgroundColor:colors.card,
-                        opacity:.6,
-                        borderRadius:10,
-                        marginHorizontal:20,
-                        marginTop:-40,
-                        zIndex:-1,}}
-                    />
+                <HomeHeader onNotificationPress={() => navigation.navigate('Notification')} />
+                <View style={[GlobalStyleSheet.container, { marginHorizontal: 5, marginVertical: 5, backgroundColor: colors.background, marginBottom: 0, paddingBottom: 0 }]}>
                     <View style={{ flexDirection: 'row', marginTop: 20 }}>
                         <View style={{ flex:1 }}>
                             <Text style={{ ...FONTS.Marcellus, fontSize: 24, color:colors.title,lineHeight:33 }}>The Natural{"\n"}Beauty Of A Jewelry{"\n"}Collection</Text>

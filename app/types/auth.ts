@@ -63,12 +63,14 @@ export interface LoginPayload {
 }
 
 export interface LoginResponse {
+  id?: number;
+  username?: string;
+  email?: string;
+  contact?: string;
+  roles?: string[];
+  token?: string;
   status?: string;
-  message: string;
-  data?: {
-    token: string;
-    user: UserData;
-  };
+  message?: string;
 }
 
 // ── Google Login ──────────────────────────────────────────────────
@@ -88,7 +90,30 @@ export interface GoogleLoginResponse {
   message?: string;
 }
 
-// ── Google Contact Update ─────────────────────────────────────────
+// ── Forgot / Reset Password ─────────────────────────────────────
+export interface ForgotPasswordPayload {
+  contactNumber: string;
+  hashKey: string;
+}
+
+export interface ForgotPasswordResponse {
+  message?: string;
+  otp?: string;
+  errorMessage?: string;
+}
+
+export interface ResetPasswordPayload {
+  contactNumber: string;
+  otp: string;
+  newPassword: string;
+}
+
+export interface ResetPasswordResponse {
+  message?: string;
+  errorMessage?: string;
+  token?: string;
+  user?: UserData;
+}
 export interface GoogleContactUpdatePayload {
   userId: number;
   contactNumber: string;

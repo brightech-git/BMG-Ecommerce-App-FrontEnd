@@ -23,9 +23,17 @@ export const loginThunk = createAsyncThunk(
   async (payload: LoginPayload, { rejectWithValue }) => {
     try {
       const res = await loginUser(payload);
-      if (!res.data?.token) return rejectWithValue(res.message ?? 'Login failed');
-      await AsyncStorageHelper.saveUserSession(res.data.user);
-      return res;
+      if (!res.token) return rejectWithValue(res.message ?? 'Login failed');
+      const user: UserData = {
+        id:            res.id,
+        username:      res.username,
+        email:         res.email,
+        contactNumber: res.contact,
+        roles:         res.roles,
+        token:         res.token,
+      };
+      await AsyncStorageHelper.saveUserSession(user);
+      return { user, token: res.token };
     } catch (err: any) {
       return rejectWithValue(err.message ?? 'Login failed');
     }
@@ -98,8 +106,8 @@ const authSlice = createSlice({
       .addCase(loginThunk.pending,   (state) => { state.loginLoading = true; state.loginError = null; })
       .addCase(loginThunk.fulfilled, (state, action) => {
         state.loginLoading = false;
-        state.user  = action.payload.data?.user  ?? null;
-        state.token = action.payload.data?.token ?? null;
+        state.user  = action.payload.user  ?? null;
+        state.token = action.payload.token ?? null;
       })
       .addCase(loginThunk.rejected,  (state, action) => { state.loginLoading = false; state.loginError = action.payload as string; })
       // Google Login

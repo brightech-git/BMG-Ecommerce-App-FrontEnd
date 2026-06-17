@@ -45,7 +45,7 @@ const SignUpVerifyOTP = ({ navigation, route }: Props) => {
             const res = await verifyOtp({ contactNumber, otp: otpCode });
             if (res.user) await AsyncStorageHelper.saveUserSession(res.user);
             toast.success(res.message ?? 'OTP verified successfully', { position: 'top' });
-            navigation.navigate('SignIn');
+            navigation.navigate('DrawerNavigation', { screen: 'Home' });
         } catch (err: any) {
             toast.error(err.message ?? 'OTP verification failed', { position: 'top', duration: 4000 });
         } finally {

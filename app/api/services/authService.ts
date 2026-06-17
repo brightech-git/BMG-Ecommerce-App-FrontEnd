@@ -7,6 +7,8 @@ import {
   GoogleLoginPayload, GoogleLoginResponse,
   GoogleContactUpdatePayload, GoogleContactUpdateResponse,
   GoogleContactVerifyPayload,
+  ForgotPasswordPayload, ForgotPasswordResponse,
+  ResetPasswordPayload, ResetPasswordResponse,
 } from '../../types/auth';
 
 export type {
@@ -16,6 +18,8 @@ export type {
   GoogleLoginPayload, GoogleLoginResponse,
   GoogleContactUpdatePayload, GoogleContactUpdateResponse,
   GoogleContactVerifyPayload,
+  ForgotPasswordPayload, ForgotPasswordResponse,
+  ResetPasswordPayload, ResetPasswordResponse,
 };
 
 export const registerUser = (payload: RegisterPayload) =>
@@ -43,3 +47,9 @@ export const updateGoogleContact = (payload: GoogleContactUpdatePayload) =>
 
 export const verifyGoogleContact = (body: GoogleContactVerifyPayload) =>
   callApi<GoogleContactVerifyPayload, OtpResponse>({ method: 'post', url: AUTH.VERIFY_OTP, data: body });
+
+export const forgotPassword = (payload: ForgotPasswordPayload) =>
+  callApi<ForgotPasswordPayload, ForgotPasswordResponse>({ method: 'post', url: AUTH.FORGOT_PASSWORD, data: payload });
+
+export const resetPassword = (payload: ResetPasswordPayload) =>
+  callApi<ResetPasswordPayload, ResetPasswordResponse>({ method: 'post', url: AUTH.VERIFY_OTP, data: payload });

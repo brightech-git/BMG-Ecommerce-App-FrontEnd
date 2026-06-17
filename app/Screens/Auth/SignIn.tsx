@@ -153,7 +153,7 @@ const SignIn = ({ navigation }: SignInScreenProps) => {
                 </View>
                 <View style={{ alignItems: 'center', flexDirection: 'row', justifyContent: 'center', flex: 1 }}>
                     <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title }}>Not a member?</Text>
-                    <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+                    <TouchableOpacity onPress={() => navigation.replace('SignUp')}>
                         <Text style={{
                             ...FONTS.fontMedium,
                             borderBottomWidth: 1,

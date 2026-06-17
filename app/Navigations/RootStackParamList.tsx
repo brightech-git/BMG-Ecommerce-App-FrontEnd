@@ -12,7 +12,7 @@ export type RootStackParamList = {
     Login: undefined;
     Register: undefined;
     ForgotPassword: undefined;
-    EnterCode: undefined;
+    EnterCode: { contactNumber: string };
     SignUpVerifyOTP: { contactNumber: string };
     GoogleContactUpload: undefined;
     GoogleContactVerify: { contactNumber: string; userId: number };

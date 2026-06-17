@@ -152,3 +152,5 @@
     return AutoScrolling;
 
 })));
+
+export default AutoScrolling;

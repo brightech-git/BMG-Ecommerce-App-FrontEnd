@@ -20,3 +20,7 @@ export const AUTH = {
   DELETE_USER:               '/auth/user/deleteUserById/:id',
 
 };
+
+export const SEARCH = {
+  SEARCH:                    '/product/items/filter',
+};

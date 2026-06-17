@@ -18,7 +18,7 @@ export const COLORS = {
 
 	// light theme
 	card: "#fff",
-	background: "#FFF8F0",
+	background: "#f0dcc6",
 	text: "#000000",
 	textLight: "#8A8A8A",
 	title: "#000000",

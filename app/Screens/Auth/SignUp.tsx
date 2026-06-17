@@ -16,7 +16,7 @@ import { useRegister } from '../../api/hooks/useRegister';
 import { useGoogleLogin } from '../../api/hooks/useGoogleLogin';
 import { useToast } from '../../components/commoncomponents/Toast';
 import { getHash } from 'react-native-otp-verify';
-
+import MobileInput from '../../components/Input/MobileInput';
 type SignUpScreenProps = StackScreenProps<RootStackParamList, 'SignUp'>;
 
 const SignUp = ({ navigation } : SignUpScreenProps) => {
@@ -45,7 +45,7 @@ const SignUp = ({ navigation } : SignUpScreenProps) => {
     }, []);
 
     useEffect(() => {
-        if (pendingOtpUser) navigation.navigate('SignUpVerifyOTP', { contactNumber: pendingOtpUser.contactNumber });
+        if (pendingOtpUser) navigation.replace('SignUpVerifyOTP', { contactNumber: pendingOtpUser.contactNumber });
     }, [pendingOtpUser]);
 
     useEffect(() => {
@@ -103,7 +103,7 @@ const SignUp = ({ navigation } : SignUpScreenProps) => {
                             <View style={{ marginBottom: 15, marginTop: 20 }}>
                                 <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title }}>Username<Text style={{ color: '#FF0000' }}>*</Text></Text>
                                 <CustomInput
-                                    inputSm
+                                    inputxs
                                     
                                     value={form.username}
                                     onChangeText={(value: string) => setForm(f => ({ ...f, username: value }))}
@@ -111,8 +111,7 @@ const SignUp = ({ navigation } : SignUpScreenProps) => {
                             </View>
                             <View style={{ marginBottom: 15 }}>
                                 <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title }}>Contact Number<Text style={{ color: '#FF0000' }}>*</Text></Text>
-                                <CustomInput
-                                    inputSm
+                                <MobileInput
                                     value={form.contactNumber}
                                     onChangeText={(value: string) => setForm(f => ({ ...f, contactNumber: value }))}
                                 />
@@ -120,7 +119,7 @@ const SignUp = ({ navigation } : SignUpScreenProps) => {
                             <View style={{ marginBottom: 15 }}>
                                 <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title }}>Email Address<Text style={{ color: '#FF0000' }}>*</Text></Text>
                                 <CustomInput
-                                    inputSm
+                                    inputxs
                                     value={form.email}
                                     onChangeText={(value: string) => setForm(f => ({ ...f, email: value }))}
                                 />
@@ -128,7 +127,7 @@ const SignUp = ({ navigation } : SignUpScreenProps) => {
                             <View>
                                 <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title }}>Password<Text style={{ color: '#FF0000' }}>*</Text></Text>
                                 <CustomInput
-                                    inputSm
+                                    inputxs
                                     type={'password'}
                                     value={form.password}
                                     onChangeText={(value: string) => setForm(f => ({ ...f, password: value }))}

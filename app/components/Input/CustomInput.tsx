@@ -14,6 +14,7 @@ interface CustomInputProps {
     background?: boolean;
     inputLg?: boolean;
     inputSm?: boolean;
+    inputxs?: boolean;
     inputRounded?: boolean;
     inputBorder?: boolean;
     keyboardType?: KeyboardTypeOptions;
@@ -80,6 +81,10 @@ const CustomInput = (props: CustomInputProps) => {
                         }, props.inputSm && {
                             paddingVertical: 7,
                             height: 45,
+                        }, props.inputRounded && {
+                        }, props.inputxs && {
+                            paddingVertical: 7,
+                            height: 40,
                         }, props.inputRounded && {
                             borderRadius: 30,
                         }, props.inputBorder && {
