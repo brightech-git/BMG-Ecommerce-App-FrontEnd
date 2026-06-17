@@ -1,0 +1,394 @@
+/**
+ * CategoryScreen — up to 4-layer expandable "Shop By Category" menu.
+ *
+ * Source: GET /menu/filter/list  →  { headers: [...] }
+ * NOTE: this is a DIFFERENT endpoint from /header-nav (home drawer menu).
+ *       Category uses the filter-list tree; the two are not interchangeable.
+ *
+ * Layer 1  (headers)            show `name`; navigatable when linkValue present;
+ *                               V-arrow when it has a `menuList`.
+ * Layer 2  (menuList)           show `label`; navigatable ("All …") when `value`
+ *                               present; V-arrow when it has `filterKeys`/`items`.
+ *                               Expanding it reveals layers 3 & 4 in a 2-column grid.
+ * Layer 3a (items)              leaf — show `itemName`, pass `itemId`. No layer 4.
+ * Layer 3b (filterKeys)         group label `filterLabel`; owns layer 4.
+ * Layer 4  (filterContent)      leaf — show `filterTitle`, pass `filterValue`
+ *                               (+ min/max when non-zero).
+ *
+ * Only one of `items` / `filterKeys` is ever present on a menu item.
+ * V-shaped arrow (chevron) marks an expandable level; final levels have no arrow.
+ */
+
+import React, {useState, useMemo} from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {Ionicons} from '@expo/vector-icons';
+import {useMenuFilters} from '../../hooks/useHeaderNav';
+import {colors, fonts} from '../../theme/theme';
+
+// "value present" helper — treats null / "" / undefined as absent.
+const has = v => v !== null && v !== undefined && String(v).trim() !== '';
+
+const CategoryScreen = ({navigation}) => {
+  // Category tree comes from GET /menu/filter/list → { headers: [...] }.
+  const {data: navData, isLoading} = useMenuFilters();
+
+  const headers = useMemo(
+    () => navData?.headers ?? navData?.menuSections ?? [],
+    [navData],
+  );
+
+  // Track which Layer-1 header and which Layer-2 menu item are expanded.
+  const [openHeader, setOpenHeader] = useState(0); // index, or null
+  const [openMenu, setOpenMenu] = useState(null); // "h-m" key, or null
+
+  const goToProducts = filters =>
+    navigation.navigate('Products', {
+      filters,
+      title: filters._title || 'Products',
+    });
+
+  // ── Layer 1: header tapped ─────────────────────────────────────────────
+  const onHeaderPress = (header, idx) => {
+    const hasMenu = (header.menuList || []).length > 0;
+    if (hasMenu) {
+      setOpenMenu(null);
+      setOpenHeader(prev => (prev === idx ? null : idx));
+    } else if (has(header.linkValue)) {
+      goToProducts({
+        [header.linkKey]: header.linkValue,
+        _title: header.name,
+      });
+    }
+  };
+
+  // ── Layer 2: "All <label>" navigatable link ────────────────────────────
+  const onMenuAll = menu => {
+    const filters = {_title: `All ${(menu.label || '').trim()}`};
+    if (has(menu.menuKey) && has(menu.value)) {
+      filters[menu.menuKey] = menu.value;
+    }
+    goToProducts(filters);
+  };
+
+  // ── Layer 3a: item leaf ────────────────────────────────────────────────
+  const onItemPress = (menu, item) => {
+    const filters = {itemId: item.itemId, _title: item.itemName};
+    if (has(menu.menuKey) && has(menu.value)) {
+      filters[menu.menuKey] = menu.value;
+    }
+    goToProducts(filters);
+  };
+
+  // ── Layer 4: filterContent leaf ────────────────────────────────────────
+  const onFilterContentPress = (menu, content) => {
+    const filters = {_title: content.filterTitle};
+    if (has(menu.menuKey) && has(menu.value)) {
+      filters[menu.menuKey] = menu.value;
+    }
+    if (has(content.filterValue)) {
+      filters.filterValue = content.filterValue;
+    }
+    if (Number(content.min) !== 0) filters.min = content.min;
+    if (Number(content.max) !== 0) filters.max = content.max;
+    goToProducts(filters);
+  };
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Shop By Category</Text>
+        </View>
+        <View style={styles.centered}>
+          <ActivityIndicator color={colors.primary} size="large" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Shop By Category</Text>
+      </View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scroll}>
+        {headers.map((header, hIdx) => {
+          const menuList = header.menuList || [];
+          const hasMenu = menuList.length > 0;
+          const headerOpen = openHeader === hIdx;
+
+          return (
+            <View key={hIdx} style={styles.l1Block}>
+              {/* ── Layer 1 ── */}
+              <TouchableOpacity
+                style={styles.l1Row}
+                activeOpacity={0.7}
+                onPress={() => onHeaderPress(header, hIdx)}>
+                <Text style={styles.l1Text}>{header.name}</Text>
+                {hasMenu ? (
+                  <Ionicons
+                    name={headerOpen ? 'chevron-up' : 'chevron-down'}
+                    size={18}
+                    color={colors.primary}
+                  />
+                ) : has(header.linkValue) ? (
+                  <Ionicons
+                    name="arrow-forward"
+                    size={16}
+                    color={colors.textLight}
+                  />
+                ) : null}
+              </TouchableOpacity>
+
+              {/* ── Layer 2 list ── */}
+              {hasMenu && headerOpen && (
+                <View style={styles.l2Wrap}>
+                  {menuList.map((menu, mIdx) => {
+                    const menuKey = `${hIdx}-${mIdx}`;
+                    const items = menu.items || [];
+                    const filterKeys = menu.filterKeys || [];
+                    const hasChildren =
+                      items.length > 0 || filterKeys.length > 0;
+                    const menuOpen = openMenu === menuKey;
+
+                    return (
+                      <View key={mIdx} style={styles.l2Block}>
+                        <TouchableOpacity
+                          style={styles.l2Row}
+                          activeOpacity={0.7}
+                          onPress={() => {
+                            if (hasChildren) {
+                              setOpenMenu(prev =>
+                                prev === menuKey ? null : menuKey,
+                              );
+                            } else if (has(menu.value)) {
+                              onMenuAll(menu);
+                            }
+                          }}>
+                          <Text style={styles.l2Text}>{menu.label}</Text>
+                          {hasChildren ? (
+                            <Ionicons
+                              name={menuOpen ? 'chevron-up' : 'chevron-down'}
+                              size={16}
+                              color={colors.primary}
+                            />
+                          ) : null}
+                        </TouchableOpacity>
+
+                        {/* ── Layers 3 & 4 — 2-column grid ── */}
+                        {hasChildren && menuOpen && (
+                          <View style={styles.gridWrap}>
+                            {/* "All <label>" navigatable when value present */}
+                            {has(menu.value) && (
+                              <TouchableOpacity
+                                style={styles.allRow}
+                                activeOpacity={0.7}
+                                onPress={() => onMenuAll(menu)}>
+                                <Text style={styles.allText}>
+                                  All {(menu.label || '').trim()}
+                                </Text>
+                                <Ionicons
+                                  name="arrow-forward"
+                                  size={14}
+                                  color={colors.primary}
+                                />
+                              </TouchableOpacity>
+                            )}
+
+                            <View style={styles.grid}>
+                              {/* Layer 3a — items (no Layer 4) */}
+                              {items.length > 0 &&
+                                items.map((item, iIdx) => (
+                                  <TouchableOpacity
+                                    key={`it-${iIdx}`}
+                                    style={styles.gridCell}
+                                    activeOpacity={0.7}
+                                    onPress={() => onItemPress(menu, item)}>
+                                    <Text
+                                      style={styles.leafText}
+                                      numberOfLines={2}>
+                                      {item.itemName}
+                                    </Text>
+                                  </TouchableOpacity>
+                                ))}
+
+                              {/* Layer 3b — filterKeys → Layer 4 filterContent */}
+                              {filterKeys.length > 0 &&
+                                filterKeys.map((fk, fkIdx) => (
+                                  <View
+                                    key={`fk-${fkIdx}`}
+                                    style={styles.groupCell}>
+                                    <Text style={styles.groupLabel}>
+                                      {(fk.filterLabel || fk.filterKeys || '')
+                                        .toString()
+                                        .toUpperCase()}
+                                    </Text>
+                                    {(fk.filterContent || []).map(
+                                      (fc, fcIdx) => (
+                                        <TouchableOpacity
+                                          key={`fc-${fcIdx}`}
+                                          style={styles.leafRow}
+                                          activeOpacity={0.7}
+                                          onPress={() =>
+                                            onFilterContentPress(menu, fc)
+                                          }>
+                                          <Text
+                                            style={styles.leafText}
+                                            numberOfLines={2}>
+                                            {fc.filterTitle}
+                                          </Text>
+                                        </TouchableOpacity>
+                                      ),
+                                    )}
+                                  </View>
+                                ))}
+                            </View>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          );
+        })}
+
+        {headers.length === 0 && (
+          <View style={styles.centered}>
+            <Text style={styles.emptyText}>No categories available.</Text>
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+export default CategoryScreen;
+
+const styles = StyleSheet.create({
+  safeArea: {flex: 1, backgroundColor: colors.background},
+  header: {
+    backgroundColor: colors.headerBg,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: fonts.weight.bold,
+    color: colors.white,
+    textAlign: 'center',
+  },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {fontSize: 14, color: colors.textSecondary},
+  scroll: {paddingBottom: 32},
+
+  // ── Layer 1 ──
+  l1Block: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+    backgroundColor: colors.surface,
+  },
+  l1Row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+  },
+  l1Text: {
+    flex: 1,
+    fontSize: fonts.size.base,
+    fontWeight: fonts.weight.bold,
+    color: colors.text,
+  },
+
+  // ── Layer 2 ──
+  l2Wrap: {
+    backgroundColor: colors.cardPrimary,
+    paddingBottom: 4,
+  },
+  l2Block: {
+    borderTopWidth: 0.5,
+    borderTopColor: colors.primarySoft,
+  },
+  l2Row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingLeft: 26,
+    paddingRight: 18,
+    paddingVertical: 13,
+  },
+  l2Text: {
+    flex: 1,
+    fontSize: fonts.size.md,
+    fontWeight: fonts.weight.semiBold,
+    color: colors.text,
+  },
+
+  // ── Layers 3 & 4 grid ──
+  gridWrap: {
+    paddingLeft: 26,
+    paddingRight: 14,
+    paddingBottom: 14,
+  },
+  allRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    marginBottom: 4,
+  },
+  allText: {
+    fontSize: fonts.size.md,
+    fontWeight: fonts.weight.bold,
+    color: colors.primary,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  groupCell: {
+    width: '50%',
+    paddingRight: 10,
+    marginBottom: 14,
+  },
+  groupLabel: {
+    fontSize: 11,
+    fontWeight: fonts.weight.bold,
+    color: colors.textLight,
+    letterSpacing: 1.2,
+    marginBottom: 6,
+  },
+  gridCell: {
+    width: '50%',
+    paddingRight: 10,
+    paddingVertical: 9,
+  },
+  leafRow: {
+    paddingVertical: 7,
+  },
+  leafText: {
+    fontSize: 13,
+    fontWeight: fonts.weight.medium,
+    color: colors.text,
+  },
+});

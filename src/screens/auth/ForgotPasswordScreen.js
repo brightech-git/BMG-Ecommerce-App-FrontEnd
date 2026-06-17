@@ -1,0 +1,311 @@
+import React, {useState} from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
+import {forgotPasswordService, resetPasswordService} from '../../services/AuthService';
+import {colors, fonts, shadows, radius} from '../../theme/theme';
+import Logo from '../../components/common/Logo';
+
+const ForgotPasswordScreen = ({navigation}) => {
+  // step 1 → enter phone, step 2 → enter OTP + new password
+  const [step, setStep] = useState(1);
+  const [contactNumber, setContactNumber] = useState('');
+  const [otp, setOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const handleSendOtp = async () => {
+    if (!/^\d{10}$/.test(contactNumber)) {
+      setErrors({contact: 'Enter a valid 10-digit mobile number'});
+      return;
+    }
+    setErrors({});
+    setLoading(true);
+    try {
+      await forgotPasswordService({contactNumber});
+      Toast.show({
+        type: 'success',
+        text1: 'OTP Sent',
+        text2: `Verification code sent to ${contactNumber}`,
+      });
+      setStep(2);
+    } catch (err) {
+      Toast.show({
+        type: 'error',
+        text1: 'Failed',
+        text2: err.message || 'Could not send OTP. Try again.',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    const e = {};
+    if (!/^\d{6}$/.test(otp)) e.otp = 'Enter a valid 6-digit OTP';
+    if (!newPassword || newPassword.length < 6)
+      e.newPassword = 'Minimum 6 characters';
+    if (Object.keys(e).length) {setErrors(e); return;}
+
+    setLoading(true);
+    try {
+      await resetPasswordService({contactNumber, otp, newPassword});
+      Toast.show({
+        type: 'success',
+        text1: 'Password Reset!',
+        text2: 'You can now sign in with your new password.',
+      });
+      navigation.navigate('Login');
+    } catch (err) {
+      Toast.show({
+        type: 'error',
+        text1: 'Reset Failed',
+        text2: err.message || 'Invalid OTP or try again.',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+    
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled">
+
+          {/* Header */}
+        
+            <Logo />
+     
+
+          {/* Card */}
+          <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.backBtn}
+              onPress={() => (step === 2 ? setStep(1) : navigation.goBack())}>
+              <Text style={styles.backText}>← Back</Text>
+            </TouchableOpacity>
+
+            {/* Icon */}
+            <View style={styles.iconWrap}>
+              <Text style={styles.iconEmoji}>{step === 1 ? '🔑' : '📱'}</Text>
+            </View>
+
+            <Text style={styles.cardTitle}>
+              {step === 1 ? 'Forgot Password' : 'Reset Password'}
+            </Text>
+            <Text style={styles.cardSubtitle}>
+              {step === 1
+                ? 'Enter your registered mobile number to receive a reset code.'
+                : `Enter the OTP sent to `}
+              {step === 2 ? (
+                <Text style={styles.contactHighlight}>{contactNumber}</Text>
+              ) : null}
+            </Text>
+
+            {step === 1 ? (
+              <>
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.label}>Mobile Number</Text>
+                  <View style={[styles.inputWrap, errors.contact && styles.inputError]}>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="10-digit mobile number"
+                      placeholderTextColor={colors.placeholder}
+                      value={contactNumber}
+                      onChangeText={val => {
+                        setContactNumber(val.replace(/\D/g, ''));
+                        if (errors.contact) setErrors({});
+                      }}
+                      keyboardType="phone-pad"
+                      maxLength={10}
+                      returnKeyType="done"
+                      onSubmitEditing={handleSendOtp}
+                      autoFocus
+                    />
+                  </View>
+                  {errors.contact ? (
+                    <Text style={styles.errorText}>{errors.contact}</Text>
+                  ) : null}
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.btn, loading && styles.btnDisabled]}
+                  onPress={handleSendOtp}
+                  disabled={loading}
+                  activeOpacity={0.85}>
+                  {loading ? (
+                    <ActivityIndicator color={colors.white} size="small" />
+                  ) : (
+                    <Text style={styles.btnText}>SEND OTP</Text>
+                  )}
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                {/* OTP */}
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.label}>OTP</Text>
+                  <View style={[styles.inputWrap, errors.otp && styles.inputError]}>
+                    <TextInput
+                      style={[styles.input, styles.otpInput]}
+                      placeholder="• • • • • •"
+                      placeholderTextColor={colors.placeholder}
+                      value={otp}
+                      onChangeText={val => {
+                        setOtp(val.replace(/\D/g, ''));
+                        if (errors.otp) setErrors(e => ({...e, otp: undefined}));
+                      }}
+                      keyboardType="number-pad"
+                      maxLength={6}
+                      autoFocus
+                    />
+                  </View>
+                  {errors.otp ? (
+                    <Text style={styles.errorText}>{errors.otp}</Text>
+                  ) : null}
+                </View>
+
+                {/* New Password */}
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.label}>New Password</Text>
+                  <View style={[styles.inputWrap, errors.newPassword && styles.inputError]}>
+                    <TextInput
+                      style={[styles.input, {paddingRight: 8}]}
+                      placeholder="Minimum 6 characters"
+                      placeholderTextColor={colors.placeholder}
+                      value={newPassword}
+                      onChangeText={val => {
+                        setNewPassword(val);
+                        if (errors.newPassword)
+                          setErrors(e => ({...e, newPassword: undefined}));
+                      }}
+                      secureTextEntry={!showPassword}
+                      returnKeyType="done"
+                      onSubmitEditing={handleResetPassword}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowPassword(v => !v)}
+                      hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+                      <Text style={styles.eyeIcon}>
+                        {showPassword ? '🙈' : '👁️'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                  {errors.newPassword ? (
+                    <Text style={styles.errorText}>{errors.newPassword}</Text>
+                  ) : null}
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.btn, loading && styles.btnDisabled]}
+                  onPress={handleResetPassword}
+                  disabled={loading}
+                  activeOpacity={0.85}>
+                  {loading ? (
+                    <ActivityIndicator color={colors.white} size="small" />
+                  ) : (
+                    <Text style={styles.btnText}>RESET PASSWORD</Text>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.resendBtn}
+                  onPress={handleSendOtp}>
+                  <Text style={styles.resendText}>Resend OTP</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+};
+
+export default ForgotPasswordScreen;
+
+const styles = StyleSheet.create({
+  flex: {flex: 1},
+  safeArea: {flex: 1},
+  scrollContent: {flexGrow: 1},
+
+
+  logoRow: {flexDirection: 'row', alignItems: 'center'},
+  logoText: {
+    fontSize: fonts.size.display, fontWeight: fonts.weight.black,
+    color: colors.headerText, letterSpacing: 5,
+  },
+  logoDivider: {
+    width: 2, height: 34,
+    backgroundColor: colors.white, marginHorizontal: 12, opacity: 0.6,
+  },
+  logoSub: {
+    fontSize: 13, fontWeight: fonts.weight.extraBold,
+    color: colors.headerText, letterSpacing: 6,
+  },
+
+  card: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    paddingHorizontal: 28, paddingTop: 24, paddingBottom: 40,
+  },
+  backBtn: {marginBottom: 16},
+  backText: {fontSize: 14, color: colors.primary, fontWeight: '600'},
+
+  iconWrap: {
+    width: 68, height: 68,
+    backgroundColor: '#000000',
+    borderRadius: 34,
+    alignItems: 'center', justifyContent: 'center',
+    alignSelf: 'center', marginBottom: 16,
+  },
+  iconEmoji: {fontSize: 32},
+
+  cardTitle: {fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 6, textAlign: 'center'},
+  cardSubtitle: {fontSize: 13, color: colors.textSecondary, marginBottom: 28, textAlign: 'center'},
+  contactHighlight: {color: colors.primary, fontWeight: '700'},
+
+  fieldGroup: {marginBottom: 16},
+  label: {fontSize: 13, fontWeight: '600', color: colors.text, marginBottom: 6},
+  inputWrap: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: colors.inputBg,
+    borderWidth: 1.5, borderColor: colors.border,
+    borderRadius: 10, paddingHorizontal: 14,
+  },
+  inputError: {borderColor: colors.error},
+  input: {flex: 1, height: 50, fontSize: 15, color: colors.text},
+  otpInput: {textAlign: 'center', fontSize: 22, letterSpacing: 8, fontWeight: '700'},
+  eyeIcon: {fontSize: 18, paddingLeft: 4},
+  errorText: {fontSize: 12, color: colors.error, marginTop: 4, marginLeft: 2},
+
+  btn: {
+    backgroundColor: colors.primaryMild,
+    borderRadius: radius.md, height: 52,
+    alignItems: 'center', justifyContent: 'center',
+    ...shadows.orange,
+  },
+  btnDisabled: {opacity: 0.65},
+  btnText: {fontSize: 15, fontWeight: fonts.weight.extraBold, color: colors.white, letterSpacing: 2},
+
+  resendBtn: {alignSelf: 'center', marginTop: 18},
+  resendText: {fontSize: 14, color: colors.primary, fontWeight: '600'},
+});

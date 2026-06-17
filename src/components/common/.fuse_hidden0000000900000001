@@ -1,0 +1,64 @@
+/**
+ * Logo — renders the BMG Jewellers logo image (src/images/logo.png).
+ *
+ * Used in place of the old "BMG | JEWELLERS" text everywhere.
+ * If the image asset ever fails to load, it falls back to the same
+ * logo asset (and, as a last resort, a small text wordmark) so the
+ * brand is always present.
+ */
+import React, {useState} from 'react';
+import {View, Text, Image, StyleSheet} from 'react-native';
+import {colors, fonts} from '../../theme/theme';
+
+import logoSource from '../../images/logo.png';
+
+const Logo = ({width = 130, height = 44, tintColor, style}) => {
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    // Last-resort text wordmark if the asset can't render at all.
+    return (
+      <View style={[styles.fallbackRow, style]}>
+        <Text style={[styles.fallbackMain, tintColor && {color: tintColor}]}>
+          BMG
+        </Text>
+        <Text style={[styles.fallbackSub, tintColor && {color: tintColor}]}>
+          JEWELLERS
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <Image
+      source={logoSource}
+      defaultSource={logoSource}
+      onError={() => setFailed(true)}
+      style={[
+        {width, height, resizeMode: 'contain'},
+        tintColor ? {tintColor} : null,
+        style,
+      ]}
+    />
+  );
+};
+
+export default Logo;
+
+const styles = StyleSheet.create({
+  fallbackRow: {flexDirection: 'row', alignItems: 'center'},
+  fallbackMain: {
+    fontSize: 22,
+    fontWeight: fonts.weight.black,
+    color: colors.headerText,
+    letterSpacing: 3,
+  },
+  fallbackSub: {
+    fontSize: 9,
+    fontWeight: fonts.weight.extraBold,
+    color: colors.headerText,
+    letterSpacing: 4,
+    marginLeft: 7,
+    alignSelf: 'center',
+  },
+});

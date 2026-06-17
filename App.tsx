@@ -1,37 +1,31 @@
-import 'react-native-gesture-handler';
-import { useFonts } from 'expo-font';
-import { StatusBar } from 'expo-status-bar';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { Provider } from 'react-redux'
-import store from './app/redux/store';
-import Route from './app/Navigations/Route';
-import { ToastProvider } from './app/components/commoncomponents/Toast';
+import React from 'react';
+import {NavigationContainer} from '@react-navigation/native';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
+import {StatusBar} from 'expo-status-bar';
+import Toast from 'react-native-toast-message';
+
+import {AuthProvider} from './src/context/AuthContext';
+import AppNavigator from './src/navigation/AppNavigator';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {retry: 1, staleTime: 1000 * 60 * 5},
+  },
+});
 
 export default function App() {
-
-  const [loaded] = useFonts({
-    JostBold: require('./app/assets/fonts/Jost-Bold.ttf'),
-    JostSemiBold : require('./app/assets/fonts/Jost-SemiBold.ttf'),
-    JostLight : require('./app/assets/fonts/Jost-Light.ttf'),
-    JostMedium : require('./app/assets/fonts/Jost-Medium.ttf'),
-    JostRegular : require('./app/assets/fonts/Jost-Regular.ttf'),
-    JostExtraLight : require('./app/assets/fonts/Jost-ExtraLight.ttf'),
-    MarcellusRegular : require('./app/assets/fonts/Marcellus-Regular.ttf'),
-  });  
-
-  if(!loaded){
-    return null;
-  }
   return (
-    <SafeAreaProvider>
-        <SafeAreaView style={{ flex: 1 }}>
-            <StatusBar style="dark" />
-            <Provider store={store}>
-              <ToastProvider>
-                <Route/>
-              </ToastProvider>
-            </Provider>
-        </SafeAreaView>
-    </SafeAreaProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <SafeAreaProvider>
+          <StatusBar style="light" />
+          <NavigationContainer>
+            <AppNavigator />
+          </NavigationContainer>
+          <Toast />
+        </SafeAreaProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }

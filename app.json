@@ -1,70 +1,28 @@
 {
   "expo": {
-    "name": "BMG Jewels Store",
-    "slug": "bmg-jewels-store",
-    "version": "1.0.6",
+    "name": "BMG Jewellers",
+    "slug": "bmg-jewellers",
+    "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-
-    "assetBundlePatterns": [
-      "**/*"
-    ],
-
+    "splash": {
+      "backgroundColor": "#1A1A1A",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.brightech.bmgjewellers"
+    },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#ffffff"
-      },
       "package": "com.brightech.bmgjewellers",
-      "versionCode": 5,
-      "googleServicesFile": "./google-services.json",
-      "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
-      ]
+      "adaptiveIcon": {
+        "backgroundColor": "#B8962E"
+      },
+      "softwareKeyboardLayoutMode": "pan"
     },
-
-    "web": {
-      "favicon": "./assets/icon.png"
-    },
-
-    "extra": {
-      "eas": {
-        "projectId": "11172f61-1dac-4232-840c-21f1dd887139"
-      }
-    },
-
+    "newArchEnabled": true,
     "plugins": [
-  [
-    "expo-camera",
-    {
-      "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
-      "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
-      "recordAudioAndroid": true
-    }
-  ],
-  [
-    "expo-screen-orientation",
-    {
-      "initialOrientation": "DEFAULT"
-    }
-  ],
-  ["expo-build-properties", {
-    "android": {
-      "kotlinVersion": "2.1.20",
-      "compileSdkVersion": 36,
-      "targetSdkVersion": 35,
-      "buildToolsVersion": "36.0.0",
-      "minSdkVersion": 24
-    }
-  }],
-  "expo-location",
-  "expo-notifications",
-  "expo-image-picker",
-  "expo-document-picker"
-],
-
-    "owner": "brightech"
+      "expo-font"
+    ]
   }
 }

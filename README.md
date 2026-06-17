@@ -1,1 +1,0 @@
-# BMG-Ecommerce-App-FrontEnd

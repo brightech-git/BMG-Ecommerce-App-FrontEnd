@@ -1,0 +1,710 @@
+import React, {useState, useMemo} from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {Ionicons} from '@expo/vector-icons';
+import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
+import Toast from 'react-native-toast-message';
+import {useCart} from '../../hooks/useCart';
+import {useAuth} from '../../context/AuthContext';
+import {getAddressesByCustomer, createAddress} from '../../services/AddressService';
+import {createOrder} from '../../services/OrderService';
+import {colors} from '../../theme/theme';
+
+const STEPS = [
+  {id: 1, label: 'Address', icon: 'location-outline'},
+  {id: 2, label: 'Summary', icon: 'bag-outline'},
+  {id: 3, label: 'Payment', icon: 'card-outline'},
+];
+
+const PAYMENT_METHODS = [
+  {id: 'cod', label: 'Cash on Delivery', icon: 'cash-outline', desc: 'Pay when you receive'},
+  {id: 'upi', label: 'UPI / Online', icon: 'phone-portrait-outline', desc: 'Google Pay, PhonePe, UPI'},
+];
+
+const fmt = val => {
+  const n = parseFloat(val);
+  if (!n) return '—';
+  return `₹${n.toLocaleString('en-IN', {maximumFractionDigits: 0})}`;
+};
+
+// ── Stepper ───────────────────────────────────────────────────────────────────
+const Stepper = ({current}) => (
+  <View style={styles.stepper}>
+    {STEPS.map((step, i) => {
+      const done = current > step.id;
+      const active = current === step.id;
+      return (
+        <React.Fragment key={step.id}>
+          <View style={styles.stepItem}>
+            <View style={[styles.stepCircle, done && styles.stepDone, active && styles.stepActive]}>
+              {done ? (
+                <Ionicons name="checkmark" size={14} color={colors.white} />
+              ) : (
+                <Ionicons name={step.icon} size={14} color={active ? colors.white : colors.textLight} />
+              )}
+            </View>
+            <Text style={[styles.stepLabel, active && styles.stepLabelActive]}>
+              {step.label}
+            </Text>
+          </View>
+          {i < STEPS.length - 1 && (
+            <View style={[styles.stepLine, done && styles.stepLineDone]} />
+          )}
+        </React.Fragment>
+      );
+    })}
+  </View>
+);
+
+// ── AddressCard ───────────────────────────────────────────────────────────────
+const AddressCard = ({addr, selected, onSelect}) => (
+  <TouchableOpacity
+    style={[styles.addrCard, selected && styles.addrCardSelected]}
+    onPress={onSelect}
+    activeOpacity={0.85}>
+    <View style={styles.addrRadio}>
+      <View style={[styles.radioOuter, selected && styles.radioOuterSelected]}>
+        {selected && <View style={styles.radioInner} />}
+      </View>
+    </View>
+    <View style={styles.addrText}>
+      <Text style={styles.addrName}>{addr?.name ?? addr?.fullName ?? 'Address'}</Text>
+      <Text style={styles.addrLine} numberOfLines={2}>
+        {[addr?.address, addr?.city, addr?.state].filter(Boolean).join(', ')}
+      </Text>
+      {addr?.pincode ? <Text style={styles.addrLine}>Pincode: {addr.pincode}</Text> : null}
+      {addr?.mobile ? <Text style={styles.addrLine}>📞 {addr.mobile}</Text> : null}
+    </View>
+  </TouchableOpacity>
+);
+
+// ── CheckoutScreen ────────────────────────────────────────────────────────────
+const CheckoutScreen = ({navigation}) => {
+  const {user, isAuthenticated} = useAuth();
+  const {cartProducts, clearCart} = useCart();
+  const queryClient = useQueryClient();
+
+  const [step, setStep] = useState(1);
+  const [selectedAddrId, setSelectedAddrId] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState('cod');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [placing, setPlacing] = useState(false);
+
+  // New address form state
+  const [form, setForm] = useState({
+    name: '', address: '', city: '', state: '', pincode: '', mobile: '',
+  });
+  const [formErrors, setFormErrors] = useState({});
+
+  const customerId = user?.id ?? user?.userId ?? user?._id;
+
+  const {data: addrData, isLoading: addrLoading, refetch: refetchAddr} = useQuery({
+    queryKey: ['addresses', customerId],
+    queryFn: () => getAddressesByCustomer(customerId),
+    enabled: !!isAuthenticated && !!customerId,
+  });
+
+  const addresses = addrData?.data ?? addrData?.addresses ?? [];
+
+  const createAddrMutation = useMutation({
+    mutationFn: createAddress,
+    onSuccess: data => {
+      refetchAddr();
+      const newId = data?.data?.id ?? data?.id;
+      if (newId) setSelectedAddrId(newId);
+      setShowAddForm(false);
+      setForm({name: '', address: '', city: '', state: '', pincode: '', mobile: ''});
+      Toast.show({type: 'success', text1: 'Address saved!'});
+      // Saved → proceed straight to the order summary step.
+      setStep(2);
+    },
+    onError: err =>
+      Toast.show({type: 'error', text1: 'Failed', text2: err.message}),
+  });
+
+  const total = useMemo(
+    () =>
+      cartProducts.reduce((s, p) => {
+        const v = parseFloat(p?.FinalAmount ?? p?.GrandTotal ?? p?.SALERATE ?? 0);
+        return s + v;
+      }, 0),
+    [cartProducts],
+  );
+
+  const selectedAddress = addresses.find(
+    a => (a?.id ?? a?._id) === selectedAddrId,
+  );
+
+  // Select a saved address and move straight to the next step.
+  const selectAndContinue = id => {
+    setSelectedAddrId(id);
+    setStep(2);
+  };
+
+  const validateAddress = () => {
+    const e = {};
+    if (!form.name.trim()) e.name = 'Required';
+    if (!form.address.trim()) e.address = 'Required';
+    if (!form.city.trim()) e.city = 'Required';
+    if (!/^\d{6}$/.test(form.pincode)) e.pincode = 'Enter valid 6-digit pincode';
+    if (!/^\d{10}$/.test(form.mobile)) e.mobile = 'Enter valid 10-digit mobile';
+    setFormErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSaveAddress = () => {
+    if (!validateAddress()) return;
+    createAddrMutation.mutate({
+      ...form,
+      customerId,
+    });
+  };
+
+  const handlePlaceOrder = async () => {
+    if (!selectedAddrId) {
+      Toast.show({type: 'error', text1: 'Select a delivery address'});
+      return;
+    }
+
+    setPlacing(true);
+    try {
+      const orderPayload = {
+        items: cartProducts.map(p => ({
+          tagKey: p.TAGKEY,
+          itemName: p.ITEMNAME,
+          price: p.FinalAmount ?? p.GrandTotal,
+          quantity: 1,
+        })),
+        shippingAddressId: selectedAddrId,
+        paymentMethod,
+        subtotal: total,
+        grandTotal: total,
+      };
+
+      await createOrder(orderPayload);
+      clearCart();
+      queryClient.invalidateQueries({queryKey: ['cart']});
+      queryClient.invalidateQueries({queryKey: ['orderHistory']});
+
+      Toast.show({type: 'success', text1: '🎉 Order placed!', text2: 'We will confirm your order soon.'});
+      navigation.navigate('OrderHistory');
+    } catch (err) {
+      Toast.show({
+        type: 'error',
+        text1: 'Order Failed',
+        text2: err.message || 'Please try again',
+      });
+    } finally {
+      setPlacing(false);
+    }
+  };
+
+  if (!isAuthenticated || cartProducts.length === 0) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={22} color={colors.white} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Checkout</Text>
+          <View style={{width: 22}} />
+        </View>
+        <View style={styles.centered}>
+          <Text style={{fontSize: 48}}>🛒</Text>
+          <Text style={styles.emptyTitle}>Your cart is empty</Text>
+          <TouchableOpacity style={styles.btn} onPress={() => navigation.navigate('Home')}>
+            <Text style={styles.btnText}>Continue Shopping</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => (step > 1 ? setStep(s => s - 1) : navigation.goBack())}
+          hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+          <Ionicons name="arrow-back" size={22} color={colors.white} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Checkout</Text>
+        <View style={{width: 22}} />
+      </View>
+
+      <Stepper current={step} />
+
+      <KeyboardAvoidingView
+        style={{flex: 1}}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{paddingBottom: 120}}>
+
+          {/* ── Step 1: Address ── */}
+          {step === 1 && (
+            <View>
+              <Text style={styles.stepHeading}>Choose Delivery Address</Text>
+
+              {addrLoading ? (
+                <ActivityIndicator color={colors.primary} style={{marginTop: 24}} />
+              ) : (
+                <>
+                  {addresses.map(addr => (
+                    <AddressCard
+                      key={addr?.id ?? addr?._id}
+                      addr={addr}
+                      selected={(addr?.id ?? addr?._id) === selectedAddrId}
+                      onSelect={() => selectAndContinue(addr?.id ?? addr?._id)}
+                    />
+                  ))}
+
+                  {/* Add new address toggle */}
+                  <TouchableOpacity
+                    style={styles.addAddrBtn}
+                    onPress={() => setShowAddForm(v => !v)}>
+                    <Ionicons
+                      name={showAddForm ? 'remove-circle-outline' : 'add-circle-outline'}
+                      size={18}
+                      color={colors.primary}
+                    />
+                    <Text style={styles.addAddrText}>
+                      {showAddForm ? 'Cancel' : 'Add New Address'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {showAddForm && (
+                    <View style={styles.addrForm}>
+                      {[
+                        {key: 'name', label: 'Full Name', placeholder: 'Your name'},
+                        {key: 'address', label: 'Address', placeholder: 'House, street, area'},
+                        {key: 'city', label: 'City', placeholder: 'City'},
+                        {key: 'state', label: 'State', placeholder: 'State'},
+                        {key: 'pincode', label: 'Pincode', placeholder: '6-digit pincode', kbd: 'numeric'},
+                        {key: 'mobile', label: 'Mobile', placeholder: '10-digit mobile', kbd: 'phone-pad'},
+                      ].map(f => (
+                        <View key={f.key} style={styles.formField}>
+                          <Text style={styles.formLabel}>{f.label}</Text>
+                          <TextInput
+                            style={[styles.formInput, formErrors[f.key] && styles.formInputErr]}
+                            placeholder={f.placeholder}
+                            placeholderTextColor={colors.placeholder}
+                            value={form[f.key]}
+                            onChangeText={v => {
+                              setForm(prev => ({...prev, [f.key]: v}));
+                              if (formErrors[f.key])
+                                setFormErrors(e => ({...e, [f.key]: undefined}));
+                            }}
+                            keyboardType={f.kbd ?? 'default'}
+                            maxLength={f.key === 'pincode' ? 6 : f.key === 'mobile' ? 10 : undefined}
+                          />
+                          {formErrors[f.key] ? (
+                            <Text style={styles.formErr}>{formErrors[f.key]}</Text>
+                          ) : null}
+                        </View>
+                      ))}
+
+                      <TouchableOpacity
+                        style={[styles.saveAddrBtn, createAddrMutation.isPending && {opacity: 0.65}]}
+                        onPress={handleSaveAddress}
+                        disabled={createAddrMutation.isPending}>
+                        {createAddrMutation.isPending ? (
+                          <ActivityIndicator size="small" color={colors.white} />
+                        ) : (
+                          <Text style={styles.saveAddrBtnText}>Save Address</Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </>
+              )}
+            </View>
+          )}
+
+          {/* ── Step 2: Order Summary ── */}
+          {step === 2 && (
+            <View style={styles.summarySection}>
+              <Text style={styles.stepHeading}>Order Summary</Text>
+
+              {/* Delivery address preview */}
+              {selectedAddress && (
+                <View style={styles.deliverTo}>
+                  <Ionicons name="location" size={14} color={colors.primary} style={{marginTop: 2}} />
+                  <View style={{flex: 1, marginLeft: 6}}>
+                    <Text style={styles.deliverLabel}>Delivering to</Text>
+                    <Text style={styles.deliverAddr}>
+                      {[selectedAddress?.address, selectedAddress?.city, selectedAddress?.pincode]
+                        .filter(Boolean)
+                        .join(', ')}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Cart items summary */}
+              {cartProducts.map((item, i) => (
+                <View key={item?.TAGKEY ?? i} style={styles.summaryItem}>
+                  <View style={styles.summaryItemDot} />
+                  <Text style={styles.summaryItemName} numberOfLines={1}>
+                    {item?.ITEMNAME ?? 'Item'}
+                  </Text>
+                  <Text style={styles.summaryItemPrice}>
+                    {fmt(item?.FinalAmount ?? item?.GrandTotal)}
+                  </Text>
+                </View>
+              ))}
+
+              <View style={styles.summaryDivider} />
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Subtotal ({cartProducts.length} items)</Text>
+                <Text style={styles.summaryValue}>{fmt(total)}</Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Delivery</Text>
+                <Text style={[styles.summaryValue, {color: colors.success}]}>Free</Text>
+              </View>
+              <View style={[styles.summaryRow, {marginTop: 8}]}>
+                <Text style={styles.totalLabel}>Total</Text>
+                <Text style={styles.totalValue}>{fmt(total)}</Text>
+              </View>
+            </View>
+          )}
+
+          {/* ── Step 3: Payment ── */}
+          {step === 3 && (
+            <View>
+              <Text style={styles.stepHeading}>Choose Payment Method</Text>
+
+              {PAYMENT_METHODS.map(pm => (
+                <TouchableOpacity
+                  key={pm.id}
+                  style={[styles.payCard, paymentMethod === pm.id && styles.payCardSelected]}
+                  onPress={() => setPaymentMethod(pm.id)}
+                  activeOpacity={0.85}>
+                  <View style={[styles.menuIcon, paymentMethod === pm.id && {backgroundColor: `${colors.primary}22`}]}>
+                    <Ionicons
+                      name={pm.icon}
+                      size={20}
+                      color={paymentMethod === pm.id ? colors.primary : colors.textSecondary}
+                    />
+                  </View>
+                  <View style={{flex: 1, marginLeft: 12}}>
+                    <Text style={[styles.payLabel, paymentMethod === pm.id && {color: colors.primary}]}>
+                      {pm.label}
+                    </Text>
+                    <Text style={styles.payDesc}>{pm.desc}</Text>
+                  </View>
+                  <View style={[styles.radioOuter, paymentMethod === pm.id && styles.radioOuterSelected]}>
+                    {paymentMethod === pm.id && <View style={styles.radioInner} />}
+                  </View>
+                </TouchableOpacity>
+              ))}
+
+              <View style={styles.orderFinalSummary}>
+                <Text style={styles.stepHeading}>Final Amount</Text>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.totalLabel}>Total Payable</Text>
+                  <Text style={styles.totalValue}>{fmt(total)}</Text>
+                </View>
+              </View>
+            </View>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* Bottom action bar */}
+      <View style={styles.bottomBar}>
+        <View style={styles.totalChip}>
+          <Text style={styles.totalChipLabel}>Total</Text>
+          <Text style={styles.totalChipValue}>{fmt(total)}</Text>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.nextBtn, placing && {opacity: 0.65}]}
+          onPress={() => {
+            if (step === 1) {
+              if (!selectedAddrId) {
+                Toast.show({type: 'error', text1: 'Select a delivery address'});
+                return;
+              }
+              setStep(2);
+            } else if (step === 2) {
+              setStep(3);
+            } else {
+              handlePlaceOrder();
+            }
+          }}
+          disabled={placing}
+          activeOpacity={0.85}>
+          {placing ? (
+            <ActivityIndicator size="small" color={colors.white} />
+          ) : (
+            <>
+              <Text style={styles.nextBtnText}>
+                {step === 3 ? 'Place Order' : 'Continue'}
+              </Text>
+              <Ionicons
+                name={step === 3 ? 'checkmark-circle-outline' : 'arrow-forward'}
+                size={18}
+                color={colors.white}
+              />
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
+};
+
+export default CheckoutScreen;
+
+const styles = StyleSheet.create({
+  safeArea: {flex: 1, backgroundColor: colors.background},
+  header: {
+    backgroundColor: colors.headerBg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  headerTitle: {
+    flex: 1,
+    fontSize: 17,
+    fontWeight: '700',
+    color: colors.white,
+    textAlign: 'center',
+  },
+
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderColor: colors.border,
+  },
+  stepItem: {alignItems: 'center', gap: 4},
+  stepCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: colors.inputBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  stepDone: {backgroundColor: colors.success, borderColor: colors.success},
+  stepActive: {backgroundColor: colors.primary, borderColor: colors.primary},
+  stepLabel: {fontSize: 10, fontWeight: '600', color: colors.textSecondary},
+  stepLabelActive: {color: colors.primary},
+  stepLine: {flex: 1, height: 2, backgroundColor: colors.border, marginBottom: 14},
+  stepLineDone: {backgroundColor: colors.primary},
+
+  stepHeading: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: colors.text,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+
+  addrCard: {
+    marginHorizontal: 16,
+    marginBottom: 10,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 14,
+    backgroundColor: colors.surface,
+  },
+  addrCardSelected: {borderColor: colors.primary, backgroundColor: '#FFF8F0'},
+  addrRadio: {paddingRight: 10, paddingTop: 2},
+  radioOuter: {
+    width: 18, height: 18, borderRadius: 9,
+    borderWidth: 2, borderColor: colors.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  radioOuterSelected: {borderColor: colors.primary},
+  radioInner: {
+    width: 9, height: 9, borderRadius: 4.5,
+    backgroundColor: colors.primary,
+  },
+  addrText: {flex: 1},
+  addrName: {fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 3},
+  addrLine: {fontSize: 12, color: colors.textSecondary, lineHeight: 18},
+
+  addAddrBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  addAddrText: {fontSize: 14, fontWeight: '700', color: colors.primary},
+
+  addrForm: {
+    marginHorizontal: 16,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  formField: {marginBottom: 12},
+  formLabel: {fontSize: 12, fontWeight: '600', color: colors.text, marginBottom: 5},
+  formInput: {
+    backgroundColor: colors.inputBg,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: 8,
+    height: 44,
+    paddingHorizontal: 12,
+    fontSize: 14,
+    color: colors.text,
+  },
+  formInputErr: {borderColor: colors.error},
+  formErr: {fontSize: 11, color: colors.error, marginTop: 3},
+  saveAddrBtn: {
+    backgroundColor: colors.primaryMild,
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  saveAddrBtnText: {fontSize: 14, fontWeight: '700', color: colors.white},
+
+  summarySection: {paddingBottom: 8},
+  deliverTo: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginBottom: 14,
+    padding: 12,
+    backgroundColor: '#F0FFF4',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  deliverLabel: {fontSize: 11, fontWeight: '600', color: colors.success},
+  deliverAddr: {fontSize: 12, color: colors.text, lineHeight: 18},
+
+  summaryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    gap: 8,
+  },
+  summaryItemDot: {
+    width: 6, height: 6, borderRadius: 3,
+    backgroundColor: colors.primary,
+  },
+  summaryItemName: {flex: 1, fontSize: 13, color: colors.text},
+  summaryItemPrice: {fontSize: 13, fontWeight: '700', color: colors.primary},
+  summaryDivider: {height: 1, backgroundColor: colors.border, marginHorizontal: 16, marginVertical: 10},
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    marginBottom: 6,
+  },
+  summaryLabel: {fontSize: 13, color: colors.textSecondary},
+  summaryValue: {fontSize: 13, fontWeight: '600', color: colors.text},
+  totalLabel: {fontSize: 15, fontWeight: '800', color: colors.text},
+  totalValue: {fontSize: 16, fontWeight: '900', color: colors.primary},
+
+  payCard: {
+    marginHorizontal: 16,
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 14,
+    backgroundColor: colors.surface,
+  },
+  payCardSelected: {borderColor: colors.primary, backgroundColor: '#FFF8F0'},
+  menuIcon: {
+    width: 40, height: 40, borderRadius: 10,
+    backgroundColor: colors.inputBg,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  payLabel: {fontSize: 14, fontWeight: '700', color: colors.text},
+  payDesc: {fontSize: 11, color: colors.textSecondary, marginTop: 2},
+
+  orderFinalSummary: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 14,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderColor: colors.border,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: -3},
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 12,
+    gap: 12,
+  },
+  totalChip: {flex: 1},
+  totalChipLabel: {fontSize: 11, color: colors.textSecondary},
+  totalChipValue: {fontSize: 17, fontWeight: '900', color: colors.primary},
+  nextBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primaryMild,
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 22,
+    gap: 6,
+    shadowColor: colors.primary,
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  nextBtnText: {fontSize: 15, fontWeight: '800', color: colors.white},
+
+  centered: {flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12},
+  emptyTitle: {fontSize: 17, fontWeight: '700', color: colors.text},
+  btn: {
+    backgroundColor: colors.primaryMild,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    marginTop: 8,
+  },
+  btnText: {fontSize: 14, fontWeight: '700', color: colors.white},
+});
