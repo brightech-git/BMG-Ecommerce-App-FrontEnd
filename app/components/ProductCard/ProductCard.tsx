@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { IMAGE_BASE_URL } from '@env';
+import { SmartImage, FALLBACK_IMAGE } from '../common/SmartImage';
 import {
   View,
   Text,
@@ -119,11 +120,7 @@ const ImageCarousel: React.FC<CarouselProps> = ({
   };
 
   if (count === 0) {
-    return (
-      <View style={[s.placeholder, { width, height }]}>
-        <Text style={s.placeholderTxt}>No Image</Text>
-      </View>
-    );
+    return <Image source={FALLBACK_IMAGE} style={{ width, height }} resizeMode="cover" />;
   }
 
   return (
@@ -138,12 +135,7 @@ const ImageCarousel: React.FC<CarouselProps> = ({
         style={{ width, height }}
       >
         {validImages.map((uri, i) => (
-          <Image
-            key={i}
-            source={{ uri }}
-            style={{ width, height }}
-            resizeMode="cover"
-          />
+          <SmartImage key={i} uri={uri} style={{ width, height }} />
         ))}
       </ScrollView>
 

@@ -1,217 +1,125 @@
-import React, { useState } from 'react'
-import { useTheme } from '@react-navigation/native'
-import { View, Text, SafeAreaView, Image, TouchableOpacity, Platform } from 'react-native'
-import Header from '../../layout/Header';
-import { GlobalStyleSheet } from '../../constants/StyleSheet';
-import { COLORS, FONTS } from '../../constants/theme';
-
-import Button from '../../components/Button/Button';
-import { ScrollView } from 'react-native-gesture-handler';
-import { IMAGES } from '../../constants/Images';
+// app/Screens/profile/SaveAddress.tsx
+// Website AddressModal field names (exact): name, phone, addressLine, locality,
+// city, state, pincode, landmark, alternatePhone, gstNumber, companyName, isDefault.
+import React, { useEffect, useState } from 'react';
+import {
+  View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, StatusBar,
+  KeyboardAvoidingView, Platform,
+} from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
+import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import { useAddresses } from '../../api/hooks/useAddresses';
+import { getAddressById } from '../../api/services/addressService';
+import { toastError } from '../../utils/toast';
 
-const saveData = [
-    {
-        image: IMAGES.home,
-        title: "Home Address",
-        text: "123 Main Street, Anytown, USA 12345",
-    },
-    {
-        image: IMAGES.map,
-        title: "Office Address",
-        text: "456 Elm Avenue, Smallville, CA 98765",
-    },
-    {
-        image: IMAGES.home,
-        title: "Home Address",
-        text: "789 Maple Lane, Suburbia, NY 54321",
-    },
-    {
-        image: IMAGES.shop,
-        title: "Shop Address",
-        text: "654 Pine Road, Countryside, FL 34567",
-    },
-]
+type Props = StackScreenProps<RootStackParamList, 'SaveAddress'>;
 
-type SaveAddressScreenProps = StackScreenProps<RootStackParamList, 'SaveAddress'>;
+type Form = {
+  name: string; phone: string; addressLine: string; locality: string;
+  city: string; state: string; pincode: string; landmark: string;
+  alternatePhone: string; addressType: string;
+};
+const EMPTY: Form = {
+  name: '', phone: '', addressLine: '', locality: '', city: '', state: '',
+  pincode: '', landmark: '', alternatePhone: '', addressType: 'Home',
+};
 
-const SaveAddress = ({ navigation } : SaveAddressScreenProps) => {
+const Field = ({ label, value, onChange, keyboardType, required }: any) => (
+  <View style={{ marginBottom: 14 }}>
+    <Text style={styles.label}>{label}{required ? ' *' : ''}</Text>
+    <TextInput
+      style={styles.input}
+      value={value}
+      onChangeText={onChange}
+      keyboardType={keyboardType}
+      placeholder={label}
+      placeholderTextColor={COLORS.placeholder}
+    />
+  </View>
+);
 
-     const theme = useTheme();
-    const { colors }:{colors : any} = theme;
+const SaveAddress = ({ route, navigation }: Props) => {
+  const editId = route.params?.id;
+  const { createAddress, updateAddress, isCreating, isUpdating } = useAddresses();
+  const [form, setForm] = useState<Form>(EMPTY);
+  const set = (k: keyof Form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
 
-    const [isChecked, setIsChecked] = useState(saveData[0]);
+  useEffect(() => {
+    if (!editId) return;
+    getAddressById(editId).then((res: any) => {
+      const a = res?.data ?? res;
+      if (a) setForm({ ...EMPTY, ...a, addressType: a.addressType ?? 'Home' });
+    }).catch(() => {});
+  }, [editId]);
 
-    return (
-        <SafeAreaView style={{ backgroundColor: colors.background, flex: 1 }}>
-            <Header
-                title={"Delivery Address"}
-                leftIcon={'back'}
-                // titleLeft
-            />
-            <ScrollView contentContainerStyle={{paddingBottom:150}}>
-                <View style={[GlobalStyleSheet.container, { paddingTop: 10 }]}>
-                    {saveData.map((data, index) => {
-                        return (
-                            <TouchableOpacity
-                                onPress={() => setIsChecked(data)}
-                                style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    borderBottomWidth: 1,
-                                    borderBottomColor: colors.border,
-                                    paddingBottom: 15,
-                                    marginTop: 10
-                                }}
-                                key={index}
-                            >
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 ,flex:1}}>
-                                    <View
-                                        style={[{
-                                            shadowColor: "rgba(195,135,95,0.30)",
-                                            shadowOffset: {
-                                                width: -5,
-                                                height: 15,
-                                            },
-                                            shadowOpacity: .1,
-                                            shadowRadius: 5,
-                                        }, Platform.OS === "ios" && {
-                                            backgroundColor: colors.card,
-                                            borderRadius:10
-                                        }]}
-                                    >
-                                        <View style={{ height: 40, width: 40, borderRadius: 10, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' }}>
-                                            <Image
-                                                style={{ height: 20, width: 20, tintColor: COLORS.primary, resizeMode: 'contain' }}
-                                                source={data.image}
-                                            />
-                                        </View>
-                                    </View>
-                                    <View style={{flex:1}}> 
-                                        <Text style={{ ...FONTS.fontMedium, fontSize: 16, color: colors.title }}>{data.title}</Text>
-                                        <Text style={{ ...FONTS.fontRegular, fontSize: 14, color: colors.title }}>{data.text}</Text>
-                                    </View>
-                                </View>
-                                <View
-                                    style={[{
-                                        shadowColor: "rgba(195, 123, 95, 0.20)",
-                                        shadowOffset: {
-                                            width: 2,
-                                            height: 15,
-                                        },
-                                        shadowOpacity: .1,
-                                        shadowRadius: 5,
-                                    }, Platform.OS === "ios" && {
-                                        backgroundColor: colors.card,
-                                        borderRadius: 50,
-                                    }]}
-                                >
-                                    <View
-                                        style={[{
-                                            borderWidth: 1,
-                                            width: 24,
-                                            height: 24,
-                                            borderRadius: 50,
-                                            borderColor: theme.colors.card,
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            backgroundColor:theme.colors.card
-                                            },isChecked === data && {
-                                                backgroundColor:COLORS.primary,
-                                                borderColor:COLORS.primary
-                                            }]}
-                                    >
-                                        <View style={[{
-                                            width: 14,
-                                            height: 14,
-                                            backgroundColor: theme.colors.background,
-                                            borderRadius: 50
-                                        }, isChecked === data && {
-                                            backgroundColor: theme.colors.card
-                                        }]}></View>
-                                    </View>
-                                </View>
-                            </TouchableOpacity>
-                        )
-                    })}
-                    <View
-                        style={[{
-                            shadowColor: "rgba(195,135,95,0.30)",
-                            shadowOffset: {
-                                width: -5,
-                                height: 15,
-                            },
-                            shadowOpacity: .1,
-                            shadowRadius: 5,
-                        }, Platform.OS === "ios" && {
-                            backgroundColor: colors.card,
-                            borderRadius:10
-                        }]}
-                    >
-                        <TouchableOpacity
-                            style={{
-                                height: 48,
-                                width: '100%',
-                                borderWidth: 1,
-                                borderColor: theme.dark ? COLORS.white : colors.border,
-                                borderRadius: 10,
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                paddingHorizontal: 10,
-                                backgroundColor:colors.card,
-                                marginTop: 30
-                            }}
-                            onPress={() => navigation.navigate('SavedAddresses')}
-                        >
-                            <View style={{ flexDirection: 'row', gap: 10 }}>
-                                <Image
-                                    style={{ height: 20, width: 20, resizeMode: 'contain', tintColor: colors.title }}
-                                    source={IMAGES.plus}
-                                />
-                                <Text style={{ ...FONTS.fontMedium, fontSize: 14, color: colors.title }}>Add Address</Text>
-                            </View>
-                            <Image
-                                style={{ height: 16, width: 16, resizeMode: 'contain', tintColor: colors.title }}
-                                source={IMAGES.rightarrow}
-                            />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </ScrollView>
-            <View
-                 style={[{
-                    position: 'absolute',
-                    bottom: 0,
-                    width: '100%',
-                    shadowColor:'rgba(195, 123, 95, 0.25)',
-                    shadowOffset: {
-                        width: 2,
-                        height: -20,
-                    },
-                    shadowOpacity: .1,
-                    shadowRadius: 5,
-                }, Platform.OS === "ios" && {
-                    backgroundColor: colors.card,
-                    borderTopLeftRadius:25,borderTopRightRadius:25,
-                    bottom:30
-                }]}
-            >
-                <View style={{ height: 88, backgroundColor: colors.card,borderTopLeftRadius:25,borderTopRightRadius:25 }}>
-                    <View style={[GlobalStyleSheet.container, { paddingHorizontal: 10, marginTop: 15, paddingTop: 0 }]}>
-                        <Button
-                            title={"Save Address"}
-                            btnRounded
-                            onPress={() => navigation.navigate('Checkout')}
-                            color={COLORS.primary}
-                        />
-                    </View>
-                </View>
-            </View>
-        </SafeAreaView>
-    )
-}
+  const onSave = () => {
+    if (!form.name.trim() || !form.phone.trim() || !form.pincode.trim() || !form.addressLine.trim() || !form.city.trim() || !form.state.trim()) {
+      toastError('Please fill name, phone, address, city, state and pincode');
+      return;
+    }
+    const done = () => navigation.goBack();
+    if (editId) updateAddress({ id: editId, data: form }, { onSuccess: done });
+    else createAddress(form, { onSuccess: done });
+  };
 
-export default SaveAddress
+  return (
+    <KeyboardAvoidingView style={styles.safe} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <StatusBar barStyle="dark-content" />
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
+          <Feather name="arrow-left" size={22} color={COLORS.title} />
+        </TouchableOpacity>
+        <Text style={styles.hTitle}>{editId ? 'Edit Address' : 'Add Address'}</Text>
+        <View style={styles.hBtn} />
+      </View>
+
+      <ScrollView contentContainerStyle={{ padding: SIZES.padding, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+        <Field label="Full Name" value={form.name} onChange={set('name')} required />
+        <Field label="Phone" value={form.phone} onChange={set('phone')} keyboardType="phone-pad" required />
+        <Field label="Address" value={form.addressLine} onChange={set('addressLine')} required />
+        <Field label="Locality / Area" value={form.locality} onChange={set('locality')} />
+        <Field label="Pincode" value={form.pincode} onChange={set('pincode')} keyboardType="number-pad" required />
+        <Field label="City" value={form.city} onChange={set('city')} required />
+        <Field label="State" value={form.state} onChange={set('state')} required />
+        <Field label="Landmark" value={form.landmark} onChange={set('landmark')} />
+        <Field label="Alternate Phone" value={form.alternatePhone} onChange={set('alternatePhone')} keyboardType="phone-pad" />
+
+        <Text style={styles.label}>Address Type</Text>
+        <View style={styles.typeRow}>
+          {['Home', 'Work', 'Other'].map((t) => (
+            <TouchableOpacity key={t} style={[styles.typeChip, form.addressType === t && styles.typeChipActive]}
+              onPress={() => set('addressType')(t)}>
+              <Text style={[styles.typeTxt, form.addressType === t && styles.typeTxtActive]}>{t}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <TouchableOpacity style={styles.saveBtn} disabled={isCreating || isUpdating} onPress={onSave}>
+          <Text style={styles.saveTxt}>{isCreating || isUpdating ? 'Saving...' : 'Save Address'}</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+};
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: '#F9F6F1' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12,
+    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor },
+  hBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
+  label: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title, marginBottom: 6 },
+  input: { backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.borderColor,
+    borderRadius: SIZES.radius, paddingHorizontal: 14, paddingVertical: 12, ...FONTS.font, color: COLORS.title },
+  typeRow: { flexDirection: 'row', gap: 10, marginTop: 6, marginBottom: 20 },
+  typeChip: { paddingHorizontal: 18, paddingVertical: 9, borderRadius: SIZES.radius, borderWidth: 1, borderColor: COLORS.borderColor, backgroundColor: COLORS.white },
+  typeChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  typeTxt: { ...FONTS.fontSm, color: COLORS.text },
+  typeTxtActive: { color: COLORS.white },
+  saveBtn: { backgroundColor: COLORS.primary, borderRadius: SIZES.radius_lg, paddingVertical: 15, alignItems: 'center' },
+  saveTxt: { ...FONTS.fontLg, ...FONTS.fontSemiBold, color: COLORS.white },
+});
+
+export default SaveAddress;

@@ -1,180 +1,106 @@
-import { useTheme } from '@react-navigation/native';
-import React from 'react';
-import { View, Text, TouchableOpacity, Image, SafeAreaView, Platform } from 'react-native';
-import Header from '../../layout/Header';
-import { GlobalStyleSheet } from '../../constants/StyleSheet';
-import { FONTS } from '../../constants/theme';
-import { ScrollView } from 'react-native-gesture-handler';
-import { IMAGES } from '../../constants/Images';
-import { StackScreenProps } from '@react-navigation/stack';
+// app/Screens/Category/Category.tsx
+// Website: home "Bmg World" categories. Data: /mainCategory_images/list -> [{item_name, image_path}].
+// Tap -> Products?ItemName=. NOTE: root App.tsx provides SafeAreaView, so use a plain View.
+import React, { useMemo } from 'react';
+import {
+  View, Text, TouchableOpacity, StyleSheet, FlatList, Dimensions, StatusBar,
+} from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
+import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import { useCategoryImages } from '../../api/hooks/useCatalog';
+import { absUrl } from '../../utils/image';
+import { SmartImage } from '../../components/common/SmartImage';
+import { Loader, EmptyState, ErrorState } from '../../components/common/StateViews';
 
+const { width } = Dimensions.get('window');
+const GAP = 12;
+const COLS = 2;
+const CARD_W = (width - SIZES.padding * 2 - GAP) / COLS;
 
-const CategoriesData = [
-    {
-        image: IMAGES.product1,
-        title: "Popular Ring"
-    },
-    {
-        image: IMAGES.product2,
-        title: "Earring"
-    },
-    {
-        image: IMAGES.product3,
-        title: "Bracelets"
-    },
-    {
-        image: IMAGES.product4,
-        title: "Anklets"
-    },
-    {
-        image: IMAGES.product1,
-        title: "Popular Ring"
-    },
-    {
-        image: IMAGES.product2,
-        title: "Earring"
-    },
-    {
-        image: IMAGES.product3,
-        title: "Bracelets"
-    },
-    {
-        image: IMAGES.product4,
-        title: "Anklets"
-    },
-]
+type Nav = StackNavigationProp<RootStackParamList>;
 
-const CategoryData = [
-    {
-        image: IMAGES.item22,
-        title: "Necklaces",
-        count: '24',
-    },
-    {
-        image: IMAGES.item23,
-        title: "Rings",
-        count: '24',
-    },
-    {
-        image: IMAGES.item24,
-        title: "Earrings",
-        count: '24',
-    },
-    {
-        image: IMAGES.item25,
-        title: "Anklets",
-        count: '24',
-    }
-]
+const titleCase = (s = '') =>
+  s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
 
-type CategoryScreenProps = StackScreenProps<RootStackParamList, 'Category'>;
+const Category = () => {
+  const navigation = useNavigation<Nav>();
+  const { data, isLoading, isError, error, refetch } = useCategoryImages();
 
-const Category = ({ navigation } : CategoryScreenProps) => {
+  const items = useMemo(() => {
+    const raw = Array.isArray(data) ? data : (data as any)?.data ?? [];
+    return raw.map((c: any) => ({
+      name: c.item_name || c.ItemName || c.itemName || c.title || c.name || '',
+      image: absUrl(c.image_path || c.imagePath || c.image || c.ImagePath),
+    })).filter((c: any) => c.name);
+  }, [data]);
 
-    const theme = useTheme();
-    const { colors }:{colors :any} = theme;
+  return (
+    <View style={styles.safe}>
+      <StatusBar barStyle="dark-content" />
+      <View style={styles.header}>
+        {navigation.canGoBack() && (
+          <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
+            <Feather name="arrow-left" size={22} color={COLORS.title} />
+          </TouchableOpacity>
+        )}
+        <Text style={styles.hTitle}>Categories</Text>
+        <TouchableOpacity style={styles.hBtn} onPress={() => navigation.navigate('Search')}>
+          <Feather name="search" size={20} color={COLORS.title} />
+        </TouchableOpacity>
+      </View>
 
-    return (
-        <SafeAreaView style={{ backgroundColor: colors.background, flex: 1 }}>
-            <Header
-                title={"Category"}
-                rightIcon2={'search'}
-                leftIcon={'back'}
-            />
-            <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{paddingBottom:80}}
+      {isLoading ? (
+        <Loader message="Loading categories..." />
+      ) : isError ? (
+        <ErrorState message={(error as any)?.message} onRetry={refetch} />
+      ) : items.length === 0 ? (
+        <EmptyState icon="grid" title="No categories" subtitle="Please check back soon." />
+      ) : (
+        <FlatList
+          data={items}
+          keyExtractor={(it, i) => `${it.name}-${i}`}
+          numColumns={COLS}
+          contentContainerStyle={{ padding: SIZES.padding }}
+          columnWrapperStyle={{ gap: GAP, marginBottom: GAP }}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[styles.card, { width: CARD_W }]}
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('Products', { ItemName: item.name, title: titleCase(item.name) })}
             >
-                <View style={GlobalStyleSheet.container}>
-                    <Text style={{ ...FONTS.Marcellus, fontSize: 20, color: colors.title }}>Because You Need Time for Yourself.{"\n"}Blend Beauty in You</Text>
-                    <View style={{ marginHorizontal: -15, }}>
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={{ paddingHorizontal: 15 }}
-                        >
-                            <View style={{ marginTop: 15, flexDirection: 'row', alignItems: 'center', gap: 10, justifyContent: 'center' }}>
-                                {CategoriesData.map((data, index) => {
-                                    return (
-                                        <TouchableOpacity
-                                            activeOpacity={.9}
-                                            onPress={() => navigation.navigate('Products')}
-                                            key={index} style={{ alignItems: 'center',marginRight:7 }}
-                                        >
-                                             <View
-                                                    style={[{
-                                                        shadowColor: "rgba(195, 123, 95, 0.15)",
-                                                        shadowOffset: {
-                                                            width: 2,
-                                                            height: 20,
-                                                        },
-                                                        shadowOpacity: .1,
-                                                        shadowRadius: 5,
-                                                    }, Platform.OS === "ios" && {
-                                                        backgroundColor: colors.card,
-                                                        borderRadius:100
-                                                    }]}
-                                                >
-                                                    <View style={{backgroundColor:colors.card,height:88,width:88,borderRadius:100,alignItems:'center',justifyContent:'center'}}>
-                                                        <Image
-                                                            style={{ height: 80, width: 80,borderRadius:100, resizeMode: 'contain', }}
-                                                            source={data.image}
-                                                        />
-                                                    </View>
-                                                </View>
-                                            <View style={{
-                                                marginTop: 10
-                                            }}>
-                                                <Text style={{ ...FONTS.Marcellus, fontSize: 15, color: colors.title }}>{data.title}</Text>
-                                            </View>
-                                        </TouchableOpacity>
-                                    )
-                                })}
-                            </View>
-                        </ScrollView>
-                    </View>
-                    <View style={{ paddingTop: 30 }}>
-                        <Text style={{ ...FONTS.Marcellus, fontSize: 20, color: colors.title }}>Discover Latest Collection </Text>
-                    </View>
-                    <View style={[GlobalStyleSheet.row,{marginTop:20}]}>
-                        {CategoryData.map((data, index) => {
-                            return (
-                                <TouchableOpacity
-                                    activeOpacity={.9}
-                                    onPress={() => navigation.navigate('Products')} 
-                                    key={index} 
-                                    style={[GlobalStyleSheet.col50, { marginBottom: 20, }]}
-                                >
-                                    <View style={{justifyContent:'center'}}>
-                                        <Image
-                                            style={{ height:null, width:'100%',aspectRatio:1/1.2, borderRadius: 20}}
-                                            source={data.image}
-                                        />
-                                        <View 
-                                            style={{ 
-                                                backgroundColor:colors.card,
-                                                height:40,
-                                                width:'100%',
-                                                borderRadius: 20,
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                transform:[{rotate:'90deg'}],
-                                                position:'absolute',
-                                                marginLeft:-60
-                                            }}
-                                        >
-                                            <Text style={{ ...FONTS.fontMedium, fontSize: 16, color:colors.title }}>{data.title}<Text style={{ ...FONTS.fontRegular, fontSize: 12 }}> ({data.count} Items)</Text></Text>
-                                        </View>
-                                    </View>
-                                </TouchableOpacity>
-                            )
-                        })}
-                    </View>
-                </View>
-            </ScrollView>
-        </SafeAreaView>
-    )
-}
+              <SmartImage uri={item.image} style={styles.img} />
+              <View style={styles.cardFooter}>
+                <Text style={styles.cardTitle} numberOfLines={1}>{titleCase(item.name)}</Text>
+                <Feather name="chevron-right" size={16} color={COLORS.primary} />
+              </View>
+            </TouchableOpacity>
+          )}
+        />
+      )}
+    </View>
+  );
+};
 
-export default Category
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: '#F9F6F1' },
+  header: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 12, paddingVertical: 12, backgroundColor: COLORS.white,
+    borderBottomWidth: 1, borderBottomColor: COLORS.borderColor,
+  },
+  hBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
+  card: {
+    backgroundColor: COLORS.white, borderRadius: 14, overflow: 'hidden',
+    elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 5, shadowOffset: { width: 0, height: 2 },
+  },
+  img: { width: '100%', height: CARD_W },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 10 },
+  cardTitle: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title, flex: 1 },
+});
+
+export default Category;

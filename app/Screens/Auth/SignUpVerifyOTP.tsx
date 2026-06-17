@@ -10,8 +10,9 @@ import { ScrollView } from 'react-native-gesture-handler';
 import { IMAGES } from '../../constants/Images';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
-import { verifyOtp, resendOtp } from '../../api/services/authService';
-import { AsyncStorageHelper } from '../../utils/AsyncStorageHelper';
+import { resendOtp } from '../../api/services/authService';
+import { verifyOtpThunk } from '../../redux/reducer/authReducer';
+import { useDispatch } from 'react-redux';
 import { useToast } from '../../components/commoncomponents/Toast';
 
 type Props = StackScreenProps<RootStackParamList, 'SignUpVerifyOTP'>;
@@ -21,6 +22,7 @@ const SignUpVerifyOTP = ({ navigation, route }: Props) => {
     const theme = useTheme();
     const { colors }: { colors: any } = theme;
     const toast = useToast();
+    const dispatch = useDispatch<any>();
 
     const [otpCode, setOTPCode] = useState('');
     const [isPinReady, setIsPinReady] = useState(false);
@@ -42,12 +44,13 @@ const SignUpVerifyOTP = ({ navigation, route }: Props) => {
         }
         try {
             setLoading(true);
-            const res = await verifyOtp({ contactNumber, otp: otpCode });
-            if (res.user) await AsyncStorageHelper.saveUserSession(res.user);
-            toast.success(res.message ?? 'OTP verified successfully', { position: 'top' });
-            navigation.navigate('DrawerNavigation', { screen: 'Home' });
-        } catch (err: any) {
-            toast.error(err.message ?? 'OTP verification failed', { position: 'top', duration: 4000 });
+            const result = await dispatch(verifyOtpThunk({ contactNumber, otp: otpCode }));
+            if (verifyOtpThunk.rejected.match(result)) {
+                toast.error(result.payload as string, { position: 'top', duration: 4000 });
+                return;
+            }
+            toast.success('OTP verified successfully', { position: 'top' });
+            navigation.reset({ index: 0, routes: [{ name: 'DrawerNavigation' }] });
         } finally {
             setLoading(false);
         }

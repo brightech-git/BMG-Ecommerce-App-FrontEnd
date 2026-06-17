@@ -3,7 +3,10 @@ import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux'
+import { QueryClientProvider } from '@tanstack/react-query';
+import FlashMessage from 'react-native-flash-message';
 import store from './app/redux/store';
+import { queryClient } from './app/api/queryClient';
 import Route from './app/Navigations/Route';
 import { ToastProvider } from './app/components/commoncomponents/Toast';
 
@@ -17,7 +20,7 @@ export default function App() {
     JostRegular : require('./app/assets/fonts/Jost-Regular.ttf'),
     JostExtraLight : require('./app/assets/fonts/Jost-ExtraLight.ttf'),
     MarcellusRegular : require('./app/assets/fonts/Marcellus-Regular.ttf'),
-  });  
+  });
 
   if(!loaded){
     return null;
@@ -27,11 +30,14 @@ export default function App() {
         <SafeAreaView style={{ flex: 1 }}>
             <StatusBar style="dark" />
             <Provider store={store}>
-              <ToastProvider>
-                <Route/>
-              </ToastProvider>
+              <QueryClientProvider client={queryClient}>
+                <ToastProvider>
+                  <Route/>
+                </ToastProvider>
+              </QueryClientProvider>
             </Provider>
         </SafeAreaView>
+        <FlashMessage position="top" floating />
     </SafeAreaProvider>
   );
 }

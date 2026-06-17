@@ -1,145 +1,133 @@
-import { useTheme } from '@react-navigation/native';
-import React from 'react';
-import { View, Text, Image, SafeAreaView, Platform } from 'react-native'
-import Header from '../../layout/Header';
-import { FONTS, COLORS } from '../../constants/theme';
-import { GlobalStyleSheet } from '../../constants/StyleSheet';
-import CardStyle3 from '../../components/Card/CardStyle3';
-import { ScrollView } from 'react-native-gesture-handler';
-import { IMAGES } from '../../constants/Images';
+// app/Screens/profile/Trackorder.tsx
+// Website: /account/orderdetails/:id + tracking. Data: /order/tracking/:orderId.
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { StackScreenProps } from '@react-navigation/stack';
+import { RootStackParamList } from '../../Navigations/RootStackParamList';
+import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import { useOrderTracking } from '../../api/hooks/useOrders';
+import { firstImage } from '../../utils/image';
+import { SmartImage } from '../../components/common/SmartImage';
+import { Loader, ErrorState } from '../../components/common/StateViews';
 
+type Props = StackScreenProps<RootStackParamList, 'Trackorder'>;
 
-const TrackorderData = [
-    {
-        image: IMAGES.item11,
-        title: "Sterling Silver Ring",
-        price: "$80",
-        discount: "$95",
-        review:"(2k Review)",
-        offer:"40% Off"
-    },
+const Trackorder = ({ route, navigation }: Props) => {
+  const { orderId } = route.params;
+  const { data, isLoading, isError, refetch } = useOrderTracking(orderId);
 
-]
+  const order: any = (data as any)?.data ?? data ?? {};
+  const timeline: any[] = order.timeline ?? order.history ?? order.statusHistory ?? [];
+  const items: any[] = order.items ?? order.orderItems ?? [];
+  const current = order.current_status ?? order.status ?? 'Pending';
+  const amount = order.totalAmount ?? order.amount;
 
-const Trackorder = () => {
+  const steps = useMemo(() => timeline, [timeline]);
 
-     const theme = useTheme();
-    const { colors }:{colors : any} = theme;
+  return (
+    <View style={styles.safe}>
+      <StatusBar barStyle="dark-content" />
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
+          <Feather name="arrow-left" size={22} color={COLORS.title} />
+        </TouchableOpacity>
+        <Text style={styles.hTitle}>Order #{orderId}</Text>
+        <View style={styles.hBtn} />
+      </View>
 
-    return (
-        <SafeAreaView style={{ backgroundColor: colors.background, flex: 1 }}>
-            <Header
-                title={"Track Order"}
-                leftIcon={"back"}
-            />
-            <ScrollView contentContainerStyle={{paddingBottom:100}}>
-                <View style={GlobalStyleSheet.container}>
-                    <View style={{
-                        // marginHorizontal: -15
-                    }}>
-                        {TrackorderData.map((data, index) => {
-                            return (
-                                <View key={index}>
-                                    <CardStyle3
-                                        id=''
-                                        title={data.title}
-                                        price={data.price}
-                                        image={data.image}
-                                        discount={data.discount} 
-                                        removebtn
-                                        review={data.review}
-                                        grid
-                                        offer={data.offer}
-                                    />
-                                </View>
-                            )
-                        })}
+      {isLoading ? (
+        <Loader message="Loading order..." />
+      ) : isError ? (
+        <ErrorState onRetry={refetch} />
+      ) : (
+        <ScrollView contentContainerStyle={{ padding: SIZES.padding, paddingBottom: 30 }}>
+          {/* Status */}
+          <View style={styles.statusCard}>
+            <Feather name="truck" size={20} color={COLORS.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.statusLabel}>Current Status</Text>
+              <Text style={styles.statusValue}>{current}</Text>
+            </View>
+            {amount != null && <Text style={styles.amount}>{'₹'}{Number(amount).toLocaleString('en-IN')}</Text>}
+          </View>
+
+          {/* Timeline */}
+          {steps.length > 0 && (
+            <>
+              <Text style={styles.secTitle}>Tracking</Text>
+              <View style={styles.timeline}>
+                {steps.map((s: any, i: number) => {
+                  const label = s.status ?? s.title ?? s.statusName ?? s.action ?? String(s);
+                  const ts = s.date ?? s.timestamp ?? s.createdAt ?? s.time;
+                  const last = i === steps.length - 1;
+                  return (
+                    <View key={i} style={styles.tlRow}>
+                      <View style={styles.tlLeft}>
+                        <View style={[styles.dot, i === 0 && styles.dotActive]} />
+                        {!last && <View style={styles.tlLine} />}
+                      </View>
+                      <View style={{ flex: 1, paddingBottom: 18 }}>
+                        <Text style={styles.tlLabel}>{label}</Text>
+                        {!!ts && <Text style={styles.tlTime}>{String(ts).replace('T', ' ').slice(0, 16)}</Text>}
+                      </View>
                     </View>
-                    <View style={{ marginTop: 20, marginBottom: 10 }}>
-                        <Text style={{ ...FONTS.Marcellus, fontSize: 20, color: colors.title }}>Track Order</Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
-                        <Image
-                            style={{ height: 24, width: 24, resizeMode: 'contain' }}
-                            source={IMAGES.check}
-                        />
-                        <View
-                            style={[{
-                                shadowColor: "rgba(195,135,95,0.25)",
-                                shadowOffset: {
-                                    width: -5,
-                                    height: 15,
-                                },
-                                shadowOpacity: .1,
-                                shadowRadius: 5,
-                            }, Platform.OS === "ios" && {
-                                backgroundColor: colors.card,
-                                borderRadius:10
-                            }]}
-                        >
-                            <View style={{backgroundColor:colors.card,padding:10,borderRadius:12}}>
-                                <Text style={{ ...FONTS.Marcellus, fontSize: 16, color: COLORS.primary }}>Order Placed<Text style={{ ...FONTS.fontRegular, fontSize: 14, color:theme.dark ? 'rgba(255,255,255,0.50)': 'rgba(0, 0, 0, 0.50)' }}>  27 Dec 2024</Text></Text>
-                                <Text style={{ ...FONTS.fontRegular, fontSize: 14, color: colors.title }}>We have received your order</Text>
-                            </View>
-                        </View>
-                        <View style={{ height: 60, width: 2, backgroundColor: COLORS.primary, position: 'absolute', left: 11, top: 40 }}></View>
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20, marginTop: 20 }}>
-                        <Image
-                            style={{ height: 24, width: 24, resizeMode: 'contain' }}
-                            source={IMAGES.check}
-                        />
-                        <View
-                            style={[{
-                                shadowColor: "rgba(195,135,95,0.25)",
-                                shadowOffset: {
-                                    width: -5,
-                                    height: 15,
-                                },
-                                shadowOpacity: .1,
-                                shadowRadius: 5,
-                            }, Platform.OS === "ios" && {
-                                backgroundColor: colors.card,
-                                borderRadius:10
-                            }]}
-                        >
-                            <View style={{backgroundColor:colors.card,padding:10,borderRadius:12}}>
-                                <Text style={{ ...FONTS.Marcellus, fontSize: 16, color: COLORS.primary }}>Order Confirm<Text style={{ ...FONTS.fontRegular, fontSize: 14, color:theme.dark ? 'rgba(255,255,255,0.50)': 'rgba(0, 0, 0, 0.50)' }}>  27 Dec 2024</Text></Text>
-                                <Text style={{ ...FONTS.fontRegular, fontSize: 14, color: colors.title }}>We has been confirmed</Text>
-                            </View>
-                        </View>
-                        <View style={{ height: 60, width: 2, backgroundColor: COLORS.primary, position: 'absolute', left: 11, top: 40 }}></View>
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20, marginTop: 20 }}>
-                        <View style={{ height: 24, width: 24, borderWidth: 2, borderColor: colors.card, borderRadius: 24,backgroundColor:theme.dark ? '#0C101C':'#F9F5F3' }}>
-                        </View>
-                        <View style={{backgroundColor:colors.card,padding:10,borderRadius:12,opacity:.4}}>
-                            <Text style={{ ...FONTS.Marcellus, fontSize: 16, color: colors.title }}>Order Processed<Text style={{ ...FONTS.fontRegular, fontSize: 14, color:theme.dark ? 'rgba(255,255,255,0.50)': 'rgba(0, 0, 0, 0.50)' }}>  28 Dec 2024</Text></Text>
-                            <Text style={{ ...FONTS.fontRegular, fontSize: 14, color: colors.title }}>We are preparing your order</Text>
-                        </View>
-                        <View style={{ height: 60, width: 2, backgroundColor: colors.card, position: 'absolute', left: 11, top: 40 }}></View>
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20, marginTop: 20 }}>
-                        <View style={{ height: 24, width: 24, borderWidth: 2, borderColor: colors.card, borderRadius: 24,backgroundColor:theme.dark ? '#0C101C':'#F9F5F3' }}>
-                        </View>
-                        <View style={{backgroundColor:colors.card,padding:10,borderRadius:12,opacity:.4}}>
-                            <Text style={{ ...FONTS.Marcellus, fontSize: 16, color: colors.title }}>Ready To Ship<Text style={{ ...FONTS.fontRegular, fontSize: 14,color:theme.dark ? 'rgba(255,255,255,0.50)': 'rgba(0, 0, 0, 0.50)'}}>  29 Dec 2024</Text></Text>
-                            <Text style={{ ...FONTS.fontRegular, fontSize: 14, color: colors.title }}>Your order is ready for shipping </Text>
-                        </View>
-                        <View style={{ height: 60, width: 2, backgroundColor: colors.card, position: 'absolute', left: 11, top: 40 }}></View>
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20, marginTop: 20 }}>
-                        <View style={{ height: 24, width: 24, borderWidth: 2, borderColor: colors.card, borderRadius: 24,backgroundColor:theme.dark ? '#0C101C':'#F9F5F3' }}>
-                        </View>
-                        <View style={{backgroundColor:colors.card,padding:10,borderRadius:12,opacity:.4}}>
-                            <Text style={{ ...FONTS.Marcellus, fontSize: 16, color: colors.title }}>Out For Delivery<Text style={{ ...FONTS.fontRegular, fontSize: 14, color:theme.dark ? 'rgba(255,255,255,0.50)': 'rgba(0, 0, 0, 0.50)' }}>  31 Dec 2024</Text></Text>
-                            <Text style={{ ...FONTS.fontRegular, fontSize: 14, color: colors.title }}>Your order is out for delivery</Text>
-                        </View>
-                    </View>
+                  );
+                })}
+              </View>
+            </>
+          )}
+
+          {/* Items */}
+          {items.length > 0 && (
+            <>
+              <Text style={styles.secTitle}>Items</Text>
+              {items.map((it: any, i: number) => (
+                <View key={i} style={styles.itemRow}>
+                  <SmartImage uri={firstImage(it.imagePath ?? it.ImagePath)} style={styles.itemImg} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.itemName} numberOfLines={2}>{it.productName ?? it.ITEMNAME ?? it.name}</Text>
+                    <Text style={styles.itemMeta}>Qty: {it.quantity ?? 1}</Text>
+                  </View>
+                  {(it.price ?? it.FinalAmount) != null && (
+                    <Text style={styles.itemPrice}>{'₹'}{Number(it.price ?? it.FinalAmount).toLocaleString('en-IN')}</Text>
+                  )}
                 </View>
-            </ScrollView>
-        </SafeAreaView>
-    )
-}
+              ))}
+            </>
+          )}
+        </ScrollView>
+      )}
+    </View>
+  );
+};
 
-export default Trackorder
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: '#F9F6F1' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12,
+    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor },
+  hBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
+  statusCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: COLORS.white,
+    padding: 14, borderRadius: 14, elevation: 1, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
+  statusLabel: { ...FONTS.fontXs, color: COLORS.textLight },
+  statusValue: { ...FONTS.h6, ...FONTS.fontSemiBold, color: COLORS.title },
+  amount: { ...FONTS.h6, ...FONTS.fontBold, color: COLORS.primary },
+  secTitle: { ...FONTS.h6, ...FONTS.fontSemiBold, color: COLORS.title, marginTop: 22, marginBottom: 10 },
+  timeline: { backgroundColor: COLORS.white, borderRadius: 14, padding: 16 },
+  tlRow: { flexDirection: 'row', gap: 12 },
+  tlLeft: { alignItems: 'center', width: 16 },
+  dot: { width: 12, height: 12, borderRadius: 6, backgroundColor: COLORS.borderColor, marginTop: 2 },
+  dotActive: { backgroundColor: COLORS.primary },
+  tlLine: { flex: 1, width: 2, backgroundColor: COLORS.borderColor, marginVertical: 2 },
+  tlLabel: { ...FONTS.font, ...FONTS.fontMedium, color: COLORS.title },
+  tlTime: { ...FONTS.fontXs, color: COLORS.textLight, marginTop: 2 },
+  itemRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: COLORS.white,
+    padding: 10, borderRadius: 12, marginBottom: 10 },
+  itemImg: { width: 60, height: 60, borderRadius: 8 },
+  itemName: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title },
+  itemMeta: { ...FONTS.fontXs, color: COLORS.textLight, marginTop: 2 },
+  itemPrice: { ...FONTS.fontSm, ...FONTS.fontBold, color: COLORS.title },
+});
+
+export default Trackorder;

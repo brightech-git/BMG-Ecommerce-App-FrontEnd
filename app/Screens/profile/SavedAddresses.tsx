@@ -1,171 +1,97 @@
-import React, { useState } from 'react';
-import { useTheme } from '@react-navigation/native';
-import { View, Text, SafeAreaView, TouchableOpacity, Platform } from 'react-native'
-import Header from '../../layout/Header';
-import { GlobalStyleSheet } from '../../constants/StyleSheet';
-import { ScrollView } from 'react-native-gesture-handler';
-import { COLORS, FONTS } from '../../constants/theme';
-import CustomInput from '../../components/Input/CustomInput';
-import Button from '../../components/Button/Button';
-
+// app/Screens/profile/SavedAddresses.tsx
+// Website: /account/address (AddressManager). Data: /addresses/customer/:customerId.
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, StatusBar, Alert } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
+import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import { useAddresses } from '../../api/hooks/useAddresses';
+import { Loader, EmptyState, ErrorState } from '../../components/common/StateViews';
 
-type SavedAddressesScreenProps = StackScreenProps<RootStackParamList, 'SavedAddresses'>;
+type Props = StackScreenProps<RootStackParamList, 'SavedAddresses'>;
 
-const SavedAddresses = ({ navigation } : SavedAddressesScreenProps) => {
+const SavedAddresses = ({ route, navigation }: Props) => {
+  const selectMode = route.params?.select;
+  const { addresses, isLoading, isError, refetch, deleteAddress } = useAddresses();
 
-     const theme = useTheme();
-    const { colors }:{colors : any} = theme;
+  return (
+    <View style={styles.safe}>
+      <StatusBar barStyle="dark-content" />
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
+          <Feather name="arrow-left" size={22} color={COLORS.title} />
+        </TouchableOpacity>
+        <Text style={styles.hTitle}>{selectMode ? 'Select Address' : 'My Addresses'}</Text>
+        <TouchableOpacity style={styles.hBtn} onPress={() => navigation.navigate('SaveAddress', {})}>
+          <Feather name="plus" size={22} color={COLORS.primary} />
+        </TouchableOpacity>
+      </View>
 
-    const productSizes = ["Home", "Shop", "Office"];
-
-    const [activeSize, setActiveSize] = useState(productSizes[0]);
-
-    return (
-        <SafeAreaView style={{ backgroundColor: colors.background, flex: 1 }}>
-            <Header
-                title={"Add Delivery Address"}
-                leftIcon={"back"}
-                // titleLeft
-            />
-            <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
-                <View style={GlobalStyleSheet.container}>
-                    <Text style={{ ...FONTS.Marcellus, fontSize: 18, color: colors.title }}>Contact Details</Text>
-                    <View style={{ marginBottom: 15, marginTop: 10 }}>
-                        <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title, marginBottom: 5 }}>Full Name</Text>
-                        <CustomInput
-                            onChangeText={(value:any) => console.log(value)}
-                            background
-                        />
-                    </View>
-                    <View style={{ marginBottom: 15 }}>
-                        <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title, marginBottom: 5 }}>Mobile No.</Text>
-                        <CustomInput
-                            onChangeText={(value:any) => console.log(value)}
-                            background
-                            keyboardType={'number-pad'}
-                        />
-                    </View>
-                    <Text style={{ ...FONTS.fontSemiBold, fontSize: 16, color: colors.title }}>Address</Text>
-                    <View style={{ marginBottom: 15, marginTop: 10 }}>
-                        <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title, marginBottom: 5 }}>Pin Code</Text>
-                        <CustomInput
-                            onChangeText={(value:any) => console.log(value)}
-                            background
-                            keyboardType={'number-pad'}
-                        />
-                    </View>
-                    <View style={{ marginBottom: 15 }}>
-                        <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title, marginBottom: 5 }}>Address</Text>
-                        <CustomInput
-                            onChangeText={(value:any) => console.log(value)}
-                            background
-                        />
-                    </View>
-                    <View style={{ marginBottom: 15 }}>
-                        <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title, marginBottom: 5 }}>Locality/Town</Text>
-                        <CustomInput
-                            onChangeText={(value:any) => console.log(value)}
-                            background
-                        />
-                    </View>
-                    <View style={{ marginBottom: 15 }}>
-                        <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title, marginBottom: 5 }}>City/District</Text>
-                        <CustomInput
-                            onChangeText={(value:any) => console.log(value)}
-                            background
-                        />
-                    </View>
-                    <View style={{ marginBottom: 15 }}>
-                        <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title, marginBottom: 5 }}>State</Text>
-                        <CustomInput
-                            onChangeText={(value:any) => console.log(value)}
-                            background
-                        />
-                    </View>
-                    <Text style={{ ...FONTS.Marcellus, fontSize: 18, color: colors.title }}>Save Address As</Text>
-                    <View
-                        style={{
-                            flexDirection: 'row',
-                            paddingTop: 10,
-                            paddingBottom: 20
-                        }}
-                    >
-                        {productSizes.map((data, index) => {
-                            return (
-                                <View
-                                    key={index}
-                                    style={[{
-                                        shadowColor: "rgba(195,135,95,0.30)",
-                                        shadowOffset: {
-                                            width: -5,
-                                            height: 15,
-                                        },
-                                        shadowOpacity: .1,
-                                        shadowRadius: 5,
-                                    }, Platform.OS === "ios" && {
-                                        backgroundColor: colors.card,
-                                        borderRadius:10
-                                    }]}
-                                >
-                                    <TouchableOpacity
-                                        onPress={() => setActiveSize(data)}
-                                        style={[{
-                                            height: 40,
-                                            // width: 75,
-                                            borderRadius: 10,
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            paddingHorizontal:20,
-                                            // borderWidth: 1,
-                                            // borderColor: theme.dark ? COLORS.white : colors.borderColor,
-                                            marginHorizontal: 4,
-                                            backgroundColor: colors.card
-                                        }, activeSize === data && {
-                                            backgroundColor:COLORS.primary,
-                                            borderColor: COLORS.primary,
-                                        }]}
-                                    >
-                                        <Text style={[{ ...FONTS.fontMedium, fontSize: 13, color: colors.title }, activeSize === data && { color: colors.card }]}>{data}</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            )
-                        })}
-                    </View>
-                </View>
-            </ScrollView>
-            <View
-                 style={[{
-                    position: 'absolute',
-                    bottom: 0,
-                    width: '100%',
-                    shadowColor:'rgba(195, 123, 95, 0.25)',
-                    shadowOffset: {
-                        width: 2,
-                        height: -20,
-                    },
-                    shadowOpacity: .1,
-                    shadowRadius: 5,
-                }, Platform.OS === "ios" && {
-                    backgroundColor: colors.card,
-                    borderTopLeftRadius:25,borderTopRightRadius:25,
-                    bottom:30
-                }]}
+      {isLoading ? (
+        <Loader message="Loading addresses..." />
+      ) : isError ? (
+        <ErrorState onRetry={refetch} />
+      ) : addresses.length === 0 ? (
+        <EmptyState icon="map-pin" title="No saved addresses"
+          subtitle="Add a delivery address to get started."
+          ctaLabel="Add Address" onCta={() => navigation.navigate('SaveAddress', {})} />
+      ) : (
+        <FlatList
+          data={addresses}
+          keyExtractor={(it: any, i) => String(it.id ?? i)}
+          contentContainerStyle={{ padding: SIZES.padding }}
+          renderItem={({ item }: any) => (
+            <TouchableOpacity
+              activeOpacity={selectMode ? 0.85 : 1}
+              onPress={() => { if (selectMode) navigation.navigate({ name: 'Checkout', params: { addressId: item.id } as any, merge: true }); }}
+              style={styles.card}
             >
-                <View style={{ height: 88, backgroundColor: colors.card,borderTopLeftRadius:25,borderTopRightRadius:25 }}>
-                    <View style={[GlobalStyleSheet.container, { paddingHorizontal: 10, marginTop: 15, paddingTop: 0 }]}>
-                        <Button
-                            title={"Save Address"}
-                            btnRounded
-                            onPress={() => navigation.navigate('Checkout')}
-                            color={COLORS.primary}
-                        />
-                    </View>
-                </View>
-            </View>
-        </SafeAreaView>
-    )
-}
+              <View style={styles.cardTop}>
+                <Text style={styles.name}>{item.name}</Text>
+                {!!item.addressType && <View style={styles.tag}><Text style={styles.tagTxt}>{item.addressType}</Text></View>}
+              </View>
+              <Text style={styles.line}>{[item.addressLine, item.locality, item.city, item.state, item.pincode].filter(Boolean).join(', ')}</Text>
+              {!!item.phone && <Text style={styles.phone}>Phone: {item.phone}</Text>}
+              <View style={styles.actions}>
+                <TouchableOpacity style={styles.actBtn} onPress={() => navigation.navigate('SaveAddress', { id: item.id })}>
+                  <Feather name="edit-2" size={14} color={COLORS.primary} />
+                  <Text style={styles.actTxt}>Edit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actBtn}
+                  onPress={() => Alert.alert('Delete address', 'Remove this address?', [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Delete', style: 'destructive', onPress: () => deleteAddress(item.id) },
+                  ])}>
+                  <Feather name="trash-2" size={14} color={COLORS.danger} />
+                  <Text style={[styles.actTxt, { color: COLORS.danger }]}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          )}
+        />
+      )}
+    </View>
+  );
+};
 
-export default SavedAddresses
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: '#F9F6F1' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12,
+    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor },
+  hBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
+  card: { backgroundColor: COLORS.white, borderRadius: 14, padding: 14, marginBottom: 12, elevation: 1,
+    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
+  cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  name: { ...FONTS.font, ...FONTS.fontSemiBold, color: COLORS.title },
+  tag: { backgroundColor: COLORS.primaryLight, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
+  tagTxt: { ...FONTS.fontXs, color: COLORS.primary },
+  line: { ...FONTS.fontSm, color: COLORS.text, lineHeight: 19 },
+  phone: { ...FONTS.fontSm, color: COLORS.textLight, marginTop: 4 },
+  actions: { flexDirection: 'row', gap: 18, marginTop: 12, borderTopWidth: 1, borderTopColor: COLORS.borderColor, paddingTop: 10 },
+  actBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  actTxt: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.primary },
+});
+
+export default SavedAddresses;

@@ -11,8 +11,9 @@ import { ScrollView } from 'react-native-gesture-handler';
 import { IMAGES } from '../../constants/Images';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
-import { resetPassword, forgotPassword } from '../../api/services/authService';
-import { AsyncStorageHelper } from '../../utils/AsyncStorageHelper';
+import { forgotPassword } from '../../api/services/authService';
+import { resetPasswordThunk } from '../../redux/reducer/authReducer';
+import { useDispatch } from 'react-redux';
 import { useToast } from '../../components/commoncomponents/Toast';
 
 type Props = StackScreenProps<RootStackParamList, 'EnterCode'>;
@@ -23,6 +24,7 @@ const EnterCode = ({ navigation, route }: Props) => {
     const theme = useTheme();
     const { colors }: { colors: any } = theme;
     const toast = useToast();
+    const dispatch = useDispatch<any>();
 
     const [otpCode, setOTPCode] = useState('');
     const [isPinReady, setIsPinReady] = useState(false);
@@ -54,13 +56,15 @@ const EnterCode = ({ navigation, route }: Props) => {
         }
         try {
             setLoading(true);
-            const res = await resetPassword({ contactNumber, otp: otpCode, newPassword });
-            if (res.errorMessage && !res.message) throw new Error(res.errorMessage);
-            if (res.user) await AsyncStorageHelper.saveUserSession(res.user);
-            toast.success(res.message ?? 'Password reset successfully', { position: 'top' });
-            navigation.reset({ index: 0, routes: [{ name: 'SignIn' }] });
-        } catch (err: any) {
-            toast.error(err.message ?? 'Verification failed', { position: 'top', duration: 4000 });
+            const result = await dispatch(resetPasswordThunk({ contactNumber, otp: otpCode, newPassword }));
+            if (resetPasswordThunk.rejected.match(result)) {
+                toast.error(result.payload as string, { position: 'top', duration: 4000 });
+                return;
+            }
+            const { token } = result.payload as any;
+            toast.success(result.payload.message ?? 'Password reset successfully', { position: 'top' });
+            // if API returned token auto-login, else go to SignIn
+            navigation.reset({ index: 0, routes: [{ name: token ? 'DrawerNavigation' : 'SignIn' }] });
         } finally {
             setLoading(false);
         }

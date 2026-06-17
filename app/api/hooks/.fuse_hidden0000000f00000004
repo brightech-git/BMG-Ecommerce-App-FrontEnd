@@ -1,0 +1,70 @@
+// app/api/hooks/useCart.ts
+// Server-backed cart (mirrors website src/hook/cart/useCartQuery.js).
+// Auth-gated: queries only run when a token exists. Default shipping pincode
+// falls back to "360004" exactly like the website.
+import { useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { fetchCart, addToCart, deleteCartItem, clearCart } from '../services/cartService';
+import { useAuthToken } from './useAuthToken';
+import { CartProduct, AddToCartPayload } from '../../types/catalog';
+
+export const DEFAULT_PINCODE = '360004';
+
+export const useCart = (pincode: string = DEFAULT_PINCODE) => {
+  const queryClient = useQueryClient();
+  const token = useSelector((s: any) => s.auth?.token);
+  const isAuthenticated = !!token;
+
+  const cartQuery = useQuery({
+    queryKey: ['cart', pincode],
+    queryFn: () => fetchCart(pincode),
+    enabled: isAuthenticated,
+    staleTime: 1000 * 60 * 2,
+  });
+
+  const cartProducts: CartProduct[] = cartQuery.data?.data?.products ?? [];
+  const cartCount = cartProducts.length;
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['cart'] });
+
+  const addMutation    = useMutation({ mutationFn: addToCart,      onSuccess: invalidate });
+  const removeMutation = useMutation({ mutationFn: deleteCartItem, onSuccess: invalidate });
+  const clearMutation  = useMutation({ mutationFn: clearCart,      onSuccess: invalidate });
+
+  const isInCart = useCallback(
+    (tagKey?: string) =>
+      !!tagKey && cartProducts.some((c) => String(c.TAGKEY) === String(tagKey)),
+    [cartProducts],
+  );
+
+  /** Add a product, guarding against duplicates + missing tagKey. Returns a status string. */
+  const addItem = useCallback(
+    (tagKey?: string, quantity = 1): 'unauth' | 'invalid' | 'duplicate' | 'ok' => {
+      if (!isAuthenticated) return 'unauth';
+      if (!tagKey) return 'invalid';
+      if (isInCart(tagKey)) return 'duplicate';
+      const payload: AddToCartPayload = { tagKey, quantity, shippingPincode: pincode };
+      addMutation.mutate(payload);
+      return 'ok';
+    },
+    [isAuthenticated, isInCart, pincode, addMutation],
+  );
+
+  return {
+    cart: cartQuery,
+    cartProducts,
+    cartCount,
+    isLoading: cartQuery.isLoading,
+    isError: cartQuery.isError,
+    refetch: cartQuery.refetch,
+    isAuthenticated,
+    isInCart,
+    addItem,
+    addRaw: addMutation.mutate,
+    isAdding: addMutation.isPending,
+    removeItem: removeMutation.mutate,
+    isRemoving: removeMutation.isPending,
+    clearCart: clearMutation.mutate,
+    isClearing: clearMutation.isPending,
+  };
+};

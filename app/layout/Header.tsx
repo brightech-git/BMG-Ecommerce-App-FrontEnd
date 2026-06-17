@@ -108,7 +108,7 @@ const Header = (props: { color?: any; transparent?: any; paddingLeft?: any; left
                     {props.rightIcon4 == "chat" &&
                          <View style={{height:40,width:40,borderRadius:8,backgroundColor:colors.background,justifyContent:'center',alignItems:'center'}}>
                             <IconButton
-                                onPress={() => navigation.navigate('SingleChat')}
+                                onPress={() => navigation.navigate('Notification')}
                                 size={20}
                                 iconColor={colors.title}
                                 icon={props => <Image {...props} style={{ height: 20, width: 20, resizeMode: 'contain', tintColor: colors.title }} source={IMAGES.comment} />}

@@ -75,7 +75,7 @@ const Search = ({ navigation }: SearchScreenProps) => {
                                 >
                                     <TouchableOpacity
                                         activeOpacity={0.5}
-                                        onPress={() => navigation.navigate('Products')}
+                                        onPress={() => navigation.navigate('Products', { search: cat, title: cat })}
                                         style={{ backgroundColor: colors.card, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 10, paddingHorizontal: 25 }}
                                     >
                                         <Text style={{ ...FONTS.fontMedium, fontSize: 13, color: colors.title }}>{cat}</Text>
@@ -130,7 +130,7 @@ const Search = ({ navigation }: SearchScreenProps) => {
                             <ProductList
                                 products={cardItems}
                                 defaultMode="grid2"
-                                onPress={() => navigation.navigate('ProductDetails')}
+                                onPress={(item) => navigation.navigate('ProductDetails', { tagKey: item.id })}
                                 onEndReached={loadMore}
                                 loadingMore={loadingMore}
                             />

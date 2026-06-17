@@ -1,5 +1,5 @@
 // apiClient.ts
-import { axiosInstance } from "./axiosInstance";
+import { axiosInstance, getInMemoryToken } from "./axiosInstance";
 
 export type HttpMethod = "get" | "post" | "put" | "patch" | "delete";
 
@@ -28,8 +28,6 @@ export const callApi = async <T, R>({
     isFormData = false,
 }: ApiOptions<T>): Promise<R> => {
     try {
-
-       
         const response = await axiosInstance.request<R>({
             method,
             url,
@@ -43,6 +41,7 @@ export const callApi = async <T, R>({
 
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         console.log(`✅ API SUCCESS [${method.toUpperCase()}] ${url}`);
+        console.log('🔑 Auth       :', getInMemoryToken() ? 'Bearer ***' : 'NONE');
         console.log('📦 Request    :', JSON.stringify(data ?? params ?? null, null, 2));
         console.log('📨 Response   :', JSON.stringify(response.data, null, 2));
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -63,6 +62,7 @@ export const callApi = async <T, R>({
 
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         console.log(`❌ API FAILED [${method.toUpperCase()}] ${url}`);
+        console.log('🔑 Auth       :', getInMemoryToken() ? 'Bearer ***' : 'NONE');
         console.log('📌 Status     :', status ?? 'No response');
         console.log('📦 Request    :', JSON.stringify(data ?? params ?? null, null, 2));
         console.log('📨 Response   :', JSON.stringify(resData, null, 2));

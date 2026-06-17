@@ -1,258 +1,107 @@
-import React, { useRef, useState } from 'react';
-import { useTheme } from '@react-navigation/native';
-import { View, Text, SafeAreaView, Animated, TouchableOpacity, Image } from 'react-native';
-import { COLORS, FONTS, SIZES } from '../../constants/theme';
-import { GlobalStyleSheet } from '../../constants/StyleSheet';
-import Header from '../../layout/Header';
-import { ScrollView } from 'react-native-gesture-handler';
-import CardStyle3 from '../../components/Card/CardStyle3';
-import { LinearGradient } from 'expo-linear-gradient';
-import { IMAGES } from '../../constants/Images';
-import { StackScreenProps } from '@react-navigation/stack';
+// app/Screens/profile/Myorder.tsx
+// Website: /account/orders (Order). Data: /order/history.
+import React, { useMemo } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, StatusBar } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
+import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import { useOrderHistory } from '../../api/hooks/useOrders';
+import { Loader, EmptyState, ErrorState } from '../../components/common/StateViews';
 
+type Nav = StackNavigationProp<RootStackParamList>;
+const asArray = (d: any): any[] =>
+  Array.isArray(d) ? d : d?.data ?? d?.orders ?? d?.data?.orders ?? [];
 
-const MyorderData = [
-    {
-        image: IMAGES.item11,
-        title: "Pearl Cluster Ring",
-        price: "$80",
-        discount: "$95",
-        btntitel: "Track Order",
-        review:"(2k Review)",
-        offer:"40% Off"
-    },
-    {
-        image: IMAGES.item12,
-        title: "Sterling Silver Ring",
-        price: "$80",
-        discount: "$95",
-        btntitel: "Track Order",
-        review:"(2k Review)",
-        offer:"40% Off"
-    },
-    {
-        image: IMAGES.item34,
-        title: "Dazzling Gold Necklace",
-        price: "$80",
-        discount: "$95",
-        btntitel: "Track Order",
-        review:"(2k Review)",
-        offer:"40% Off"
-    },
-    {
-        image: IMAGES.item32,
-        title: "Amethyst Hoop Earrings",
-        price: "$80",
-        discount: "$95",
-        btntitel: "Track Order",
-        review:"(2k Review)",
-        offer:"40% Off"
-    },
-    {
-        image: IMAGES.item38,
-        title: "Dazzling Gold Ring",
-        price: "$80",
-        discount: "$95",
-        btntitel: "Track Order",
-        review:"(2k Review)",
-        offer:"40% Off"
-    },
-    {
-        image: IMAGES.item13,
-        title: "Amethyst Hoop Earrings",
-        price: "$80",
-        discount: "$95",
-        btntitel: "Track Order",
-        review:"(2k Review)",
-        offer:"40% Off"
-    },
-]
-const CompletedData = [
-    {
-        image: IMAGES.item13,
-        title: "Amethyst Hoop Earrings",
-        price: "$80",
-        discount: "$95",
-        btntitel: "Write Review",
-        review:"(2k Review)",
-        offer:"40% Off"
-    },
-    {
-        image: IMAGES.item12,
-        title: "Sterling Silver Ring",
-        price: "$80",
-        discount: "$95",
-        btntitel: "Write Review",
-        review:"(2k Review)",
-        offer:"40% Off"
-    },
-    {
-        image: IMAGES.item11,
-        title: "Pearl Cluster Ring",
-        price: "$80",
-        discount: "$95",
-        btntitel: "Write Review",
-        review:"(2k Review)",
-        offer:"40% Off"
-    },
-    {
-        image: IMAGES.item34,
-        title: "Dazzling Gold Necklace",
-        price: "$80",
-        discount: "$95",
-        btntitel: "Write Review",
-        review:"(2k Review)",
-        offer:"40% Off"
-    },
-    {
-        image: IMAGES.item32,
-        title: "Amethyst Hoop Earrings",
-        price: "$80",
-        discount: "$95",
-        btntitel: "Write Review",
-        review:"(2k Review)",
-        offer:"40% Off"
-    },
-    {
-        image: IMAGES.item38,
-        title: "Dazzling Gold Ring",
-        price: "$80",
-        discount: "$95",
-        btntitel: "Write Review",
-        review:"(2k Review)",
-        offer:"40% Off"
-    },
-]
+const statusColor = (s = '') => {
+  const t = s.toLowerCase();
+  if (t.includes('deliver')) return COLORS.success;
+  if (t.includes('cancel')) return COLORS.danger;
+  if (t.includes('ship') || t.includes('transit')) return COLORS.info;
+  return COLORS.warning;
+};
 
-type MyorderScreenProps = StackScreenProps<RootStackParamList, 'Myorder'>;
+const Myorder = () => {
+  const navigation = useNavigation<Nav>();
+  const { data, isLoading, isError, refetch } = useOrderHistory();
+  const orders = useMemo(() => asArray(data), [data]);
 
-const Myorder = ({ navigation } : MyorderScreenProps) => {
+  return (
+    <View style={styles.safe}>
+      <StatusBar barStyle="dark-content" />
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
+          <Feather name="arrow-left" size={22} color={COLORS.title} />
+        </TouchableOpacity>
+        <Text style={styles.hTitle}>My Orders</Text>
+        <View style={styles.hBtn} />
+      </View>
 
+      {isLoading ? (
+        <Loader message="Loading orders..." />
+      ) : isError ? (
+        <ErrorState onRetry={refetch} />
+      ) : orders.length === 0 ? (
+        <EmptyState icon="package" title="No orders yet"
+          subtitle="Your placed orders will appear here."
+          ctaLabel="Start shopping" onCta={() => navigation.navigate('Products', {})} />
+      ) : (
+        <FlatList
+          data={orders}
+          keyExtractor={(it: any, i) => String(it.orderId ?? it.id ?? i)}
+          contentContainerStyle={{ padding: SIZES.padding }}
+          renderItem={({ item }: any) => {
+            const oid = item.orderId ?? item.id;
+            const status = item.status ?? item.current_status ?? item.orderStatus ?? 'Pending';
+            const amount = item.totalAmount ?? item.amount ?? item.grandTotal;
+            const count = (item.items?.length ?? item.orderItems?.length ?? item.itemCount) || undefined;
+            return (
+              <TouchableOpacity style={styles.card} activeOpacity={0.85}
+                onPress={() => navigation.navigate('Trackorder', { orderId: oid })}>
+                <View style={styles.cardTop}>
+                  <Text style={styles.oid}>Order #{oid}</Text>
+                  <View style={[styles.badge, { backgroundColor: statusColor(status) + '22' }]}>
+                    <Text style={[styles.badgeTxt, { color: statusColor(status) }]}>{status}</Text>
+                  </View>
+                </View>
+                {!!item.createdAt && <Text style={styles.date}>{String(item.createdAt).slice(0, 10)}</Text>}
+                <View style={styles.cardBottom}>
+                  {count != null && <Text style={styles.meta}>{count} item{count === 1 ? '' : 's'}</Text>}
+                  {amount != null && <Text style={styles.amount}>{'₹'}{Number(amount).toLocaleString('en-IN')}</Text>}
+                </View>
+                <View style={styles.track}>
+                  <Text style={styles.trackTxt}>View details & track</Text>
+                  <Feather name="chevron-right" size={16} color={COLORS.primary} />
+                </View>
+              </TouchableOpacity>
+            );
+          }}
+        />
+      )}
+    </View>
+  );
+};
 
-    const scrollRef = useRef<any>();
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const scrollX = useRef(new Animated.Value(0)).current;
-
-    const onPressTouch = (val:any) => {
-        setCurrentIndex(val)
-        scrollRef.current?.scrollTo({
-            x: SIZES.width * val,
-            animated: true,
-        });
-    }
-
-     const theme = useTheme();
-    const { colors }:{colors : any} = theme;
-
-    return (
-        <SafeAreaView style={{ backgroundColor: colors.background, flex: 1 }}>
-            <Header
-                title={"My Order"}
-                leftIcon={'back'}
-            />
-            <View style={{ flex: 1 }}>
-                <LinearGradient colors={['rgba(236,245,241,0)', 'rgba(236,245,241,0.80)']}
-                    style={{ width: '100%', height: 90, bottom: 0, position: 'absolute',zIndex:10,backgroundColor:'rgba(255,255,255,.1)' }}
-                >
-                    <View style={[GlobalStyleSheet.container,{paddingTop:20,paddingHorizontal:60}]}>
-                        <View style={{ flexDirection: 'row', gap: 10, marginRight: 10,alignItems:'center',justifyContent:'center',backgroundColor:colors.card,height:50,borderRadius:25,paddingHorizontal:10 }}>
-                            <TouchableOpacity
-                                onPress={() => onPressTouch(0)}
-                                style={[GlobalStyleSheet.TouchableOpacity2, { backgroundColor: currentIndex === 0 ? COLORS.primary : colors.card, borderColor: currentIndex === 0 ? COLORS.primary : colors.title }]}
-                            >
-                                <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: currentIndex === 0 ? colors.card : colors.text }}>Ongoing</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={() => onPressTouch(1)}
-                                style={[GlobalStyleSheet.TouchableOpacity2, { backgroundColor: currentIndex === 1 ? COLORS.primary : colors.card, borderColor: currentIndex === 1 ? COLORS.primary : colors.title }]}
-                            >
-                                <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: currentIndex === 1 ? colors.card : colors.text }}>Completed</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </LinearGradient>
-
-                <ScrollView
-                    horizontal
-                    pagingEnabled
-                    showsHorizontalScrollIndicator={false}
-                    ref={scrollRef}
-                    onScroll={Animated.event(
-                        [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-                        { useNativeDriver: false }
-                    )}
-                    onMomentumScrollEnd={(e:any) => {
-                        if (e.nativeEvent.contentOffset.x.toFixed(0) == SIZES.width.toFixed(0)) {
-                            setCurrentIndex(1)
-                        } else if (e.nativeEvent.contentOffset.x.toFixed(0) == 0) {
-                            setCurrentIndex(0)
-                        } else {
-                            setCurrentIndex(0)
-                        }
-                    }}
-                    //contentContainerStyle={{paddingBottom:100}}
-                >
-                    <View style={{ width: SIZES.width }}>
-                        <View style={[GlobalStyleSheet.container, { paddingTop: 0,paddingBottom:0 }]}>
-                            <View style={{  }}>
-                                <ScrollView
-                                    showsVerticalScrollIndicator={false}
-                                    contentContainerStyle={{paddingBottom:100}}
-                                >
-                                    {MyorderData.map((data:any, index:any) => {
-                                        return (
-                                            <CardStyle3
-                                                id=''
-                                                key={index}
-                                                title={data.title}
-                                                price={data.price}
-                                                image={data.image}
-                                                discount={data.discount}
-                                                btntitel={data.btntitel}
-                                                review={data.review}
-                                                offer={data.offer}
-                                                onPress={() => navigation.navigate('Trackorder')}
-                                                grid
-                                            />
-                                        )
-                                    })}
-                                </ScrollView>
-                            </View>
-                        </View>
-                    </View>
-                    <View style={{ width: SIZES.width }}>
-                        <View style={[GlobalStyleSheet.container, { paddingTop: 0 ,paddingBottom:0, }]}>
-                            <View style={{ }}>
-                                <ScrollView
-                                    showsVerticalScrollIndicator={false}
-                                    contentContainerStyle={{paddingBottom:100}}
-                                >
-                                    {CompletedData.map((data:any, index:any) => {
-                                        return (
-                                            <CardStyle3
-                                                id=''
-                                                key={index}
-                                                title={data.title}
-                                                price={data.price}
-                                                image={data.image}
-                                                discount={data.discount}
-                                                btntitel={data.btntitel}
-                                                review={data.review}
-                                                offer={data.offer}
-                                                onPress={() => navigation.navigate('WriteReview')}
-                                                grid
-                                            />
-                                        )
-                                    })}
-                                </ScrollView>
-                            </View>
-                        </View>
-                    </View>
-                </ScrollView>
-            </View>
-        </SafeAreaView>
-    )
-}
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: '#F9F6F1' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12,
+    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor },
+  hBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
+  card: { backgroundColor: COLORS.white, borderRadius: 14, padding: 14, marginBottom: 12, elevation: 1,
+    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
+  cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  oid: { ...FONTS.font, ...FONTS.fontSemiBold, color: COLORS.title },
+  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  badgeTxt: { ...FONTS.fontXs, ...FONTS.fontSemiBold },
+  date: { ...FONTS.fontXs, color: COLORS.textLight, marginTop: 4 },
+  cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
+  meta: { ...FONTS.fontSm, color: COLORS.textLight },
+  amount: { ...FONTS.h6, ...FONTS.fontBold, color: COLORS.title },
+  track: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 10,
+    borderTopWidth: 1, borderTopColor: COLORS.borderColor, paddingTop: 10 },
+  trackTxt: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.primary },
+});
 
 export default Myorder;

@@ -1,197 +1,117 @@
-import { useTheme } from '@react-navigation/native';
+// app/Screens/profile/Profile.tsx
+// Website: /account (Dashboard). Shows user + menu to orders/addresses/profile/logout.
 import React from 'react';
-import { View, Text, SafeAreaView, Image, TouchableOpacity, SectionList, ScrollView, Platform } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { GlobalStyleSheet } from '../../constants/StyleSheet';
-import {  FONTS, COLORS } from '../../constants/theme';
-
-import ListItem from '../../components/list/ListItem';
-import { IMAGES } from '../../constants/Images';
-import { StackScreenProps } from '@react-navigation/stack';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, Alert } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { useNavigation, CommonActions } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { useDispatch } from 'react-redux';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
+import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import { useProfile } from '../../api/hooks/useProfile';
+import { useAuthToken } from '../../api/hooks/useAuthToken';
+import { logout } from '../../redux/reducer/authReducer';
+import { EmptyState } from '../../components/common/StateViews';
 
-const btnData = [
+type Nav = StackNavigationProp<RootStackParamList>;
+
+const Row = ({ icon, label, onPress, danger }: any) => (
+  <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.7}>
+    <View style={[styles.rowIcon, danger && { backgroundColor: 'rgba(255,49,49,0.08)' }]}>
+      <Feather name={icon} size={18} color={danger ? COLORS.danger : COLORS.primary} />
+    </View>
+    <Text style={[styles.rowLabel, danger && { color: COLORS.danger }]}>{label}</Text>
+    {!danger && <Feather name="chevron-right" size={18} color={COLORS.textLight} />}
+  </TouchableOpacity>
+);
+
+const Profile = () => {
+  const navigation = useNavigation<Nav>();
+  const dispatch = useDispatch<any>();
+  const token = useAuthToken();
+  const { profile } = useProfile();
+
+  const u: any = profile ?? {};
+  const name = u.username || u.name || u.customerName || 'Guest';
+  const email = u.email || '';
+  const phone = u.contactNumber || u.contact || u.phone || '';
+
+  const doLogout = () => Alert.alert('Log out', 'Are you sure you want to log out?', [
+    { text: 'Cancel', style: 'cancel' },
     {
-        title: "Your Order",
-        navigate: 'Myorder',
+      text: 'Log out', style: 'destructive',
+      onPress: () => {
+        dispatch(logout());
+        navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'SignIn' }] }));
+      },
     },
-    {
-        title: "Wishlist",
-        navigate: 'Wishlist',
-    },
-    {
-        title: "Coupons",
-        navigate: 'Coupons',
-    },
-    {
-        title: "Track Order",
-        navigate: 'Trackorder',
-    },
-]
+  ]);
 
-
-const ListwithiconData = [
-    {
-        title: 'Account Settings',
-        data: [
-            {
-                icon: IMAGES.user2,
-                title: "Edit Profile",
-                navigate: 'EditProfile'
-            },
-            {
-                icon: IMAGES.card2,
-                title: "Saved Cards & Wallet",
-                navigate: 'Payment'
-            },
-            {
-                icon: IMAGES.map2,
-                title: "Saved Addresses",
-                navigate: 'SavedAddresses'
-            },
-            {
-                icon: IMAGES.translation,
-                title: "Select Language",
-                navigate: 'Language'
-            },
-            {
-                icon: IMAGES.bell2,
-                title: "Notifications Settings",
-                navigate: 'Notification'
-            },
-        ],
-    },
-    {
-        title: 'My Activity',
-        data: [
-            {
-                icon: IMAGES.star,
-                title: "Reviews",
-                navigate: 'WriteReview'
-            },
-            {
-                icon: IMAGES.comment,
-                title: "Questions & Answers",
-                navigate: 'Questions'
-            },
-        ],
-    },
-
-];
-
-type ProfileScreenProps = StackScreenProps<RootStackParamList, 'Profile'>;
-
-const Profile = ({ navigation } : ProfileScreenProps) => {
-
-    const theme = useTheme();
-    const { colors } : {colors : any}= theme;
-
+  if (!token) {
     return (
+      <View style={styles.safe}>
+        <View style={styles.header}><Text style={styles.hTitle}>Account</Text></View>
+        <EmptyState icon="user" title="You're not signed in"
+          subtitle="Sign in to view your profile, orders and addresses."
+          ctaLabel="Sign In" onCta={() => navigation.navigate('SignIn')} />
+      </View>
+    );
+  }
 
-        <SafeAreaView style={{ backgroundColor: colors.background, flex: 1, }}>
-            {theme.dark ?
-                null
-                :
-                <LinearGradient colors={['#C37B5F', '#F9F5F3']}
-                    style={{ width: '100%', height: 230, top: 0, position: 'absolute' }}
-                >
-                </LinearGradient>
-            }
-            <View style={[GlobalStyleSheet.container, { flex: 1 }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <View style={{ flexDirection: 'row', alignItems:'flex-start', gap: 5 }}>
-                        <Image
-                            style={{ height: 30, width: 30, resizeMode: 'contain', }}
-                            source={IMAGES.logo}
-                        />
-                        <Text style={{ ...FONTS.Marcellus, fontSize: 24, color: colors.title }}>BMG Jewels Store</Text>
-                    </View>
-                    <TouchableOpacity 
-                        onPress={() => navigation.navigate('SignIn')}
-                        style={{ flexDirection: 'row', alignItems: 'center' }}
-                    >
-                        <Image
-                            style={{height:18,width:18,resizeMode:'contain',tintColor:colors.title}}
-                            source={IMAGES.logout}
-                        />
-                         <Text style={{...FONTS.fontRegular,fontSize:16,color:colors.title,marginLeft:5}}>Logout</Text>
-                    </TouchableOpacity>
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 20, paddingBottom: 30 }}>
-                    <View style={{ height: 45, width: 45, borderRadius: 50, backgroundColor: COLORS.white, alignItems: 'center', justifyContent: 'center' }}>
-                        <Image
-                            style={{ height: 40, width: 40, borderRadius: 50 }}
-                            source={IMAGES.small1}
-                        />
-                    </View>
-                    <Text style={{ ...FONTS.Marcellus, fontSize: 24, color: colors.title }}>Hello, Roopa</Text>
-                </View>
-                <View style={[GlobalStyleSheet.row]}>
-                    {btnData.map((data:any, index:any) => {
-                        return (
-                            <View key={index} style={[GlobalStyleSheet.col50, { marginBottom: 15 }]}>
-                                <View
-                                    style={[{
-                                        shadowColor:'rgba(195,135,95,0.20)',
-                                        shadowOffset: {
-                                            width: 2,
-                                            height: 15,
-                                        },
-                                        shadowOpacity: .1,
-                                        shadowRadius: 5,
-                                    }, Platform.OS === "ios" && {
-                                        backgroundColor: colors.card,
-                                        borderRadius:10
-                                    }]}
-                                >
-                                    <TouchableOpacity
-                                        activeOpacity={.9}
-                                        onPress={() => navigation.navigate(data.navigate)}
-                                        style={{
-                                            height: 48,
-                                            backgroundColor: colors.card,
-                                            //width: 180,
-                                            borderRadius: 15,
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }}
-                                    >
-                                        <Text style={{ ...FONTS.fontMedium, fontSize: 16, color: colors.title }}>{data.title}</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        )
-                    })}
-                </View>
-                <View style={{ marginHorizontal: -15, marginTop: 0, flex: 1 }}>
-                    <SectionList
-                        sections={ListwithiconData}
-                        keyExtractor={(item:any, index) => item + index}
-                        renderItem={({ item }) => (
-                            <ListItem
-                                icon={
-                                    <Image
-                                        style={{
-                                            height: 20,
-                                            width: 20,
-                                            tintColor:COLORS.primary,
-                                            resizeMode: 'contain',
-                                        }}
-                                        source={item.icon}
-                                    />
-                                }
-                                title={item.title}
-                                onPress={() => navigation.navigate(item.navigate)}
-                            />
-                        )}
-                        renderSectionHeader={({ section: { title } }) => (
-                            <Text style={{ ...FONTS.Marcellus, fontSize: 20, color: colors.title, paddingLeft: 20, paddingBottom: 10, paddingTop: 20,backgroundColor:colors.background }}>{title}</Text>
-                        )}
-                    />
-                </View>
-            </View>
-        </SafeAreaView>
-    )
-}
+  return (
+    <View style={styles.safe}>
+      <StatusBar barStyle="dark-content" />
+      <View style={styles.header}><Text style={styles.hTitle}>Account</Text></View>
+      <ScrollView contentContainerStyle={{ paddingBottom: 30 }}>
+        <View style={styles.profileCard}>
+          <View style={styles.avatar}><Text style={styles.avatarTxt}>{name.charAt(0).toUpperCase()}</Text></View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.name}>{name}</Text>
+            {!!email && <Text style={styles.sub}>{email}</Text>}
+            {!!phone && <Text style={styles.sub}>{phone}</Text>}
+          </View>
+          <TouchableOpacity onPress={() => navigation.navigate('EditProfile')}>
+            <Feather name="edit-2" size={18} color={COLORS.primary} />
+          </TouchableOpacity>
+        </View>
 
-export default Profile
+        <View style={styles.group}>
+          <Row icon="shopping-bag" label="My Orders" onPress={() => navigation.navigate('Myorder')} />
+          <Row icon="map-pin" label="My Addresses" onPress={() => navigation.navigate('SavedAddresses', {})} />
+          <Row icon="heart" label="Wishlist" onPress={() => navigation.navigate('Wishlist')} />
+          <Row icon="bell" label="Notifications" onPress={() => navigation.navigate('Notification')} />
+        </View>
+
+        <View style={styles.group}>
+          <Row icon="user" label="Edit Profile" onPress={() => navigation.navigate('EditProfile')} />
+          <Row icon="globe" label="Language" onPress={() => navigation.navigate('Language')} />
+        </View>
+
+        <View style={styles.group}>
+          <Row icon="log-out" label="Log Out" danger onPress={doLogout} />
+        </View>
+      </ScrollView>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: '#F9F6F1' },
+  header: { paddingHorizontal: SIZES.padding, paddingVertical: 14, backgroundColor: COLORS.white,
+    borderBottomWidth: 1, borderBottomColor: COLORS.borderColor },
+  hTitle: { ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
+  profileCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: COLORS.white,
+    margin: SIZES.padding, padding: 16, borderRadius: 14, elevation: 1,
+    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
+  avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
+  avatarTxt: { ...FONTS.h4, color: COLORS.white },
+  name: { ...FONTS.h6, ...FONTS.fontSemiBold, color: COLORS.title },
+  sub: { ...FONTS.fontSm, color: COLORS.textLight, marginTop: 1 },
+  group: { backgroundColor: COLORS.white, marginHorizontal: SIZES.padding, marginBottom: 14, borderRadius: 14, overflow: 'hidden' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 14, paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: COLORS.borderColor },
+  rowIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  rowLabel: { flex: 1, ...FONTS.font, ...FONTS.fontMedium, color: COLORS.title },
+});
+
+export default Profile;

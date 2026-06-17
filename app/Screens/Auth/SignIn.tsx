@@ -28,7 +28,7 @@ const SignIn = ({ navigation }: SignInScreenProps) => {
     const toast = useToast();
 
     useEffect(() => {
-        if (token) navigation.navigate('DrawerNavigation', { screen: 'Home' });
+        if (token) navigation.reset({ index: 0, routes: [{ name: 'DrawerNavigation' }] });
     }, [token]);
 
     useEffect(() => {

@@ -1,7 +1,6 @@
-// src/api/axiosInstance.ts
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '@env';
+import { AsyncStorageHelper } from '../utils/AsyncStorageHelper';
 
 export const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -12,24 +11,39 @@ export const axiosInstance = axios.create({
   timeout: 15000,
 });
 
-// Request interceptor — attach token from AsyncStorage
+// In-memory token — a fast path set on login/boot. The request interceptor
+// falls back to AsyncStorage so the token is ALWAYS attached when one exists,
+// even if setAuthToken() wasn't called (e.g. after a cold start).
+let _token: string | null = null;
+
+export const setAuthToken = (token: string | null) => {
+  _token = token;
+};
+
+export const getInMemoryToken = () => _token;
+
+// Request interceptor — attach the Bearer token on every request.
+// Uses in-memory token first, then falls back to AsyncStorage (and caches it).
 axiosInstance.interceptors.request.use(async (config) => {
-  const token = await AsyncStorage.getItem('@auth_token');
+  let token = _token;
+  if (!token) {
+    token = await AsyncStorageHelper.getToken();
+    if (token) _token = token; // cache for subsequent calls
+  }
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
-  } else {
-    console.log('[Axios] No token found in storage');
   }
-  // console.log(`[Axios] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
   return config;
 });
 
-// Response interceptor — handle 401 globally
+// Response interceptor — on a genuine 401 clear only the in-memory token so the
+// next request re-reads storage. We do NOT auto-wipe the stored session here
+// (that caused a logout cascade on transient 401s); logout() clears storage.
 axiosInstance.interceptors.response.use(
   (response) => response,
-  async (error) => {
+  (error) => {
     if (error?.response?.status === 401) {
-      await AsyncStorage.multiRemove(['@auth_token', '@user']);
+      _token = null;
     }
     return Promise.reject(error);
   }

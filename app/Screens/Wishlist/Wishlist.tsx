@@ -1,259 +1,121 @@
-import React from 'react'
-import { View, Text, TouchableOpacity, SafeAreaView, Platform } from 'react-native'
-import { useTheme } from '@react-navigation/native'
-import {  COLORS, FONTS } from '../../constants/theme';
-import { GlobalStyleSheet } from '../../constants/StyleSheet';
-import { ScrollView } from 'react-native-gesture-handler';
-import Header from '../../layout/Header';
-import CardStyle3 from '../../components/Card/CardStyle3';
-import { StackScreenProps } from '@react-navigation/stack';
+// app/Screens/Wishlist/Wishlist.tsx
+// Website page: /wishlist (Wishlist). Data: /wishlist (useWishlist).
+// NOTE: root App.tsx provides SafeAreaView, so use a plain View container.
+import React, { useMemo } from 'react';
+import {
+  View, Text, TouchableOpacity, StyleSheet, FlatList, Dimensions, StatusBar,
+} from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
-import { IMAGES } from '../../constants/Images';
-import { useDispatch, useSelector } from 'react-redux';
-import { addToCart } from '../../redux/reducer/cartReducer';
-import { removeFromwishList } from '../../redux/reducer/wishListReducer';
-import { Feather } from "@expo/vector-icons";
+import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import { useWishlist } from '../../api/hooks/useWishlist';
+import { useCart } from '../../api/hooks/useCart';
+import { firstImage } from '../../utils/image';
+import { SmartImage } from '../../components/common/SmartImage';
+import { Loader, EmptyState, ErrorState } from '../../components/common/StateViews';
 
-const sliderData = [
-    {
-        title: "All",
-    },
-    {
-        title: "Child",
-    },
-    {
-        title: "Man",
-    },
-    {
-        title: "Woman",
-    },
-    {
-        title: "unisex",
-    },
-    {
-        title: "Boys",
-    },
-    {
-        title: "Girls",
-    },
-]
+const { width } = Dimensions.get('window');
+const GAP = 12;
+const CARD_W = (width - SIZES.padding * 2 - GAP) / 2;
+type Nav = StackNavigationProp<RootStackParamList>;
 
-const gridData = [
-    {
-        image: IMAGES.item11,
-        title: "Earring Body Product",
-        price: "$80",
-        discount: "$95",
-        review: "(2k Review)",
-    },
-    {
-        image: IMAGES.item12,
-        title: "Dog Cloths",
-        price: "$80",
-        discount: "$95",
-        review: "(2k Review)",
-        text: "FREE"
-    },
-    {
-        image: IMAGES.item32,
-        title: "Pet Bed For Dog",
-        price: "$80",
-        discount: "$95",
-        review: "(2k Review)",
-        text: "FREE"
-    },
-    {
-        image: IMAGES.item34,
-        title: "Pet Bed For Dog",
-        price: "$80",
-        discount: "$95",
-        review: "(2k Review)",
-        text: "FREE"
-    },
-    {
-        image: IMAGES.item38,
-        title: "Pet Bed For Dog",
-        price: "$80",
-        discount: "$95",
-        review: "(2k Review)",
-        text: "FREE"
-    },
-    {
-        image: IMAGES.item11,
-        title: "Earring Body Product",
-        price: "$80",
-        discount: "$95",
-        review: "(2k Review)",
-    },
-    {
-        image: IMAGES.item12,
-        title: "Dog Cloths",
-        price: "$80",
-        discount: "$95",
-        review: "(2k Review)",
-        text: "FREE"
-    },
-    {
-        image: IMAGES.item32,
-        title: "Pet Bed For Dog",
-        price: "$80",
-        discount: "$95",
-        review: "(2k Review)",
-        text: "FREE"
-    },
-    {
-        image: IMAGES.item34,
-        title: "Pet Bed For Dog",
-        price: "$80",
-        discount: "$95",
-        review: "(2k Review)",
-        text: "FREE"
-    },
-    {
-        image: IMAGES.item38,
-        title: "Pet Bed For Dog",
-        price: "$80",
-        discount: "$95",
-        review: "(2k Review)",
-        text: "FREE"
-    },
-]
+const Wishlist = () => {
+  const navigation = useNavigation<Nav>();
+  const { favorites, isLoading, isError, error, refetch, isAuthenticated, removeFavorite } = useWishlist();
+  const { addItem } = useCart();
 
-type WishlistScreenProps = StackScreenProps<RootStackParamList, 'Wishlist'>;
+  const items = useMemo(() => favorites, [favorites]);
 
-const Wishlist = ({ navigation } : WishlistScreenProps ) => {
+  const Header = (
+    <View style={styles.header}>
+      {navigation.canGoBack() && (
+        <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
+          <Feather name="arrow-left" size={22} color={COLORS.title} />
+        </TouchableOpacity>
+      )}
+      <Text style={styles.hTitle}>Wishlist</Text>
+      <TouchableOpacity style={styles.hBtn} onPress={() => navigation.navigate('MyCart')}>
+        <Feather name="shopping-bag" size={20} color={COLORS.title} />
+      </TouchableOpacity>
+    </View>
+  );
 
-    const wishList = useSelector((state:any) => state.wishList.wishList);
-    const dispatch = useDispatch();
-
-    const theme = useTheme();
-    const { colors } : {colors : any} = theme;
-
-    const addItemToCart = (data: any) => {
-        dispatch(addToCart(data));
-    }
-
-    const removeItemFromWishList = (data: any) => {
-        dispatch(removeFromwishList(data));
-    }
+  if (!isAuthenticated) {
     return (
-        <SafeAreaView style={{ backgroundColor: colors.background, flex: 1 }}>
-            <Header
-                 title={"Wishlist"}
-                 rightIcon2={'search'}
-                 leftIcon={'back'}
-            />
-            <View style={[GlobalStyleSheet.container,{flex:1}]}>
-                <View style={{ marginHorizontal: -15, marginBottom: 10,marginTop:5 }}>
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={{ paddingHorizontal: 15 }}
-                    >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, justifyContent: 'center' }}>
-                            {sliderData.map((data, index) => {
-                                return (
-                                    <View
-                                        key={index}
-                                        style={[{
-                                            shadowColor: 'rgba(195, 123, 95, 0.20)',
-                                            shadowOffset: {
-                                                width: 2,
-                                                height: 10,
-                                            },
-                                            shadowOpacity: .1,
-                                            shadowRadius: 5,
-                                            marginBottom:5
-                                        }, Platform.OS === "ios" && {
-                                            backgroundColor: 'rgba(255, 255, 255, 0.70)',
-                                            borderRadius: 12,
-                                        }]}
-                                    >
-                                        <TouchableOpacity
-                                            style={{
-                                                backgroundColor:colors.card,
-                                                height: 40,
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                borderRadius: 12,
-                                                paddingHorizontal: 20,
-                                                paddingVertical: 5,
-                                                
-                                            }}>
-                                            <Text style={{ ...FONTS.fontMedium, fontSize: 13, color:colors.title }}>{data.title}</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                )
-                            })}
-                        </View>
-                    </ScrollView>
-                </View>
-                <View style={{ marginHorizontal: -15,flex:1}}>
-                    <ScrollView
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{ paddingHorizontal:15,paddingBottom:190,flexGrow:1}}
-                    >
-                        <View style={{ marginTop: -10}}>
-                            {wishList.map((data:any, index:any) => {
-                                return (
-                                    <CardStyle3
-                                        id={data.id}
-                                        key={index}
-                                        title={data.title}
-                                        price={data.price}
-                                        image={data.image}
-                                        discount={data.discount}
-                                        onPress1={() => removeItemFromWishList(data.id)}
-                                        onPress2={() =>{addItemToCart(data) ; navigation.navigate('MyCart')}}
-                                        review={data.review}
-                                        CardStyle4
-                                    />
-                                )
-                            })}
-                            {wishList.length === 0 && 
-                                <View
-                                    style={{
-                                        position:'absolute',
-                                        left:0,
-                                        right:0,
-                                        //bottom:0,
-                                        top:220,
-                                        // flex:1,
-                                        alignItems:'center',
-                                        justifyContent:'center',
-                                    }}
-                                >
-                                    <View
-                                        style={{
-                                            height:60,
-                                            width:60,
-                                            borderRadius:60,
-                                            alignItems:'center',
-                                            justifyContent:'center',
-                                            backgroundColor:COLORS.primaryLight,
-                                            marginBottom:20,
-                                        }}
-                                    >
-                                        <Feather color={COLORS.primary} size={24} name='heart'/>
-                                    </View>
-                                    <Text style={{...FONTS.h5,color:colors.title,marginBottom:8}}>Your Wishlist is Empty!</Text>    
-                                    <Text
-                                        style={{
-                                            ...FONTS.fontSm,
-                                            color:colors.text,
-                                            textAlign:'center',
-                                            paddingHorizontal:40,
-                                            marginBottom:30,
-                                        }}
-                                    >Add Product to you favourite and shop now.</Text>
-                                </View>
-                            }
-                        </View>
-                    </ScrollView>
-                </View>
+      <View style={styles.safe}>{Header}
+        <EmptyState icon="heart" title="Your wishlist is waiting"
+          subtitle="Sign in to save your favourite pieces."
+          ctaLabel="Sign In" onCta={() => navigation.navigate('SignIn')} />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.safe}>
+      <StatusBar barStyle="dark-content" />
+      {Header}
+      {isLoading ? (
+        <Loader message="Loading wishlist..." />
+      ) : isError ? (
+        <ErrorState message={(error as any)?.message} onRetry={refetch} />
+      ) : items.length === 0 ? (
+        <EmptyState icon="heart" title="No favourites yet"
+          subtitle="Tap the heart on any product to save it here."
+          ctaLabel="Explore products" onCta={() => navigation.navigate('Products', {})} />
+      ) : (
+        <FlatList
+          data={items}
+          keyExtractor={(it: any, i) => String(it.TAGKEY ?? i)}
+          numColumns={2}
+          contentContainerStyle={{ padding: SIZES.padding }}
+          columnWrapperStyle={{ gap: GAP, marginBottom: GAP }}
+          renderItem={({ item }: any) => (
+            <View style={[styles.card, { width: CARD_W }]}>
+              <TouchableOpacity activeOpacity={0.85}
+                onPress={() => navigation.navigate('ProductDetails', { tagKey: item.TAGKEY })}>
+                <SmartImage uri={firstImage(item.ImagePath)} style={styles.img} />
+                <TouchableOpacity style={styles.remove} onPress={() => removeFavorite(item.TAGKEY)}>
+                  <Feather name="x" size={15} color={COLORS.title} />
+                </TouchableOpacity>
+              </TouchableOpacity>
+              <View style={styles.body}>
+                <Text style={styles.name} numberOfLines={2}>{item.ITEMNAME}</Text>
+                <Text style={styles.price}>{'₹'}{item.FinalAmount}</Text>
+                <TouchableOpacity style={styles.cartBtn} onPress={() => addItem(item.TAGKEY)}>
+                  <Feather name="shopping-bag" size={14} color={COLORS.white} />
+                  <Text style={styles.cartTxt}>Add to Cart</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-        </SafeAreaView>
-    )
-}
+          )}
+        />
+      )}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: '#F9F6F1' },
+  header: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 12, paddingVertical: 12, backgroundColor: COLORS.white,
+    borderBottomWidth: 1, borderBottomColor: COLORS.borderColor,
+  },
+  hBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
+  card: { backgroundColor: COLORS.white, borderRadius: 14, overflow: 'hidden', elevation: 2,
+    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
+  img: { width: '100%', height: CARD_W },
+  remove: { position: 'absolute', top: 8, right: 8, width: 28, height: 28, borderRadius: 14,
+    backgroundColor: COLORS.white, alignItems: 'center', justifyContent: 'center', elevation: 2 },
+  body: { padding: 10, gap: 5 },
+  name: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title, lineHeight: 17 },
+  price: { ...FONTS.font, ...FONTS.fontBold, color: COLORS.title },
+  cartBtn: { flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: COLORS.primary, borderRadius: SIZES.radius, paddingVertical: 8, marginTop: 4 },
+  cartTxt: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.white },
+});
 
 export default Wishlist;
