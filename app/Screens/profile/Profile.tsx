@@ -62,7 +62,7 @@ const Profile = () => {
     <View style={styles.safe}>
       <StatusBar barStyle="dark-content" />
       <View style={styles.header}><Text style={styles.hTitle}>Account</Text></View>
-      <ScrollView contentContainerStyle={{ paddingBottom: 30 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: SIZES.TAB_BAR_HEIGHT }}>
         <View style={styles.profileCard}>
           <View style={styles.avatar}><Text style={styles.avatarTxt}>{name.charAt(0).toUpperCase()}</Text></View>
           <View style={{ flex: 1 }}>
@@ -79,12 +79,28 @@ const Profile = () => {
           <Row icon="shopping-bag" label="My Orders" onPress={() => navigation.navigate('Myorder')} />
           <Row icon="map-pin" label="My Addresses" onPress={() => navigation.navigate('SavedAddresses', {})} />
           <Row icon="heart" label="Wishlist" onPress={() => navigation.navigate('Wishlist')} />
+          <Row icon="tag" label="Offers & Deals" onPress={() => navigation.navigate('Offers')} />
           <Row icon="bell" label="Notifications" onPress={() => navigation.navigate('Notification')} />
         </View>
 
         <View style={styles.group}>
           <Row icon="user" label="Edit Profile" onPress={() => navigation.navigate('EditProfile')} />
           <Row icon="globe" label="Language" onPress={() => navigation.navigate('Language')} />
+        </View>
+
+        <View style={styles.group}>
+          <Row icon="help-circle" label="FAQ" onPress={() => navigation.navigate('Questions')} />
+          <Row icon="phone" label="Contact Us" onPress={() => navigation.navigate('ContactUs')} />
+          <Row icon="info" label="About Us" onPress={() => navigation.navigate('AboutUs')} />
+        </View>
+
+        <View style={styles.group}>
+          <Row icon="shield" label="Privacy Policy" onPress={() => navigation.navigate('PolicyScreen', { type: 'privacy' })} />
+          <Row icon="file-text" label="Terms & Conditions" onPress={() => navigation.navigate('PolicyScreen', { type: 'terms' })} />
+          <Row icon="rotate-ccw" label="Refund Policy" onPress={() => navigation.navigate('PolicyScreen', { type: 'refund' })} />
+          <Row icon="truck" label="Shipping & Delivery" onPress={() => navigation.navigate('PolicyScreen', { type: 'shipping' })} />
+          <Row icon="x-circle" label="Cancellation & Return" onPress={() => navigation.navigate('PolicyScreen', { type: 'cancellation' })} />
+          <Row icon="star" label="Why Choose Us" onPress={() => navigation.navigate('PolicyScreen', { type: 'why-choose-us' })} />
         </View>
 
         <View style={styles.group}>

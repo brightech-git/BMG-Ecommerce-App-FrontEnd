@@ -4,7 +4,6 @@ import { AsyncStorageHelper } from '../utils/AsyncStorageHelper';
 import { useDispatch } from 'react-redux';
 import { hydrateAuth } from '../redux/reducer/authReducer';
 import { setAuthToken } from '../api/axiosInstance';
-
 import Onbording from "../Screens/onbording/Onbording";
 import { RootStackParamList } from "./RootStackParamList";
 import SignIn from "../Screens/Auth/SignIn";
@@ -37,12 +36,16 @@ import Language from "../Screens/language/Language";
 import Questions from "../Screens/profile/Questions";
 import Coupons from "../Screens/profile/Coupons";
 import Products from "../Screens/Category/Products";
+import Offers from "../Screens/Offers/Offers";
+import OrderReturn from "../Screens/profile/OrderReturn";
+import AboutUs from "../Screens/AboutUs/AboutUs";
+import ContactUs from "../Screens/ContactUs/ContactUs";
+import PolicyScreen from "../Screens/Policy/PolicyScreen";
 
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 const StackNavigator = () => {
-
   const dispatch = useDispatch<any>();
   const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | null>(null);
 
@@ -105,6 +108,11 @@ const StackNavigator = () => {
       <Stack.Screen name={"Questions"} component={Questions} />
       <Stack.Screen name={"Coupons"} component={Coupons} />
       <Stack.Screen name={"Products"} component={Products} />
+      <Stack.Screen name={"Offers"} component={Offers} />
+      <Stack.Screen name={"OrderReturn"} component={OrderReturn} />
+      <Stack.Screen name={"AboutUs"} component={AboutUs} />
+      <Stack.Screen name={"ContactUs"} component={ContactUs} />
+      <Stack.Screen name={"PolicyScreen"} component={PolicyScreen} />
     </Stack.Navigator>
   );
 };

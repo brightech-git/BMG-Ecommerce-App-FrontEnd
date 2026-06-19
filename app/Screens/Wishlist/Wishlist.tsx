@@ -15,6 +15,7 @@ import { useCart } from '../../api/hooks/useCart';
 import { firstImage } from '../../utils/image';
 import { SmartImage } from '../../components/common/SmartImage';
 import { Loader, EmptyState, ErrorState } from '../../components/common/StateViews';
+import { CartWishlistBadge } from '../../components/common/CartWishlistBadge';
 
 const { width } = Dimensions.get('window');
 const GAP = 12;
@@ -36,9 +37,7 @@ const Wishlist = () => {
         </TouchableOpacity>
       )}
       <Text style={styles.hTitle}>Wishlist</Text>
-      <TouchableOpacity style={styles.hBtn} onPress={() => navigation.navigate('MyCart')}>
-        <Feather name="shopping-bag" size={20} color={COLORS.title} />
-      </TouchableOpacity>
+      <CartWishlistBadge />
     </View>
   );
 
@@ -69,7 +68,7 @@ const Wishlist = () => {
           data={items}
           keyExtractor={(it: any, i) => String(it.TAGKEY ?? i)}
           numColumns={2}
-          contentContainerStyle={{ padding: SIZES.padding }}
+          contentContainerStyle={{ padding: SIZES.padding, paddingBottom: SIZES.TAB_BAR_HEIGHT }}
           columnWrapperStyle={{ gap: GAP, marginBottom: GAP }}
           renderItem={({ item }: any) => (
             <View style={[styles.card, { width: CARD_W }]}>

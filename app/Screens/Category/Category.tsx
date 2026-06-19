@@ -63,7 +63,7 @@ const Category = () => {
           data={items}
           keyExtractor={(it, i) => `${it.name}-${i}`}
           numColumns={COLS}
-          contentContainerStyle={{ padding: SIZES.padding }}
+          contentContainerStyle={{ padding: SIZES.padding, paddingBottom: SIZES.TAB_BAR_HEIGHT }}
           columnWrapperStyle={{ gap: GAP, marginBottom: GAP }}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (

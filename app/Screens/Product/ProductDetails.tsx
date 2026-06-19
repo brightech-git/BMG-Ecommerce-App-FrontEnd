@@ -17,6 +17,7 @@ import { useWishlist } from '../../api/hooks/useWishlist';
 import { useTodayRate } from '../../api/hooks/useRate';
 import { parseImages } from '../../utils/image';
 import { SmartImage } from '../../components/common/SmartImage';
+import { CartWishlistBadge } from '../../components/common/CartWishlistBadge';
 import { Loader, ErrorState } from '../../components/common/StateViews';
 
 const { width } = Dimensions.get('window');
@@ -36,7 +37,7 @@ const ProductDetails = ({ route, navigation }: Props) => {
   const { tagKey } = route.params;
   const { data: product, isLoading, isError, error, refetch } = useProductDetail(tagKey);
   const { data: rate } = useTodayRate();
-  const { isInCart, addItem, isAdding } = useCart();
+  const { isInCart, addItem, isAdding, isAuthenticated } = useCart();
   const { isFavorite, toggleFavorite } = useWishlist();
 
   const [activeImg, setActiveImg] = useState(0);
@@ -81,9 +82,7 @@ const ProductDetails = ({ route, navigation }: Props) => {
           <Feather name="arrow-left" size={22} color={COLORS.title} />
         </TouchableOpacity>
         <Text style={styles.hTitle} numberOfLines={1}>{product.ITEMNAME}</Text>
-        <TouchableOpacity style={styles.hBtn} onPress={() => navigation.navigate('MyCart')}>
-          <Feather name="shopping-bag" size={20} color={COLORS.title} />
-        </TouchableOpacity>
+        <CartWishlistBadge />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 110 }}>
@@ -191,11 +190,17 @@ const ProductDetails = ({ route, navigation }: Props) => {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.buyBtn}
-          onPress={() => requireAuth(() => {
-            const res = addItem(product.TAGKEY);
-            if (res === 'ok' || res === 'duplicate') navigation.navigate('Checkout');
-            return res;
-          })}
+          onPress={() => {
+            if (!isAuthenticated) {
+              Alert.alert('Login required', 'Please sign in to continue.', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Sign In', onPress: () => navigation.navigate('SignIn') },
+              ]);
+              return;
+            }
+            // Pass product directly — does NOT add to cart, only this item goes to checkout
+            navigation.navigate('Checkout', { buyNowProduct: product });
+          }}
         >
           <Text style={styles.buyTxt}>Buy Now</Text>
         </TouchableOpacity>

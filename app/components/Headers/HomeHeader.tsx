@@ -7,6 +7,7 @@ import { FONTS } from '../../constants/theme';
 import { IMAGES } from '../../constants/Images';
 import { GlobalStyleSheet } from '../../constants/StyleSheet';
 import SearchBar from '../SearchBar';
+import { CartWishlistBadge } from '../common/CartWishlistBadge';
 
 const HomeHeader = ({ onNotificationPress }: { onNotificationPress: () => void }) => {
     const theme = useTheme();
@@ -29,15 +30,18 @@ const HomeHeader = ({ onNotificationPress }: { onNotificationPress: () => void }
                     </View>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                    onPress={onNotificationPress}
-                    style={{ height: 45, width: 45, backgroundColor: colors.card, borderRadius: 15, alignItems: 'center', justifyContent: 'center' }}
-                >
-                    <Image
-                        style={[GlobalStyleSheet.image, { tintColor: colors.title }]}
-                        source={IMAGES.bell}
-                    />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <CartWishlistBadge />
+                    <TouchableOpacity
+                        onPress={onNotificationPress}
+                        style={{ height: 45, width: 45, backgroundColor: colors.card, borderRadius: 15, alignItems: 'center', justifyContent: 'center' }}
+                    >
+                        <Image
+                            style={[GlobalStyleSheet.image, { tintColor: colors.title }]}
+                            source={IMAGES.bell}
+                        />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Search Bar */}

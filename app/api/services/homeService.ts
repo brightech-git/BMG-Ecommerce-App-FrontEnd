@@ -16,3 +16,5 @@ export const getLatestCollection   = () => callApi<null, any>({ method: 'get', u
 export const getBudgetCategories   = () => callApi<null, any>({ method: 'get', url: HOME.BUDGET_CATEGORIES });
 export const getNewArrivals        = () => callApi<null, any>({ method: 'get', url: HOME.NEW_ARRIVALS });
 export const getTrending           = () => callApi<null, any>({ method: 'get', url: HOME.TRENDING });
+export const getCompanyInfo        = () => callApi<null, any>({ method: 'get', url: HOME.COMPANY });
+export const getFooterContent      = () => callApi<null, any>({ method: 'get', url: HOME.FOOTER });

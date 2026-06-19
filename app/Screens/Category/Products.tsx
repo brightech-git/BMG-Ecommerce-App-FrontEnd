@@ -11,6 +11,7 @@ import { COLORS, FONTS } from '../../constants/theme';
 import { useProductListing } from '../../api/hooks/useProducts';
 import { ProductList, toCardItem } from '../../components/ProductCard/ProductCard';
 import { Loader, EmptyState, ErrorState } from '../../components/common/StateViews';
+import { CartWishlistBadge } from '../../components/common/CartWishlistBadge';
 
 type Props = StackScreenProps<RootStackParamList, 'Products'>;
 
@@ -56,9 +57,7 @@ const Products = ({ route, navigation }: Props) => {
         <TouchableOpacity style={styles.hBtn} onPress={() => navigation.navigate('Search')}>
           <Feather name="search" size={20} color={COLORS.title} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.hBtn} onPress={() => navigation.navigate('MyCart')}>
-          <Feather name="shopping-bag" size={20} color={COLORS.title} />
-        </TouchableOpacity>
+        <CartWishlistBadge />
       </View>
 
       {isLoading ? (

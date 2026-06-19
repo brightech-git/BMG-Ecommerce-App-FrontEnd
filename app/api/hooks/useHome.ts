@@ -4,7 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuthToken } from './useAuthToken';
 import {
   getHeroBanners, getCategoryImages, getBudgetCategories,
-  getNewArrivals, getTrending, getOfferBanners,
+  getNewArrivals, getTrending, getOfferBanners, getInstantOffers,
+  getCompanyInfo, getFooterContent,
 } from '../services/homeService';
 
 // Public content — always fetched
@@ -23,3 +24,12 @@ export const useTrending = () => {
   const token = useAuthToken();
   return useQuery({ queryKey: ['trending'], queryFn: getTrending, enabled: !!token });
 };
+
+export const useInstantOffers = () =>
+  useQuery({ queryKey: ['instantOffers'], queryFn: getInstantOffers, staleTime: 1000 * 60 * 5 });
+
+export const useCompanyInfo = () =>
+  useQuery({ queryKey: ['companyInfo'], queryFn: getCompanyInfo, staleTime: 1000 * 60 * 30 });
+
+export const useFooterContent = () =>
+  useQuery({ queryKey: ['footerContent'], queryFn: getFooterContent, staleTime: 1000 * 60 * 30 });

@@ -66,6 +66,11 @@ export const SIZES = {
 	height,
 
 	container: 800,
+
+	// Bottom tab bar clearance: bar height (65) + bottom offset (10) + buffer (10)
+	// Add this as paddingBottom to any ScrollView/FlatList inside a bottom-tab screen
+	// so content isn't hidden behind the floating tab bar.
+	TAB_BAR_HEIGHT: 85,
 };
 
 export const FONTS = {

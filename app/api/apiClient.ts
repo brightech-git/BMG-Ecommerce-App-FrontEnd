@@ -1,5 +1,5 @@
 // apiClient.ts
-import { axiosInstance, getInMemoryToken } from "./axiosInstance";
+import { axiosInstance } from "./axiosInstance";
 
 export type HttpMethod = "get" | "post" | "put" | "patch" | "delete";
 
@@ -39,13 +39,6 @@ export const callApi = async <T, R>({
             },
         });
 
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log(`✅ API SUCCESS [${method.toUpperCase()}] ${url}`);
-        console.log('🔑 Auth       :', getInMemoryToken() ? 'Bearer ***' : 'NONE');
-        console.log('📦 Request    :', JSON.stringify(data ?? params ?? null, null, 2));
-        console.log('📨 Response   :', JSON.stringify(response.data, null, 2));
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
         if ((response.data as any)?.status === 'error') {
             throw {
                 status: 'error',
@@ -57,17 +50,8 @@ export const callApi = async <T, R>({
 
         return response.data;
     } catch (error: any) {
-        const status   = error?.response?.status;
-        const resData  = error?.response?.data;
-
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log(`❌ API FAILED [${method.toUpperCase()}] ${url}`);
-        console.log('🔑 Auth       :', getInMemoryToken() ? 'Bearer ***' : 'NONE');
-        console.log('📌 Status     :', status ?? 'No response');
-        console.log('📦 Request    :', JSON.stringify(data ?? params ?? null, null, 2));
-        console.log('📨 Response   :', JSON.stringify(resData, null, 2));
-        console.log('💬 Message    :', resData?.message ?? resData?.error ?? (typeof resData === 'string' ? resData : null) ?? error?.message ?? 'Unknown error');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        const status  = error?.response?.status;
+        const resData = error?.response?.data;
 
         throw {
             status: 'error',

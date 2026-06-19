@@ -31,7 +31,7 @@ export type RootStackParamList = {
     Call: undefined;
     EditProfile: undefined;
     WriteReview: undefined;
-    Trackorder: { orderId: string | number };
+    Trackorder: { orderId: string | number; seedOrder?: any };
     Products: {
         ItemName?: string;
         itemId?: string;
@@ -55,7 +55,12 @@ export type RootStackParamList = {
     Components: undefined;
     Coupons: undefined;
     SavedAddresses: { select?: boolean } | undefined;
-    Checkout: undefined;
+    Checkout: {
+      /** Buy Now flow — pass the single product object, bypasses cart */
+      buyNowProduct?: any;
+      /** Cart selection flow — only checkout these TAGKEY values */
+      selectedTagKeys?: string[];
+    } | undefined;
     Addcard: undefined;
     Payment: { orderId: string | number; paymentMode: 'ONLINE' | 'COD'; paymentType?: string; totalAmount?: number };
     PaymentStatus: { orderId: string | number; mode?: string };
@@ -63,6 +68,13 @@ export type RootStackParamList = {
     Myorder: undefined;
     AddCard: undefined;
     Notification: undefined;
+    Offers: undefined;
+    OrderReturn: { orderId: string | number };
+    AboutUs: undefined;
+    ContactUs: undefined;
+    PolicyScreen: {
+      type: 'privacy' | 'terms' | 'refund' | 'shipping' | 'cancellation' | 'why-choose-us' | 'risk';
+    };
     Home: undefined;
     Accordion: undefined;
     ActionModals: undefined;

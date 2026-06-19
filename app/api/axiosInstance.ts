@@ -28,7 +28,7 @@ axiosInstance.interceptors.request.use(async (config) => {
   let token = _token;
   if (!token) {
     token = await AsyncStorageHelper.getToken();
-    if (token) _token = token; // cache for subsequent calls
+    if (token) _token = token;
   }
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;

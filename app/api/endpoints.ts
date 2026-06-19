@@ -64,11 +64,10 @@ export const HOME = {
   FEATURED_PRODUCTS: '/feature_product/list',
   BEST_DESIGN:       '/best_design/list',
   LATEST_COLLECTION: '/latest_collection/list',
-  BUDGET_CATEGORIES: '/budget-categories/getOnlyVisible',
+  BUDGET_CATEGORIES: '/budget-categories/getOnlyVisible', 
   NEW_ARRIVALS:      '/new-arrivals',
   TRENDING:          '/trending/top10',
-  RECENTLY_VIEWED:   '/recently-viewed/list',
-  FOOTER:            '/footer-container/all',
+  RECENTLY_VIEWED:   '/recently-viewed/list', //to pass auth token
   COMPANY:           '/company/all',
 };
 
@@ -124,6 +123,7 @@ export const PROFILE = {
 export const MISC = {
   CONTACT_SUBMIT:    '/contact/submit',
   DEVICE_REGISTER:   '/device/register',
+  NOTIFICATION_LIST: '/notification',
   REFUND_SUBMIT:     '/refunds/submit',
   VIDEO_APPOINTMENT: '/video-appointments/upload',
 };

@@ -3,32 +3,48 @@
 import { callApi } from '../apiClient';
 import { ORDER, MISC } from '../endpoints';
 
+export interface OrderAddressPayload {
+  name: string;
+  phone: string;
+  addressLine: string;
+  locality: string;
+  city: string;
+  state: string;
+  country: string;
+  pincode: string;
+  alternatePhone?: string;
+  landmark?: string;
+  isDefault?: boolean;
+  gstNumber?: string;
+  companyName?: string;
+  createdTime?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
 export interface OrderItemPayload {
-  itemId?: string | number;
-  productName?: string;
-  grossAmount?: number;
-  price?: number;
-  tagNo?: string;
-  sno?: string;
-  grsWt?: number;
-  netWt?: number;
-  imagePath?: string;
-  quantity?: number;
-  gstType?: string;
-  gstPer?: number;
-  gstAmount?: number;
+  sno: string;
+  itemId: number;
+  tagNo: string;
+  productName: string;
+  quantity: number;
+  price: number;
+  grossAmount: number;
+  gstPer: number;
+  gstAmount: number;
+  netWt: number;
+  grsWt: number;
+  gstType: string;
+  imagePath: string;
 }
 
 export interface CreateOrderPayload {
-  customerName?: string;
-  contact?: string;
-  email?: string;
   totalAmount: number;
-  paymentMode: 'ONLINE' | 'COD';
-  paymentType?: string | null;
-  paymentStatus?: string;
-  shippingPincode?: string;
-  address?: any;
+  paymentMode: 'ONLINE' | 'CASH';
+  paymentStatus: 'PENDING' | 'PAID';
+  courierName?: string;
+  shippingPincode: string;
+  address: OrderAddressPayload;
   items: OrderItemPayload[];
 }
 
@@ -64,6 +80,15 @@ export const reorder = (orderId: string | number) =>
 
 export const getOrderInvoice = (orderId: string | number) =>
   callApi<null, any>({ method: 'get', url: ORDER.INVOICE.replace(':orderId', String(orderId)) });
+
+// DTDC live courier tracking by AWB / consignment number
+// Mirrors website trackOrder() — POST /dtdc/track
+export const trackDtdc = (awbNumber: string) =>
+  callApi<any, any>({
+    method: 'post',
+    url: ORDER.DTDC_TRACK,
+    data: { trkType: 'cnno', strcnno: awbNumber, addtnlDtl: 'Y' },
+  });
 
 export const submitRefund = (formData: any) =>
   callApi<any, any>({ method: 'post', url: MISC.REFUND_SUBMIT, data: formData });

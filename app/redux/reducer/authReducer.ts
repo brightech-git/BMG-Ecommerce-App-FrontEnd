@@ -3,6 +3,7 @@ import { registerUser, loginUser, googleLoginUser, verifyOtp, resetPassword } fr
 import { RegisterPayload, LoginPayload, GoogleLoginPayload, VerifyOtpPayload, ResetPasswordPayload, UserData } from '../../types/auth';
 import { AsyncStorageHelper } from '../../utils/AsyncStorageHelper';
 import { setAuthToken } from '../../api/axiosInstance';
+import { queryClient } from '../../api/queryClient';
 
 const saveSession = async (user: UserData, token: string) => {
   user.token = token;
@@ -30,6 +31,7 @@ export const loginThunk = createAsyncThunk(
   async (payload: LoginPayload, { rejectWithValue }) => {
     try {
       const res = await loginUser(payload);
+      console.log('🔐 [Login] response:', JSON.stringify(res, null, 2));
       if (!res.token) return rejectWithValue(res.message ?? 'Login failed');
       const user: UserData = {
         id:            res.id,
@@ -40,6 +42,8 @@ export const loginThunk = createAsyncThunk(
         token:         res.token,
       };
       await saveSession(user, res.token);
+      // Flush any cached data from a previous session before loading new user data
+      queryClient.clear();
       return { user, token: res.token };
     } catch (err: any) {
       return rejectWithValue(err.message ?? 'Login failed');
@@ -64,6 +68,7 @@ export const googleLoginThunk = createAsyncThunk(
         picture:       payload.picture,
       };
       await saveSession(user, res.token);
+      queryClient.clear();
       return { user, token: res.token };
     } catch (err: any) {
       return rejectWithValue(err.message ?? 'Google login failed');
@@ -81,6 +86,7 @@ export const verifyOtpThunk = createAsyncThunk(
       const token = (res.token ?? res.user?.token)!;
       const user: UserData = res.user ?? { token };
       await saveSession(user, token);
+      queryClient.clear();
       return { user, token };
     } catch (err: any) {
       return rejectWithValue(err.message ?? 'OTP verification failed');
@@ -142,6 +148,8 @@ const authSlice = createSlice({
       state.user = null; state.token = null;
       setAuthToken(null);
       AsyncStorageHelper.clearSession();
+      // Clear ALL React Query cache so the next user never sees stale data
+      queryClient.clear();
     },
     hydrateAuth: (state, action) => {
       state.user = action.payload.user;

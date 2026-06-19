@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { Image, StyleProp, ImageStyle, ImageResizeMode } from 'react-native';
 
-export const FALLBACK_IMAGE = require('../../../assets/icon.png');
+export const FALLBACK_IMAGE = require('../../assets/images/icon.png');
 
 type Props = {
   uri?: string | null;
