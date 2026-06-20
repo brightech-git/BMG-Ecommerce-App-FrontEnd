@@ -118,14 +118,12 @@ const Checkout = () => {
       params: { destinationPincode: String(pincode), weightInGrams: totalWeightInGrams },
     }).then((res: any) => {
       const d = res.data;
-      if (__DEV__) console.log('[Shipping] response:', JSON.stringify(d));
       const fee = num(
         d?.totalAmount ?? d?.shippingCharge ?? d?.amount ?? d?.rate ??
         d?.totalCharge ?? d?.data?.totalAmount ?? d?.data?.shippingCharge ?? 0
       );
       setShippingFee(fee);
     }).catch((e: any) => {
-      if (__DEV__) console.log('[Shipping] error:', e?.response?.status, JSON.stringify(e?.response?.data));
       setShippingFee(0);
     }).finally(() => setShippingLoading(false));
   }, [selected, totalWeightInGrams]);
@@ -197,12 +195,10 @@ const Checkout = () => {
       items,
     };
 
-    console.log('🛒 Order Payload:', JSON.stringify(payload, null, 2));
 
     try {
       setPlacing(true);
       const res: any = await createOrder(payload);
-      console.log('✅ Order Response:', JSON.stringify(res, null, 2));
 
       const orderId = res?.orderId ?? res?.data?.orderId ?? res?.id;
       if (!orderId) {
@@ -221,11 +217,6 @@ const Checkout = () => {
         navigation.navigate('PaymentStatus', { orderId, mode: 'cod' });
       }
     } catch (e: any) {
-      console.log('❌ Order Error:', JSON.stringify({
-        message: e?.message,
-        status:  e?.response?.status,
-        data:    e?.response?.data,
-      }, null, 2));
 
       const errMsg =
         e?.response?.data?.message ??

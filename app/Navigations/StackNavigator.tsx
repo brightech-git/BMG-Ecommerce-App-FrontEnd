@@ -113,9 +113,10 @@ const StackNavigator = () => {
       <Stack.Screen name={"Offers"} component={Offers} />
       <Stack.Screen name={"OrderReturn"} component={OrderReturn} />
       <Stack.Screen name={"AboutUs"} component={AboutUs} />
-      <Stack.Screen name={"ContactUs"} component={ContactUs} />
+            <Stack.Screen name={"ContactUs"} component={ContactUs} />
       <Stack.Screen name={"PolicyScreen"} component={PolicyScreen} />
     </Stack.Navigator>
   );
 };
+
 export default StackNavigator;

@@ -92,9 +92,6 @@ const Myorder = () => {
   const orders = useMemo(() => {
     const list = toOrders(data);
     if (__DEV__ && list.length > 0) {
-      console.log('[Myorder] raw response keys:', Object.keys(data ?? {}));
-      console.log('[Myorder] first order keys:', Object.keys(list[0]));
-      console.log('[Myorder] first order sample:', JSON.stringify(list[0], null, 2).slice(0, 500));
     }
     return list;
   }, [data]);
@@ -177,7 +174,6 @@ const Myorder = () => {
               o.orderNumber ?? o.order_no;
 
             if (__DEV__ && !oid) {
-              console.warn('[Myorder] Could not find orderId on order object. Keys:', Object.keys(o));
             }
 
             const status = o.status ?? o.current_status ?? o.orderStatus ?? 'Pending';

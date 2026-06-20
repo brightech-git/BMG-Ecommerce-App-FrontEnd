@@ -124,7 +124,5 @@ export const PROFILE = {
 export const MISC = {
   CONTACT_SUBMIT:    '/contact/submit',
   DEVICE_REGISTER:   '/device/register',
-  NOTIFICATION_LIST: '/notification',
-  REFUND_SUBMIT:     '/refunds/submit',
-  VIDEO_APPOINTMENT: '/video-appointments/upload',
+  NOTIFICATION_LIST: '/notification/list',
 };

@@ -51,23 +51,7 @@ const LoginModal = ({close}) => {
                     <Text style={{...FONTS.font,color:colors.title,marginBottom:4}}>Username</Text>
                     <CustomInput  
                         placeholder={'Type Username Here'}
-                        onChangeText={(value)=> console.log(value)}
-                    />
-                </View>
-                <View style={{marginBottom:25}}>
-                    <Text style={{...FONTS.font,color:colors.title,marginBottom:4}}>Password</Text>
-                    <CustomInput
-                        type="password" 
-                        placeholder={'Type Password Here'}
-                        onChangeText={(value)=> console.log(value)}
-                    />
-                </View>
-                <CustomButton
-                    title={'Login'}
-                />
-            </View>
-        </>
-    );
+                        onChangeText={(value)=>
 };
 
 

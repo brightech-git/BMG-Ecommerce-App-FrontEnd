@@ -1,7 +1,4 @@
 // app/Screens/Product/ProductDetails.tsx
-// Website page: /products-page/:tagKey (ProductDetail / ProductInfo).
-// Data: /product/getTagkeyFilter/:tagKey, /product/related. Cart + wishlist actions.
-// NOTE: root App.tsx provides SafeAreaView, so use a plain View container.
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
@@ -10,7 +7,8 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
-import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import { FONTS, SIZES } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 import { useProductDetail, useRelatedProducts } from '../../api/hooks/useProductDetail';
 import { useRecordRecentlyViewed } from '../../api/hooks/useHome';
 import { useCart } from '../../api/hooks/useCart';
@@ -24,18 +22,22 @@ import { Loader, ErrorState } from '../../components/common/StateViews';
 const { width } = Dimensions.get('window');
 type Props = StackScreenProps<RootStackParamList, 'ProductDetails'>;
 
-const InfoChip = ({ label, value }: { label: string; value?: string | number }) => {
+const InfoChip = ({ label, value, chipBg, labelColor, valueColor }: {
+  label: string; value?: string | number;
+  chipBg: string; labelColor: string; valueColor: string;
+}) => {
   if (value === undefined || value === null || value === '') return null;
   return (
-    <View style={styles.chip}>
-      <Text style={styles.chipLabel}>{label}</Text>
-      <Text style={styles.chipValue}>{String(value)}</Text>
+    <View style={[styles.chip, { backgroundColor: chipBg }]}>
+      <Text style={[styles.chipLabel, { color: labelColor }]}>{label}</Text>
+      <Text style={[styles.chipValue, { color: valueColor }]}>{String(value)}</Text>
     </View>
   );
 };
 
 const ProductDetails = ({ route, navigation }: Props) => {
   const { tagKey } = route.params;
+  const { colors: C } = useTheme();
   const { data: product, isLoading, isError, error, refetch } = useProductDetail(tagKey);
   const { data: rate } = useTodayRate();
   const { isInCart, addItem, isAdding, isAuthenticated } = useCart();
@@ -44,8 +46,6 @@ const ProductDetails = ({ route, navigation }: Props) => {
   const [activeImg, setActiveImg] = useState(0);
   const { mutate: recordView } = useRecordRecentlyViewed();
 
-  // Record view once isAuthenticated is confirmed — this ensures the token is
-  // available in useRecordRecentlyViewed before the POST fires.
   const recorded = useRef(false);
   useEffect(() => {
     if (isAuthenticated && tagKey && !recorded.current) {
@@ -54,15 +54,14 @@ const ProductDetails = ({ route, navigation }: Props) => {
     }
   }, [isAuthenticated, tagKey]);
 
-  const images = useMemo(() => parseImages(product?.ImagePath), [product?.ImagePath]);
+  const images      = useMemo(() => parseImages(product?.ImagePath), [product?.ImagePath]);
   const galleryImgs = images.length > 0 ? images : [undefined];
-  // itemCtrId for /product/related — use SubItemId if it's a positive number,
-  // otherwise fall back to ITEMID string (category code)
+
   const relatedId = (product?.SubItemId && product.SubItemId > 0)
     ? product.SubItemId
     : (product?.ITEMID ?? null);
   const { data: relatedRaw } = useRelatedProducts(relatedId);
-  // Filter out the current product so it doesn't appear in its own similar list
+
   const related: any[] = useMemo(
     () => (Array.isArray(relatedRaw) ? relatedRaw : (relatedRaw as any)?.data ?? [])
             .filter((p: any) => p.TAGKEY !== tagKey),
@@ -80,30 +79,31 @@ const ProductDetails = ({ route, navigation }: Props) => {
   };
 
   if (isLoading) {
-    return <View style={styles.safe}><Loader message="Loading product..." /></View>;
+    return <View style={[styles.safe, { backgroundColor: C.background }]}><Loader message="Loading product..." /></View>;
   }
   if (isError || !product) {
     return (
-      <View style={styles.safe}>
+      <View style={[styles.safe, { backgroundColor: C.background }]}>
         <ErrorState message={(error as any)?.message ?? 'Product not found.'} onRetry={refetch} />
       </View>
     );
   }
 
-  const inCart = isInCart(product.TAGKEY);
-  const faved = isFavorite(product.TAGKEY);
-  const r: any = rate ?? {};
-  const goGold = r.GOLDRATE ?? r.gold ?? r.goldRate;
+  const inCart   = isInCart(product.TAGKEY);
+  const faved    = isFavorite(product.TAGKEY);
+  const r: any   = rate ?? {};
+  const goGold   = r.GOLDRATE ?? r.gold ?? r.goldRate;
   const goSilver = r.SILVERRATE ?? r.silver ?? r.silverRate;
 
   return (
-    <View style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.header}>
+    <View style={[styles.safe, { backgroundColor: C.background }]}>
+      <StatusBar barStyle={C.statusBar} backgroundColor={C.card} />
+
+      <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
         <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={22} color={COLORS.title} />
+          <Feather name="arrow-left" size={22} color={C.title} />
         </TouchableOpacity>
-        <Text style={styles.hTitle} numberOfLines={1}>{product.ITEMNAME}</Text>
+        <Text style={[styles.hTitle, { color: C.title }]} numberOfLines={1}>{product.ITEMNAME}</Text>
         <CartWishlistBadge />
       </View>
 
@@ -111,8 +111,7 @@ const ProductDetails = ({ route, navigation }: Props) => {
         <View>
           <FlatList
             data={galleryImgs}
-            horizontal
-            pagingEnabled
+            horizontal pagingEnabled
             showsHorizontalScrollIndicator={false}
             keyExtractor={(_, i) => String(i)}
             onMomentumScrollEnd={(e) =>
@@ -122,86 +121,89 @@ const ProductDetails = ({ route, navigation }: Props) => {
             )}
           />
           <TouchableOpacity
-            style={styles.heart}
+            style={[styles.heart, { backgroundColor: C.card }]}
             onPress={() => requireAuth(() => toggleFavorite(product.TAGKEY))}
           >
-            <Feather name="heart" size={20} color={faved ? COLORS.danger : COLORS.title} />
+            <Feather name="heart" size={20} color={faved ? C.danger : C.title} />
           </TouchableOpacity>
           {galleryImgs.length > 1 && (
             <View style={styles.dots}>
               {galleryImgs.map((_, i) => (
-                <View key={i} style={[styles.dot, i === activeImg && styles.dotActive]} />
+                <View key={i} style={[styles.dot, i === activeImg && { backgroundColor: C.primary, width: 16 }]} />
               ))}
             </View>
           )}
         </View>
 
         <View style={styles.body}>
-          <Text style={styles.name}>{product.ITEMNAME}</Text>
-          {!!product.SUBITEMNAME && <Text style={styles.subName}>{product.SUBITEMNAME}</Text>}
+          <Text style={[styles.name, { color: C.title }]}>{product.ITEMNAME}</Text>
+          {!!product.SUBITEMNAME && (
+            <Text style={[styles.subName, { color: C.secondary }]}>{product.SUBITEMNAME}</Text>
+          )}
 
           <View style={styles.priceRow}>
-            <Text style={styles.price}>{'₹'}{product.FinalAmount}</Text>
+            <Text style={[styles.price, { color: C.title }]}>{'₹'}{product.FinalAmount}</Text>
             {!!product.OriginalAmount && product.OriginalAmount !== product.FinalAmount && (
-              <Text style={styles.orig}>{'₹'}{product.OriginalAmount}</Text>
+              <Text style={[styles.orig, { color: C.textLight }]}>{'₹'}{product.OriginalAmount}</Text>
             )}
             {!!product.OfferPercentage && product.OfferPercentage !== '0' && (
-              <View style={styles.offer}><Text style={styles.offerTxt}>{product.OfferPercentage}% OFF</Text></View>
+              <View style={[styles.offer, { backgroundColor: C.danger }]}>
+                <Text style={[styles.offerTxt, { color: C.white }]}>{product.OfferPercentage}% OFF</Text>
+              </View>
             )}
           </View>
 
           {(goGold || goSilver) && (
-            <View style={styles.rateCard}>
-              <Feather name="trending-up" size={16} color={COLORS.secondary} />
-              <Text style={styles.rateTxt}>
+            <View style={[styles.rateCard, { backgroundColor: C.primaryLight }]}>
+              <Feather name="trending-up" size={16} color={C.secondary} />
+              <Text style={[styles.rateTxt, { color: C.text }]}>
                 Today's Rate: Gold {String(goGold ?? '-')}  |  Silver {String(goSilver ?? '-')}
               </Text>
             </View>
           )}
 
           <View style={styles.chips}>
-            <InfoChip label="Purity" value={product.NEWPURITY} />
-            <InfoChip label="Gross Wt" value={product.GRSWT ? `${product.GRSWT} g` : ''} />
-            <InfoChip label="Net Wt" value={product.NETWT ? `${product.NETWT} g` : ''} />
-            <InfoChip label="Metal" value={product.CATNAME} />
-            <InfoChip label="Tag No" value={product.TAGNO} />
+            <InfoChip label="Purity"   value={product.NEWPURITY}                        chipBg={C.card} labelColor={C.textLight} valueColor={C.title} />
+            <InfoChip label="Gross Wt" value={product.GRSWT ? product.GRSWT + ' g' : ''} chipBg={C.card} labelColor={C.textLight} valueColor={C.title} />
+            <InfoChip label="Net Wt"   value={product.NETWT ? product.NETWT + ' g' : ''}  chipBg={C.card} labelColor={C.textLight} valueColor={C.title} />
+            <InfoChip label="Metal"    value={product.CATNAME}                           chipBg={C.card} labelColor={C.textLight} valueColor={C.title} />
+            <InfoChip label="Tag No"   value={product.TAGNO}                             chipBg={C.card} labelColor={C.textLight} valueColor={C.title} />
           </View>
 
           {!!product.Description && (
             <>
-              <Text style={styles.secTitle}>Description</Text>
-              <Text style={styles.desc}>{product.Description}</Text>
+              <Text style={[styles.secTitle, { color: C.title }]}>Description</Text>
+              <Text style={[styles.desc, { color: C.text }]}>{product.Description}</Text>
             </>
           )}
 
           {related.length > 0 && (
             <>
-              <Text style={styles.secTitle}>Similar Products</Text>
+              <Text style={[styles.secTitle, { color: C.title }]}>Similar Products</Text>
               <FlatList
-                data={related}
-                horizontal
+                data={related} horizontal
                 showsHorizontalScrollIndicator={false}
                 keyExtractor={(it: any, i) => String(it.TAGKEY ?? i)}
                 contentContainerStyle={{ gap: 12, paddingVertical: 4 }}
                 renderItem={({ item }: any) => (
                   <TouchableOpacity
-                    style={styles.relCard}
+                    style={[styles.relCard, { backgroundColor: C.card }]}
                     activeOpacity={0.85}
                     onPress={() => navigation.push('ProductDetails', { tagKey: item.TAGKEY })}
                   >
                     <View style={styles.relImgWrap}>
                       <SmartImage uri={parseImages(item.ImagePath)[0]} style={styles.relImg} />
                       {!!item.OfferPercentage && item.OfferPercentage !== '0' && (
-                        <View style={styles.relBadge}>
-                          <Text style={styles.relBadgeTxt}>{item.OfferPercentage}% OFF</Text>
+                        <View style={[styles.relBadge, { backgroundColor: C.danger }]}>
+                          <Text style={[styles.relBadgeTxt, { color: C.white }]}>{item.OfferPercentage}% OFF</Text>
                         </View>
                       )}
                     </View>
-                    <Text style={styles.relName} numberOfLines={2}>{item.ITEMNAME}</Text>
+                    <Text style={[styles.relName, { color: C.title }]} numberOfLines={2}>{item.ITEMNAME}</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
-                      <Text style={styles.relPrice}>{'₹'}{item.FinalAmount}</Text>
+                      <Text style={[styles.relPrice, { color: C.title }]}>{'₹'}{item.FinalAmount}</Text>
                       {!!item.OriginalAmount && item.OriginalAmount !== item.FinalAmount && (
-                        <Text style={styles.relOrig}>{'₹'}{item.OriginalAmount}</Text>
+                        <Text style={[styles.relOrig, { color: C.textLight }]}>{'₹'}{item.OriginalAmount}</Text>
                       )}
                     </View>
                   </TouchableOpacity>
@@ -212,19 +214,19 @@ const ProductDetails = ({ route, navigation }: Props) => {
         </View>
       </ScrollView>
 
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { backgroundColor: C.card, borderTopColor: C.borderColor }]}>
         <TouchableOpacity
-          style={[styles.cartBtn, inCart && styles.cartBtnActive]}
+          style={[styles.cartBtn, { borderColor: C.primary }, inCart && { backgroundColor: C.primary }]}
           disabled={isAdding}
           onPress={() => inCart ? navigation.navigate('MyCart') : requireAuth(() => addItem(product.TAGKEY))}
         >
-          <Feather name="shopping-bag" size={18} color={inCart ? COLORS.white : COLORS.primary} />
-          <Text style={[styles.cartTxt, inCart && { color: COLORS.white }]}>
+          <Feather name="shopping-bag" size={18} color={inCart ? C.white : C.primary} />
+          <Text style={[styles.cartTxt, { color: inCart ? C.white : C.primary }]}>
             {inCart ? 'In Cart' : isAdding ? 'Adding...' : 'Add to Cart'}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.buyBtn}
+          style={[styles.buyBtn, { backgroundColor: C.primary }]}
           onPress={() => {
             if (!isAuthenticated) {
               Alert.alert('Login required', 'Please sign in to continue.', [
@@ -233,11 +235,10 @@ const ProductDetails = ({ route, navigation }: Props) => {
               ]);
               return;
             }
-            // Pass product directly — does NOT add to cart, only this item goes to checkout
             navigation.navigate('Checkout', { buyNowProduct: product });
           }}
         >
-          <Text style={styles.buyTxt}>Buy Now</Text>
+          <Text style={[styles.buyTxt, { color: C.white }]}>Buy Now</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -245,66 +246,42 @@ const ProductDetails = ({ route, navigation }: Props) => {
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.white },
-  header: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 10, paddingVertical: 8,
-    borderBottomWidth: 1, borderBottomColor: COLORS.borderColor,
-  },
-  hBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  hTitle: { flex: 1, ...FONTS.h6, ...FONTS.fontSemiBold, color: COLORS.title, textAlign: 'center' },
-  heart: {
-    position: 'absolute', top: 14, right: 14,
-    width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.white,
-    alignItems: 'center', justifyContent: 'center', elevation: 3,
-    shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 4, shadowOffset: { width: 0, height: 2 },
-  },
-  dots: { position: 'absolute', bottom: 12, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 5 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(0,0,0,0.2)' },
-  dotActive: { backgroundColor: COLORS.primary, width: 16 },
-  body: { padding: SIZES.padding },
-  name: { ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
-  subName: { ...FONTS.font, color: COLORS.secondary, marginTop: 2 },
+  safe:     { flex: 1 },
+  header:   { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 8, borderBottomWidth: 1 },
+  hBtn:     { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  hTitle:   { flex: 1, ...FONTS.h6, ...FONTS.fontSemiBold, textAlign: 'center' },
+  heart:    { position: 'absolute', top: 14, right: 14, width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', elevation: 3, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
+  dots:     { position: 'absolute', bottom: 12, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 5 },
+  dot:      { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(0,0,0,0.2)' },
+  body:     { padding: SIZES.padding },
+  name:     { ...FONTS.h5, ...FONTS.fontSemiBold },
+  subName:  { ...FONTS.font, marginTop: 2 },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 },
-  price: { ...FONTS.h4, ...FONTS.fontBold, color: COLORS.title },
-  orig: { ...FONTS.font, color: COLORS.textLight, textDecorationLine: 'line-through' },
-  offer: { backgroundColor: COLORS.danger, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 5 },
-  offerTxt: { ...FONTS.fontXs, color: COLORS.white, fontWeight: '700' },
-  rateCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14,
-    backgroundColor: COLORS.primaryLight, padding: 10, borderRadius: SIZES.radius,
-  },
-  rateTxt: { ...FONTS.fontSm, color: COLORS.title, flex: 1 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16 },
-  chip: { backgroundColor: COLORS.input, borderRadius: SIZES.radius, paddingHorizontal: 10, paddingVertical: 8, borderWidth: 1, borderColor: COLORS.borderColor },
-  chipLabel: { ...FONTS.fontXs, color: COLORS.textLight },
-  chipValue: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title },
-  secTitle: { ...FONTS.h6, ...FONTS.fontSemiBold, color: COLORS.title, marginTop: 22, marginBottom: 8 },
-  desc: { ...FONTS.font, color: COLORS.text, lineHeight: 21 },
-  relCard: { width: 140 },
+  price:    { ...FONTS.h4, ...FONTS.fontBold },
+  orig:     { ...FONTS.font, textDecorationLine: 'line-through' },
+  offer:    { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 5 },
+  offerTxt: { ...FONTS.fontXs, fontWeight: '700' },
+  rateCard: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14, padding: 10, borderRadius: 10 },
+  rateTxt:  { ...FONTS.fontSm, flex: 1 },
+  chips:    { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 },
+  chip:     { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, elevation: 1, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } },
+  chipLabel:  { ...FONTS.fontXs, marginBottom: 1 },
+  chipValue:  { ...FONTS.fontSm, ...FONTS.fontSemiBold },
+  secTitle:   { ...FONTS.h6, ...FONTS.fontSemiBold, marginTop: 20, marginBottom: 10 },
+  desc:       { ...FONTS.font, lineHeight: 22 },
+  relCard:    { width: 140, borderRadius: 12, overflow: 'hidden', elevation: 2, shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
   relImgWrap: { position: 'relative' },
-  relImg: { width: 140, height: 140, borderRadius: 12, backgroundColor: '#EDE8DF' },
-  relBadge: {
-    position: 'absolute', top: 6, left: 6,
-    backgroundColor: COLORS.danger, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2,
-  },
-  relBadgeTxt: { ...FONTS.fontXs, color: COLORS.white, fontWeight: '700' },
-  relName: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title, marginTop: 7, lineHeight: 16 },
-  relPrice: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title },
-  relOrig: { ...FONTS.fontXs, color: COLORS.textLight, textDecorationLine: 'line-through' },
-  bottomBar: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    flexDirection: 'row', gap: 10, padding: 12,
-    backgroundColor: COLORS.white, borderTopWidth: 1, borderTopColor: COLORS.borderColor,
-  },
-  cartBtn: {
-    flex: 1, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1.5, borderColor: COLORS.primary, borderRadius: SIZES.radius_lg, paddingVertical: 13,
-  },
-  cartBtnActive: { backgroundColor: COLORS.primary },
-  cartTxt: { ...FONTS.font, ...FONTS.fontSemiBold, color: COLORS.primary },
-  buyBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primary, borderRadius: SIZES.radius_lg, paddingVertical: 13 },
-  buyTxt: { ...FONTS.font, ...FONTS.fontSemiBold, color: COLORS.white },
+  relImg:     { width: 140, height: 140 },
+  relBadge:   { position: 'absolute', top: 6, left: 6, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 2 },
+  relBadgeTxt:{ ...FONTS.fontXs, fontWeight: '700' },
+  relName:    { ...FONTS.fontSm, ...FONTS.fontSemiBold, padding: 8, paddingBottom: 2 },
+  relPrice:   { ...FONTS.fontSm, ...FONTS.fontBold, paddingHorizontal: 8 },
+  relOrig:    { ...FONTS.fontXs, textDecorationLine: 'line-through', paddingBottom: 8 },
+  bottomBar:  { flexDirection: 'row', gap: 12, padding: 14, borderTopWidth: 1 },
+  cartBtn:    { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 14, borderWidth: 1.5 },
+  cartTxt:    { ...FONTS.font, ...FONTS.fontSemiBold },
+  buyBtn:     { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 14 },
+  buyTxt:     { ...FONTS.font, ...FONTS.fontSemiBold },
 });
 
 export default ProductDetails;

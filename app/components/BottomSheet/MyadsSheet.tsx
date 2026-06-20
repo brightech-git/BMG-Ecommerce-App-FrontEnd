@@ -14,7 +14,7 @@ const MyadsSheet = (props, ref) => {
 
     // callbacks
     const handleSheetChanges = useCallback((index) => {
-        console.log('handleSheetChanges', index);
+
     }, []);
 
     // renders

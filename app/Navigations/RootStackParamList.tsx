@@ -98,6 +98,5 @@ export type RootStackParamList = {
     Footers: undefined;
     TabStyle1: undefined;
     TabStyle2: undefined;
-    TabStyle3: undefined;
-    TabStyle4: undefined;
+    TabStyle3: undefined
 };

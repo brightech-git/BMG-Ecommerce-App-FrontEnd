@@ -34,34 +34,23 @@ export const useCompanyInfo = () =>
 export const useFooterContent = () =>
   useQuery({ queryKey: ['footerContent'], queryFn: getFooterContent, staleTime: 1000 * 60 * 30 });
 
-// Recently viewed — requires auth. Returns list of previously viewed products.
 export const useRecentlyViewed = () => {
   const token = useAuthToken();
   return useQuery({
     queryKey: ['recentlyViewed'],
     queryFn: getRecentlyViewed,
     enabled: !!token,
-    staleTime: 1000 * 60 * 2, // refresh every 2 min
+    staleTime: 1000 * 60 * 2,
   });
 };
 
-// Call this when a product page opens to record the view server-side.
-// We pass the token explicitly because the mutation fires on mount (before the
-// axios interceptor's async token-read from AsyncStorage has finished).
 export const useRecordRecentlyViewed = () => {
   const token = useAuthToken();
-  const qc    = useQueryClient();
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: (tagKey: string) => {
-      if (__DEV__) console.log('[RecentlyViewed ADD] posting tagKey:', tagKey, '| token present:', !!token);
-      return recordRecentlyViewed(tagKey, token ?? '');
-    },
-    onSuccess: (res: any) => {
-      if (__DEV__) console.log('[RecentlyViewed ADD] success:', JSON.stringify(res)?.slice(0, 300));
+    mutationFn: (tagKey: string) => recordRecentlyViewed(tagKey, token ?? ''),
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['recentlyViewed'] });
-    },
-    onError: (err: any) => {
-      if (__DEV__) console.warn('[RecentlyViewed ADD] error:', err?.statusCode, err?.message);
     },
   });
 };

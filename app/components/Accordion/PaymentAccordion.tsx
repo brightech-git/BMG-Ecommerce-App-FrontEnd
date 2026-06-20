@@ -103,77 +103,7 @@ const PaymentAccordion = () => {
                     <View>
                         <Text style={{ ...FONTS.fontMedium, fontSize: 13, color: colors.title, marginBottom: 5 }}>Link via UPI</Text>
                         <CustomInput
-                            onChangeText={(value:any) => console.log(value)}
-                            placeholder={"Enter your UPI ID"}
-                            // background
-                        />
-                        <View style={{ marginTop: 10 }}>
-                            <Button
-                                btnRounded
-                                title={"Continue"}
-                                color={COLORS.primary}
-                            />
-                        </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10, marginLeft: 10 }}>
-                            <Image
-                                style={{ height: 24, width: 24, resizeMode: 'contain' }}
-                                source={IMAGES.shieldcheck}
-                            />
-                            <Text style={{ ...FONTS.fontRegular, fontSize: 13, color: colors.title }}>{item.content}</Text>
-                        </View>
-                    </View>
-                    :
-                    item.payment ?
-                        <View>
-                            <Text style={{ ...FONTS.fontMedium, fontSize: 13, color: colors.title, marginBottom: 5 }}>Link Your Wallet</Text>
-                            <CustomInput
-                                onChangeText={(value:any) => console.log(value)}
-                                placeholder={"+91"}
-                                keyboardType={'phone-pad'}
-                            />
-                            <View style={{ marginTop: 10, marginBottom: 5 }}>
-                                <Button
-                                    btnRounded
-                                    title={"Continue"}
-                                    color={COLORS.primary}
-                                />
-                            </View>
-                        </View>
-                        :
-                        item.netbanking ?
-                            <View style={{ marginVertical: 10 }}>
-                                <ButtonOutline
-                                    color={COLORS.primary}
-                                    title={"Netbanking"}
-                                />
-                            </View>
-                            :
-                            <Text style={[FONTS.fontSm, { color: colors.text, lineHeight: 20 }]}>{item.content}</Text>
-                }
-            </View>
-        )
-    }
-
-    return (
-        
-            <>
-                <Accordion
-                    sections={SECTIONS}
-                    duration={300}
-                    sectionContainerStyle={[{
-                        marginBottom:15,
-                        borderRadius: 10,
-                        backgroundColor:colors.card
-                    },Platform.OS === "ios" && {}]}
-                    activeSections={activeSections}
-                    onChange={setSections}
-                    touchableComponent={TouchableOpacity}
-                    renderHeader={AccordionHeader}
-                    renderContent={AccordionBody}
-                />
-            </>
-        
-    );
+                            onChangeText={(value:any) =>
 };
 
 export default PaymentAccordion

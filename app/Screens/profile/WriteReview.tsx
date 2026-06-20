@@ -85,14 +85,14 @@ const WriteReview = () => {
                     <View style={{ marginBottom: 15, marginTop: 30 }}>
                         <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title, marginBottom: 5 }}>Full Name</Text>
                         <CustomInput
-                            onChangeText={(value:any) => console.log(value)}
+                            onChangeText={(value: any) => {}}
                             background
                         />
                     </View>
                     <View style={{ marginBottom: 15 }}>
                         <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title, marginBottom: 5 }}>Product Review</Text>
                         <CustomInput
-                            onChangeText={(value:any) => console.log(value)}
+                            onChangeText={(value: any) => {}}
                             inputLg
                             background
                         />

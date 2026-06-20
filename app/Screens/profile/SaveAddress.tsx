@@ -108,7 +108,6 @@ const SaveAddress = ({ route, navigation }: Props) => {
         params: { destPincode: p },
       });
       const data = res.data;
-      if (__DEV__) console.log('[PincodeCheck] success:', JSON.stringify(data));
 
       // On a 200 response, treat as serviceable UNLESS the body explicitly says otherwise
       const explicitlyNotServiceable =
@@ -129,7 +128,6 @@ const SaveAddress = ({ route, navigation }: Props) => {
     } catch (e: any) {
       // Non-2xx — the backend may still return a JSON body with serviceability info
       const data = e?.response?.data;
-      if (__DEV__) console.log('[PincodeCheck] error status:', e?.response?.status, 'body:', JSON.stringify(data));
 
       if (data != null) {
         // Explicit false → not available

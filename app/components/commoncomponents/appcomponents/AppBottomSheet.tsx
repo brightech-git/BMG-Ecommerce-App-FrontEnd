@@ -452,13 +452,7 @@ const sheetRef = useRef<AppBottomSheetRef>(null);
   subtitle="Select amount and confirm"
   showCloseButton
   footerComponent={<AppButton title="Confirm" onPress={() => {}} />}
-  onClose={() => console.log("closed")}
->
-  <YourFormContent />
-</AppBottomSheet>
-
-// Open / close:
-sheetRef.current?.open();
+  onClose={() =>
 sheetRef.current?.close();
 sheetRef.current?.snapTo(1); // snap to 75%
 */

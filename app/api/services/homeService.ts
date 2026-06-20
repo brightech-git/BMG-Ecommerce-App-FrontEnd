@@ -1,6 +1,4 @@
 // app/api/services/homeService.ts
-// Mirrors website banner/home-content services (BannerService, CategoryImageService,
-// BudgetCategoryService, newArrivals, trendingService, GenderBannerService, OfferBannerService…)
 import { callApi } from '../apiClient';
 import { HOME } from '../endpoints';
 import { CategoryImage } from '../../types/catalog';
@@ -17,13 +15,14 @@ export const getBudgetCategories   = () => callApi<null, any>({ method: 'get', u
 export const getNewArrivals        = () => callApi<null, any>({ method: 'get', url: HOME.NEW_ARRIVALS });
 export const getTrending           = () => callApi<null, any>({ method: 'get', url: HOME.TRENDING });
 export const getRecentlyViewed     = () => callApi<null, any>({ method: 'get', url: HOME.RECENTLY_VIEWED });
-export const recordRecentlyViewed  = (tagKey: string, token: string) =>
+export const getCompanyInfo        = () => callApi<null, any>({ method: 'get', url: HOME.COMPANY });
+export const getFooterContent      = () => callApi<null, any>({ method: 'get', url: HOME.COMPANY });
+
+export const recordRecentlyViewed = (tagKey: string, token: string) =>
   callApi<null, any>({
     method: 'post',
     url: HOME.RECENTLY_VIEWED_ADD,
     data: null,
     params: { tagKey },
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: token ? { Authorization: 'Bearer ' + token } : {},
   });
-export const getCompanyInfo        = () => callApi<null, any>({ method: 'get', url: HOME.COMPANY });
-export const getFooterContent      = () => callApi<null, any>({ method: 'get', url: HOME.FOOTER });

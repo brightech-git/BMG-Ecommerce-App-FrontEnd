@@ -49,7 +49,7 @@ const SortbySheet = (props, ref) => {
 
     // callbacks
     const handleSheetChanges = useCallback((index) => {
-        console.log('handleSheetChanges', index);
+
     }, []);
 
 

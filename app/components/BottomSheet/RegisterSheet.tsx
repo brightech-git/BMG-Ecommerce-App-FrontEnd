@@ -43,31 +43,7 @@ const RegisterSheet = ({sheetRef}) => {
                 <CustomInput
                     value={''}    
                     placeholder={'Type Username Here'}
-                    onChangeText={(value)=> console.log(value)}
-                />
-            </View>
-            <View style={{marginBottom:15}}>
-                <Text style={{...FONTS.font,color:colors.title,marginBottom:4}}>Email</Text>
-                <CustomInput
-                    value={''}    
-                    placeholder={'Type Email Here'}
-                    onChangeText={(value)=> console.log(value)}
-                />
-            </View>
-            <View style={{marginBottom:25}}>
-                <Text style={{...FONTS.font,color:colors.title,marginBottom:4}}>Password</Text>
-                <CustomInput
-                    value={''}   
-                    type="password" 
-                    placeholder={'Type Password Here'}
-                    onChangeText={(value)=> console.log(value)}
-                />
-            </View>
-            <CustomButton 
-                title={'Register'}
-            />
-        </View>
-    );
+                    onChangeText={(value)=>
 };
 
 

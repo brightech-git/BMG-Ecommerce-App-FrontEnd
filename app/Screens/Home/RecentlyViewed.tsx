@@ -1,6 +1,5 @@
 // app/Screens/Home/RecentlyViewed.tsx
-// Full-page list of all recently viewed products (GET /recently-viewed/list).
-// Shows a 2-column grid, infinite scroll not needed — the API returns a bounded list.
+// Full-page 2-column grid of all recently viewed products.
 import React, { useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
@@ -10,7 +9,8 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
-import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import { FONTS, SIZES } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 import { useRecentlyViewed } from '../../api/hooks/useHome';
 import { parseImages } from '../../utils/image';
 import { SmartImage } from '../../components/common/SmartImage';
@@ -26,11 +26,11 @@ type Nav = StackNavigationProp<RootStackParamList>;
 
 const RecentlyViewed = () => {
   const navigation = useNavigation<Nav>();
+  const { colors: C } = useTheme();
   const { data, isLoading, isError, error, refetch } = useRecentlyViewed();
 
   const items: any[] = useMemo(() => {
     const raw = data as any;
-    if (__DEV__ && raw) console.log('[RecentlyViewed screen] raw:', JSON.stringify(raw)?.slice(0, 400));
     if (!raw) return [];
     if (Array.isArray(raw))                return raw;
     if (Array.isArray(raw.data))           return raw.data;
@@ -41,15 +41,14 @@ const RecentlyViewed = () => {
   }, [data]);
 
   return (
-    <View style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
+    <View style={[styles.safe, { backgroundColor: C.background }]}>
+      <StatusBar barStyle={C.statusBar} backgroundColor={C.card} />
 
-      {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
         <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={22} color={COLORS.title} />
+          <Feather name="arrow-left" size={22} color={C.title} />
         </TouchableOpacity>
-        <Text style={styles.hTitle}>Recently Viewed</Text>
+        <Text style={[styles.hTitle, { color: C.title }]}>Recently Viewed</Text>
         <CartWishlistBadge />
       </View>
 
@@ -74,31 +73,31 @@ const RecentlyViewed = () => {
           columnWrapperStyle={{ gap: GAP, marginBottom: GAP }}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => {
-            const img = parseImages(item.ImagePath)[0];
+            const img     = parseImages(item.ImagePath)[0];
             const hasOffer = item.OfferPercentage && item.OfferPercentage !== '0';
             return (
               <TouchableOpacity
-                style={[styles.card, { width: CARD_W }]}
+                style={[styles.card, { width: CARD_W, backgroundColor: C.card }]}
                 activeOpacity={0.85}
                 onPress={() => navigation.navigate('ProductDetails', { tagKey: item.TAGKEY })}
               >
                 <View style={styles.imgWrap}>
-                  <SmartImage uri={img} style={styles.img} />
+                  <SmartImage uri={img} style={[styles.img, { backgroundColor: C.borderColor }]} />
                   {hasOffer && (
-                    <View style={styles.badge}>
-                      <Text style={styles.badgeTxt}>{item.OfferPercentage}% OFF</Text>
+                    <View style={[styles.badge, { backgroundColor: C.danger }]}>
+                      <Text style={[styles.badgeTxt, { color: C.white }]}>{item.OfferPercentage}% OFF</Text>
                     </View>
                   )}
                 </View>
                 <View style={styles.info}>
-                  <Text style={styles.name} numberOfLines={2}>{item.ITEMNAME}</Text>
+                  <Text style={[styles.name, { color: C.title }]} numberOfLines={2}>{item.ITEMNAME}</Text>
                   {!!item.SUBITEMNAME && (
-                    <Text style={styles.sub} numberOfLines={1}>{item.SUBITEMNAME}</Text>
+                    <Text style={[styles.sub, { color: C.textLight }]} numberOfLines={1}>{item.SUBITEMNAME}</Text>
                   )}
                   <View style={styles.priceRow}>
-                    <Text style={styles.price}>₹{item.FinalAmount}</Text>
+                    <Text style={[styles.price, { color: C.title }]}>₹{item.FinalAmount}</Text>
                     {!!item.OriginalAmount && item.OriginalAmount !== item.FinalAmount && (
-                      <Text style={styles.orig}>₹{item.OriginalAmount}</Text>
+                      <Text style={[styles.orig, { color: C.textLight }]}>₹{item.OriginalAmount}</Text>
                     )}
                   </View>
                 </View>
@@ -112,35 +111,32 @@ const RecentlyViewed = () => {
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F9F6F1' },
+  safe:      { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 10, paddingVertical: 12,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1, borderBottomColor: COLORS.borderColor,
+    borderBottomWidth: 1,
   },
-  hBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
-  list: { padding: SIZES.padding },
+  hBtn:    { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  hTitle:  { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold },
+  list:    { padding: SIZES.padding },
   card: {
-    backgroundColor: COLORS.white, borderRadius: 14, overflow: 'hidden',
-    elevation: 2,
+    borderRadius: 14, overflow: 'hidden', elevation: 2,
     shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 5, shadowOffset: { width: 0, height: 2 },
   },
-  imgWrap: { position: 'relative' },
-  img: { width: '100%', height: CARD_W, backgroundColor: '#EDE8DF' },
+  imgWrap:  { position: 'relative' },
+  img:      { width: '100%', height: CARD_W },
   badge: {
     position: 'absolute', top: 7, left: 7,
-    backgroundColor: COLORS.danger, borderRadius: 5,
-    paddingHorizontal: 6, paddingVertical: 2,
+    borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2,
   },
-  badgeTxt: { ...FONTS.fontXs, color: COLORS.white, fontWeight: '700' },
-  info: { padding: 10, gap: 3 },
-  name: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title, lineHeight: 17 },
-  sub: { ...FONTS.fontXs, color: COLORS.textLight },
+  badgeTxt: { ...FONTS.fontXs, fontWeight: '700' },
+  info:     { padding: 10, gap: 3 },
+  name:     { ...FONTS.fontSm, ...FONTS.fontSemiBold, lineHeight: 17 },
+  sub:      { ...FONTS.fontXs },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
-  price: { ...FONTS.font, ...FONTS.fontBold, color: COLORS.title },
-  orig: { ...FONTS.fontXs, color: COLORS.textLight, textDecorationLine: 'line-through' },
+  price:    { ...FONTS.font, ...FONTS.fontBold },
+  orig:     { ...FONTS.fontXs, textDecorationLine: 'line-through' },
 });
 
 export default RecentlyViewed;

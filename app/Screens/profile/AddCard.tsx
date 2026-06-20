@@ -36,14 +36,14 @@ const AddCard = ({ navigation } : AddCardScreenProps) => {
                     <View style={{ marginBottom: 15, marginTop: 20 }}>
                         <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title, marginBottom: 5 }}>Card Name</Text>
                         <CustomInput
-                            onChangeText={(value:any) => console.log(value)}
+                            onChangeText={(value: any) => {}}
                             background
                         />
                     </View>
                     <View style={{ marginBottom: 15 }}>
                         <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title, marginBottom: 5 }}>Card Number</Text>
                         <CustomInput
-                            onChangeText={(value:any) => console.log(value)}
+                            onChangeText={(value: any) => {}}
                             background
                             keyboardType={'number-pad'}
                         />
@@ -52,7 +52,7 @@ const AddCard = ({ navigation } : AddCardScreenProps) => {
                         <View style={{ marginBottom: 15, width: '50%' }}>
                             <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title, marginBottom: 5 }}>Expiry Date</Text>
                             <CustomInput
-                                onChangeText={(value:any) => console.log(value)}
+                                onChangeText={(value: any) => {}}
                                 background
                                 keyboardType={'number-pad'}
                             />
@@ -60,7 +60,7 @@ const AddCard = ({ navigation } : AddCardScreenProps) => {
                         <View style={{ marginBottom: 15, width: '50%' }}>
                             <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title, marginBottom: 5 }}>CVV</Text>
                             <CustomInput
-                                onChangeText={(value:any) => console.log(value)}
+                                onChangeText={(value: any) => {}}
                                 background
                                 keyboardType={'number-pad'}
                             />

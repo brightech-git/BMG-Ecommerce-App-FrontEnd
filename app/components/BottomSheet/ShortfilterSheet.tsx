@@ -46,7 +46,7 @@ const ShortfilterSheet = (props, ref) => {
 
     // callbacks
     const handleSheetChanges = useCallback((index) => {
-        console.log('handleSheetChanges', index);
+
     }, []);
 
 

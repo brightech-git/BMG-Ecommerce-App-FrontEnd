@@ -31,7 +31,6 @@ export const loginThunk = createAsyncThunk(
   async (payload: LoginPayload, { rejectWithValue }) => {
     try {
       const res = await loginUser(payload);
-      console.log('🔐 [Login] response:', JSON.stringify(res, null, 2));
       if (!res.token) return rejectWithValue(res.message ?? 'Login failed');
       const user: UserData = {
         id:            res.id,

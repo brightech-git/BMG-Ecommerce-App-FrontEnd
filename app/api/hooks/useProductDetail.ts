@@ -15,12 +15,12 @@ export const useRelatedProducts = (itemCtrId?: string | number | null) =>
     queryFn: () => getRelatedProducts(itemCtrId as string | number),
     // SubItemId can be 0 for some products — check != null rather than !!
     // Also fall back gracefully if ITEMID string is passed
-    enabled: itemCtrId != null && itemCtrId !== '' && itemCtrId !== 0,
+        enabled: itemCtrId != null && itemCtrId !== '' && itemCtrId !== 0,
   });
 
-export const useWhatsappLink = (sno?: string) =>
+export const useWhatsappLink = (tagKey?: string) =>
   useQuery({
-    queryKey: ['whatsappLink', sno],
-    queryFn: () => getWhatsappLink(sno as string),
-    enabled: !!sno,
+    queryKey: ['whatsapp', tagKey],
+    queryFn: () => getWhatsappLink(tagKey as string),
+    enabled: !!tagKey,
   });
