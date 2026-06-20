@@ -67,7 +67,8 @@ export const HOME = {
   BUDGET_CATEGORIES: '/budget-categories/getOnlyVisible', 
   NEW_ARRIVALS:      '/new-arrivals',
   TRENDING:          '/trending/top10',
-  RECENTLY_VIEWED:   '/recently-viewed/list', //to pass auth token
+  RECENTLY_VIEWED:     '/recently-viewed/list',   // GET  — requires auth token
+  RECENTLY_VIEWED_ADD: '/recently-viewed/add',         // POST { tagKey } — records a view
   COMPANY:           '/company/all',
 };
 

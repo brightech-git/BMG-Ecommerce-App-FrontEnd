@@ -16,7 +16,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { useTodayRate } from '../../api/hooks/useRate';
-import { useBudgetBanners, useNewArrivals, useTrending } from '../../api/hooks/useHome';
+import { useBudgetBanners, useNewArrivals, useTrending, useRecentlyViewed } from '../../api/hooks/useHome';
 import { useCart } from '../../api/hooks/useCart';
 import { useWishlist } from '../../api/hooks/useWishlist';
 import { firstImage, absUrl } from '../../utils/image';
@@ -133,11 +133,31 @@ const Home = () => {
       .sort((a, b) => (a.displayOrder ?? 99) - (b.displayOrder ?? 99));
   }, [budget.data]);
 
-  const arrivals = useMemo(() => asArray(newArrivals.data).slice(0, 10), [newArrivals.data]);
-  const trend = useMemo(() => asArray(trending.data).slice(0, 10), [trending.data]);
+  const recentlyViewed = useRecentlyViewed();
 
-  const onRefresh = () => { rate.refetch(); budget.refetch(); newArrivals.refetch(); trending.refetch(); };
-  const refreshing = rate.isRefetching || budget.isRefetching || newArrivals.isRefetching || trending.isRefetching;
+  const arrivals = useMemo(() => asArray(newArrivals.data).slice(0, 10), [newArrivals.data]);
+  const trend    = useMemo(() => asArray(trending.data).slice(0, 10),     [trending.data]);
+  // No slice — show all items in horizontal scroll; full list on "See All" screen
+  const recent = useMemo(() => {
+    const raw = recentlyViewed.data as any;
+    // Log once so we can see the real response shape in Metro / Expo console
+    if (__DEV__ && raw) console.log('[RecentlyViewed] raw API response:', JSON.stringify(raw)?.slice(0, 400));
+    if (!raw) return [];
+    // Handle all common API response shapes
+    if (Array.isArray(raw))           return raw;          // plain array
+    if (Array.isArray(raw.data))      return raw.data;     // { data: [...] }
+    if (Array.isArray(raw.products))  return raw.products; // { products: [...] }
+    if (Array.isArray(raw.items))     return raw.items;    // { items: [...] }
+    if (Array.isArray(raw.recentlyViewed)) return raw.recentlyViewed;
+    return [];
+  }, [recentlyViewed.data]);
+
+  const onRefresh = () => {
+    rate.refetch(); budget.refetch(); newArrivals.refetch();
+    trending.refetch(); recentlyViewed.refetch();
+  };
+  const refreshing = rate.isRefetching || budget.isRefetching ||
+    newArrivals.isRefetching || trending.isRefetching || recentlyViewed.isRefetching;
 
   const r: any = rate.data ?? {};
   const goGold = r.GOLDRATE ?? r.gold ?? r.goldRate;
@@ -213,6 +233,25 @@ const Home = () => {
             />
           </>
         )}
+
+        {recent.length > 0 && (
+          <>
+            <View style={styles.secHead}>
+              <Text style={styles.secTitle}>Recently Viewed</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('RecentlyViewed')}>
+                <Text style={styles.seeAll}>See All</Text>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={recent} horizontal showsHorizontalScrollIndicator={false}
+              keyExtractor={(it: any, i) => String(it.TAGKEY ?? i)}
+              contentContainerStyle={styles.hList}
+              renderItem={({ item }) => (
+                <ProductTile item={item} onPress={() => navigation.navigate('ProductDetails', { tagKey: item.TAGKEY })} />
+              )}
+            />
+          </>
+        )}
       </ScrollView>
     </View>
   );
@@ -233,8 +272,12 @@ const styles = StyleSheet.create({
   rateStrip: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: COLORS.primaryLight,
     paddingHorizontal: PAD, paddingVertical: 9 },
   rateTxt: { ...FONTS.fontSm, color: COLORS.title, flex: 1 },
-  secHead: { paddingHorizontal: PAD, marginTop: 18, marginBottom: 8 },
+  secHead: {
+    paddingHorizontal: PAD, marginTop: 18, marginBottom: 8,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+  },
   secTitle: { ...FONTS.h5, fontFamily: 'MarcellusRegular', color: COLORS.title },
+  seeAll: { ...FONTS.fontSm, color: COLORS.primary, ...FONTS.fontSemiBold },
   hList: { paddingHorizontal: PAD, gap: 12 },
   tile: { width: 140 },
   tileImg: { width: 140, height: 140, borderRadius: 12, backgroundColor: '#EDE8DF' },

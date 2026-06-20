@@ -9,11 +9,13 @@ export const useProductDetail = (tagKey?: string) =>
     enabled: !!tagKey,
   });
 
-export const useRelatedProducts = (itemCtrId?: string | number) =>
+export const useRelatedProducts = (itemCtrId?: string | number | null) =>
   useQuery({
     queryKey: ['related', itemCtrId],
     queryFn: () => getRelatedProducts(itemCtrId as string | number),
-    enabled: !!itemCtrId,
+    // SubItemId can be 0 for some products — check != null rather than !!
+    // Also fall back gracefully if ITEMID string is passed
+    enabled: itemCtrId != null && itemCtrId !== '' && itemCtrId !== 0,
   });
 
 export const useWhatsappLink = (sno?: string) =>

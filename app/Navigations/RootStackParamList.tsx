@@ -76,6 +76,7 @@ export type RootStackParamList = {
       type: 'privacy' | 'terms' | 'refund' | 'shipping' | 'cancellation' | 'why-choose-us' | 'risk';
     };
     Home: undefined;
+    RecentlyViewed: undefined;
     Accordion: undefined;
     ActionModals: undefined;
     BottomSheet: undefined;

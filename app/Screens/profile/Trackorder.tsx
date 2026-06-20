@@ -225,7 +225,7 @@ const Trackorder = ({ route, navigation }: Props) => {
       {
         text: 'Yes, Cancel', style: 'destructive',
         onPress: () => cancelOrder(
-          { orderId, status: 'CANCELLED' },
+          { orderId, newStatus: 'CANCELLED',remarks:"Cancelled By User" },
           { onSuccess: () => { toastSuccess('Order cancelled'); refetchOrder(); } }
         ),
       },

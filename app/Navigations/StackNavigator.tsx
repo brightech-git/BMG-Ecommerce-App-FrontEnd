@@ -19,6 +19,7 @@ import Notification from "../Screens/Notification/Notification";
 import Search from "../Screens/search/Search";
 import ProductDetails from "../Screens/Product/ProductDetails";
 import Home from "../Screens/Home/Home";
+import RecentlyViewed from "../Screens/Home/RecentlyViewed";
 import Wishlist from "../Screens/Wishlist/Wishlist";
 import MyCart from "../Screens/MyCart/MyCart";
 import Category from "../Screens/Category/Category";
@@ -91,6 +92,7 @@ const StackNavigator = () => {
       <Stack.Screen name={"Search"} component={Search} />
       <Stack.Screen name={"ProductDetails"} component={ProductDetails} />
       <Stack.Screen name={"Home"} component={Home} />
+      <Stack.Screen name={"RecentlyViewed"} component={RecentlyViewed} />
       <Stack.Screen name={"Wishlist"} component={Wishlist} />
       <Stack.Screen name={"MyCart"} component={MyCart} />
       <Stack.Screen name={"Category"} component={Category} />

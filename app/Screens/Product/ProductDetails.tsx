@@ -2,7 +2,7 @@
 // Website page: /products-page/:tagKey (ProductDetail / ProductInfo).
 // Data: /product/getTagkeyFilter/:tagKey, /product/related. Cart + wishlist actions.
 // NOTE: root App.tsx provides SafeAreaView, so use a plain View container.
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
   Dimensions, StatusBar, Alert, FlatList,
@@ -12,6 +12,7 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { useProductDetail, useRelatedProducts } from '../../api/hooks/useProductDetail';
+import { useRecordRecentlyViewed } from '../../api/hooks/useHome';
 import { useCart } from '../../api/hooks/useCart';
 import { useWishlist } from '../../api/hooks/useWishlist';
 import { useTodayRate } from '../../api/hooks/useRate';
@@ -41,11 +42,32 @@ const ProductDetails = ({ route, navigation }: Props) => {
   const { isFavorite, toggleFavorite } = useWishlist();
 
   const [activeImg, setActiveImg] = useState(0);
+  const { mutate: recordView } = useRecordRecentlyViewed();
+
+  // Record view once isAuthenticated is confirmed — this ensures the token is
+  // available in useRecordRecentlyViewed before the POST fires.
+  const recorded = useRef(false);
+  useEffect(() => {
+    if (isAuthenticated && tagKey && !recorded.current) {
+      recorded.current = true;
+      recordView(tagKey);
+    }
+  }, [isAuthenticated, tagKey]);
 
   const images = useMemo(() => parseImages(product?.ImagePath), [product?.ImagePath]);
   const galleryImgs = images.length > 0 ? images : [undefined];
-  const relatedId = product?.SubItemId ?? product?.ITEMID;
-  const { data: related = [] } = useRelatedProducts(relatedId);
+  // itemCtrId for /product/related — use SubItemId if it's a positive number,
+  // otherwise fall back to ITEMID string (category code)
+  const relatedId = (product?.SubItemId && product.SubItemId > 0)
+    ? product.SubItemId
+    : (product?.ITEMID ?? null);
+  const { data: relatedRaw } = useRelatedProducts(relatedId);
+  // Filter out the current product so it doesn't appear in its own similar list
+  const related: any[] = useMemo(
+    () => (Array.isArray(relatedRaw) ? relatedRaw : (relatedRaw as any)?.data ?? [])
+            .filter((p: any) => p.TAGKEY !== tagKey),
+    [relatedRaw, tagKey],
+  );
 
   const requireAuth = (action: () => string) => {
     const res = action();
@@ -152,9 +174,9 @@ const ProductDetails = ({ route, navigation }: Props) => {
             </>
           )}
 
-          {Array.isArray(related) && related.length > 0 && (
+          {related.length > 0 && (
             <>
-              <Text style={styles.secTitle}>You may also like</Text>
+              <Text style={styles.secTitle}>Similar Products</Text>
               <FlatList
                 data={related}
                 horizontal
@@ -164,11 +186,24 @@ const ProductDetails = ({ route, navigation }: Props) => {
                 renderItem={({ item }: any) => (
                   <TouchableOpacity
                     style={styles.relCard}
+                    activeOpacity={0.85}
                     onPress={() => navigation.push('ProductDetails', { tagKey: item.TAGKEY })}
                   >
-                    <SmartImage uri={parseImages(item.ImagePath)[0]} style={styles.relImg} />
-                    <Text style={styles.relName} numberOfLines={1}>{item.ITEMNAME}</Text>
-                    <Text style={styles.relPrice}>{'₹'}{item.FinalAmount}</Text>
+                    <View style={styles.relImgWrap}>
+                      <SmartImage uri={parseImages(item.ImagePath)[0]} style={styles.relImg} />
+                      {!!item.OfferPercentage && item.OfferPercentage !== '0' && (
+                        <View style={styles.relBadge}>
+                          <Text style={styles.relBadgeTxt}>{item.OfferPercentage}% OFF</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.relName} numberOfLines={2}>{item.ITEMNAME}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                      <Text style={styles.relPrice}>{'₹'}{item.FinalAmount}</Text>
+                      {!!item.OriginalAmount && item.OriginalAmount !== item.FinalAmount && (
+                        <Text style={styles.relOrig}>{'₹'}{item.OriginalAmount}</Text>
+                      )}
+                    </View>
                   </TouchableOpacity>
                 )}
               />
@@ -246,10 +281,17 @@ const styles = StyleSheet.create({
   chipValue: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title },
   secTitle: { ...FONTS.h6, ...FONTS.fontSemiBold, color: COLORS.title, marginTop: 22, marginBottom: 8 },
   desc: { ...FONTS.font, color: COLORS.text, lineHeight: 21 },
-  relCard: { width: 130 },
-  relImg: { width: 130, height: 130, borderRadius: 12, backgroundColor: '#EDE8DF' },
-  relName: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title, marginTop: 6 },
-  relPrice: { ...FONTS.fontSm, color: COLORS.secondary },
+  relCard: { width: 140 },
+  relImgWrap: { position: 'relative' },
+  relImg: { width: 140, height: 140, borderRadius: 12, backgroundColor: '#EDE8DF' },
+  relBadge: {
+    position: 'absolute', top: 6, left: 6,
+    backgroundColor: COLORS.danger, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2,
+  },
+  relBadgeTxt: { ...FONTS.fontXs, color: COLORS.white, fontWeight: '700' },
+  relName: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title, marginTop: 7, lineHeight: 16 },
+  relPrice: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title },
+  relOrig: { ...FONTS.fontXs, color: COLORS.textLight, textDecorationLine: 'line-through' },
   bottomBar: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     flexDirection: 'row', gap: 10, padding: 12,

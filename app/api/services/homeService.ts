@@ -16,5 +16,14 @@ export const getLatestCollection   = () => callApi<null, any>({ method: 'get', u
 export const getBudgetCategories   = () => callApi<null, any>({ method: 'get', url: HOME.BUDGET_CATEGORIES });
 export const getNewArrivals        = () => callApi<null, any>({ method: 'get', url: HOME.NEW_ARRIVALS });
 export const getTrending           = () => callApi<null, any>({ method: 'get', url: HOME.TRENDING });
+export const getRecentlyViewed     = () => callApi<null, any>({ method: 'get', url: HOME.RECENTLY_VIEWED });
+export const recordRecentlyViewed  = (tagKey: string, token: string) =>
+  callApi<null, any>({
+    method: 'post',
+    url: HOME.RECENTLY_VIEWED_ADD,
+    data: null,
+    params: { tagKey },
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
 export const getCompanyInfo        = () => callApi<null, any>({ method: 'get', url: HOME.COMPANY });
 export const getFooterContent      = () => callApi<null, any>({ method: 'get', url: HOME.FOOTER });
