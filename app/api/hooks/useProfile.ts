@@ -1,6 +1,6 @@
 // app/api/hooks/useProfile.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getProfile, updateUserById } from '../services/profileService';
+import { getProfile, updateUserById, changePasswordApi } from '../services/profileService';
 import { useAuthToken } from './useAuthToken';
 import { toastSuccess, toastError, errMsg } from '../../utils/toast';
 
@@ -9,6 +9,16 @@ export const useProfile = () => {
   const q = useQuery({ queryKey: ['profile'], queryFn: getProfile, enabled: !!token });
   const profile = (q.data as any)?.data ?? q.data ?? null;
   return { ...q, profile };
+};
+
+export const useChangePassword = () => {
+  const token = useAuthToken();
+  return useMutation({
+    mutationFn: ({ oldPassword, newPassword }: { oldPassword: string; newPassword: string }) =>
+      changePasswordApi(oldPassword, newPassword, token ?? ''),
+    onSuccess: () => toastSuccess('Password changed successfully'),
+    onError: (e) => toastError('Failed to change password', errMsg(e)),
+  });
 };
 
 export const useUpdateProfile = () => {

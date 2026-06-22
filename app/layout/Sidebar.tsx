@@ -1,188 +1,265 @@
+// app/layout/Sidebar.tsx
+// Enhanced drawer sidebar — logo, real user info, grouped nav, logout.
 import React from 'react';
-import { Image, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { COLORS, FONTS, } from '../constants/theme';
-import FeatherIcon from 'react-native-vector-icons/Feather';
-import { useNavigation, useTheme } from '@react-navigation/native';
-import ThemeBtn from '../components/ThemeBtn';
-
-import { IMAGES } from '../constants/Images';
+import {
+  Image, ScrollView, StyleSheet, Text,
+  TouchableOpacity, View, StatusBar,
+} from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
+import { CommonActions } from '@react-navigation/native';
+import { COLORS, FONTS } from '../constants/theme';
+import { IMAGES } from '../constants/Images';
+import { useTheme } from '../context/ThemeContext';
 import { closeDrawer } from '../redux/actions/drawerAction';
 import { logout } from '../redux/reducer/authReducer';
 import { AsyncStorageHelper } from '../utils/AsyncStorageHelper';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
-const Sidebar = ({navigation} : any) => {
+/* ─── nav group definition ─────────────────────────────────────── */
+interface NavItem { icon: string; label: string; route: string }
+interface NavGroup { title: string; items: NavItem[] }
 
-    const theme = useTheme();
-    const { colors }: {colors : any} = theme;
+const NAV_GROUPS: NavGroup[] = [
+  {
+    title: 'Shop',
+    items: [
+      { icon: 'home',        label: 'Home',        route: 'BottomNavigation' },
+      { icon: 'grid',        label: 'Categories',  route: 'Category' },
+      { icon: 'tag',         label: 'Offers',      route: 'Offers' },
+      { icon: 'search',      label: 'Search',      route: 'Search' },
+    ],
+  },
+  {
+    title: 'My Account',
+    items: [
+      { icon: 'shopping-bag',  label: 'My Orders',    route: 'Myorder' },
+      { icon: 'heart',         label: 'Wishlist',     route: 'Wishlist' },
+      { icon: 'shopping-cart', label: 'My Cart',      route: 'MyCart' },
+      { icon: 'map-pin',       label: 'Addresses',    route: 'SavedAddresses' },
+      { icon: 'user',          label: 'Edit Profile', route: 'EditProfile' },
+    ],
+  },
+  {
+    title: 'Support',
+    items: [
+      { icon: 'help-circle', label: 'Help & Info', route: 'HelpCenter' },
+      { icon: 'phone',       label: 'Contact Us',  route: 'ContactUs' },
+      { icon: 'info',        label: 'About Us',    route: 'AboutUs' },
+    ],
+  },
+  {
+    title: 'Legal',
+    items: [
+      { icon: 'shield',    label: 'Privacy Policy',     route: 'PolicyScreen' },
+      { icon: 'file-text', label: 'Terms & Conditions', route: 'PolicyScreen' },
+    ],
+  },
+];
 
-    const dispatch = useDispatch();
-
-    const handleLogout = async () => {
-        dispatch(closeDrawer());
-        try { await GoogleSignin.signOut(); } catch { }
-        await AsyncStorageHelper.clearSession();
-        dispatch(logout());
-        navigation.reset({ index: 0, routes: [{ name: 'SignIn' }] });
-    };
-
-    const navItem = [
-        {
-            icon: IMAGES.home,
-            name: "Home",
-            navigate: "BottomNavigation",
-        },
-        {
-            icon: IMAGES.producta,
-            name: "Products",
-            navigate: "Products",
-        },
-        {
-            icon: IMAGES.components,
-            name: "Components",
-            navigate: "Components",
-        },
-        {
-            icon: IMAGES.star,
-            name: "Review",
-            navigate: "WriteReview",
-        },
-        {
-            icon: IMAGES.heart2,
-            name: "Wishlist",
-            navigate: "Wishlist",
-        },
-        {
-            icon: IMAGES.order,
-            name: "My Orders",
-            navigate: 'Myorder',
-        },
-        {
-            icon: IMAGES.shopping2,
-            name: "My Cart",
-            navigate: 'MyCart',
-        },
-        {
-            icon: IMAGES.chat,
-            name: "Chat List",
-            navigate: 'Chat',
-        },
-        {
-            icon: IMAGES.user2,
-            name: "Profile",
-            navigate: "Profile",
-        },
-        {
-            icon: IMAGES.logout,
-            name: "Logout",
-            navigate: 'SignIn',
-        },
-    ]
-
-    return (
-        <>
-            <View style={{ flex: 1, backgroundColor: colors.background }}>
-                <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-                    <View
-                        style={{
-                            paddingTop: 30,
-                            paddingHorizontal: 20,
-                            borderBottomWidth: 1,
-                            borderColor: colors.border,
-                            paddingBottom: 20,
-                            marginBottom: 15,
-                            alignItems: 'flex-start',
-                        }}
-                    >
-                        <View style={{
-                            flexDirection: 'row',
-                        }}>
-                            <View style={{
-                                alignItems: 'flex-start',
-                                flex: 1,
-                            }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                                    <Image
-                                        style={{ height: 60, width: 60, resizeMode: 'contain', borderRadius: 20 }}
-                                        source={IMAGES.small1}
-                                    />
-                                    <View>
-                                        <Text style={{ ...FONTS.fontSemiBold, fontSize: 18, color: colors.title }}>Roopa</Text>
-                                        <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title }}>example@gmail.com</Text>
-                                    </View>
-                                </View>
-                            </View>
-                            <View style={{ position: 'absolute', right: 0, top: -10 }}>
-                                <ThemeBtn />
-                            </View>
-                        </View>
-                    </View>
-
-                    <View style={{ flex: 1 }}>
-                        {navItem.map((data, index) => {
-                            return (
-                                <TouchableOpacity
-                                    //onPress={() => {data.navigate && navigation.navigate(data.navigate); navigation.closeDrawer()}}
-                                    onPress={() => {
-                                        if (data.name === 'Logout') { handleLogout(); return; }
-                                        dispatch(closeDrawer());
-                                        navigation.navigate(data.navigate);
-                                    }}
-                                    //onPress={() => {data.navigate === "DrawerNavigation" ? dispatch(closeDrawer()) : dispatch(closeDrawer()); navigation.navigate(data.navigate)}}
-                                    key={index}
-                                    style={{
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        paddingHorizontal: 20,
-                                        paddingVertical: 5,
-                                    }}
-                                >
-                                    <View
-                                        style={[{
-                                            shadowColor:theme.dark ? "#000": "rgba(195, 123, 95, 0.20)",
-                                            shadowOffset: {
-                                                width: 3,
-                                                height: 10,
-                                            },
-                                            shadowOpacity: .2,
-                                            shadowRadius: 5,
-                                            marginRight: 15,
-                                        }, Platform.OS === "ios" && {
-                                            backgroundColor: colors.card,
-                                            borderRadius:10
-                                        }]}
-                                    >
-                                        <View style={{ height:40,width:40,alignItems:'center',justifyContent:'center',backgroundColor:colors.card,borderRadius:10 }}>
-                                            <Image
-                                                style={{ height: 20, width: 20, resizeMode: 'contain', tintColor:COLORS.primary }}
-                                                source={data.icon}
-                                            />
-                                        </View>
-                                    </View>
-                                    <Text style={{ ...FONTS.fontRegular, fontSize: 18, color: colors.title, flex: 1 }}>{data.name}</Text>
-                                    <FeatherIcon size={16} color={colors.title} name='chevron-right' />
-                                </TouchableOpacity>
-                            )
-                        })}
-                    </View>
-
-                    <View
-                        style={{
-                            paddingHorizontal: 20,
-                            paddingVertical: 20,
-                            marginTop: 10,
-                            borderTopWidth: 1,
-                            borderTopColor: colors.border
-                        }}
-                    >
-                        <Text style={{ ...FONTS.fontSemiBold, fontSize: 13, color: colors.title, marginBottom: 4 }}>BMG Jewels Store<Text style={{ ...FONTS.fontRegular, fontSize: 13 }}> Cosmetic Store</Text></Text>
-                        <Text style={{ ...FONTS.fontRegular, fontSize: 13, color: colors.title }}>App Version 1.0</Text>
-                    </View>
-                </ScrollView>
-            </View>
-        </>
-    );
+const POLICY_PARAMS: Record<string, any> = {
+  'Privacy Policy':     { type: 'privacy' },
+  'Terms & Conditions': { type: 'terms' },
 };
+
+/* ─── component ────────────────────────────────────────────────── */
+const Sidebar = ({ navigation }: any) => {
+  const dispatch = useDispatch();
+  const { colors: C, isDark, toggleTheme } = useTheme();
+  const user = useSelector((s: any) => s.auth?.user);
+
+  const name     = user?.username || user?.name || 'Guest';
+  const email    = user?.email   || '';
+  const picture  = user?.picture || null;
+  const initials = name.charAt(0).toUpperCase();
+
+  const go = (route: string, params?: any) => {
+    navigation.closeDrawer();
+    dispatch(closeDrawer());
+    navigation.dispatch(CommonActions.navigate({ name: route, params }));
+  };
+
+  const handleLogout = async () => {
+    navigation.closeDrawer();
+    dispatch(closeDrawer());
+    try { await GoogleSignin.signOut(); } catch { }
+    await AsyncStorageHelper.clearSession();
+    dispatch(logout());
+    navigation.dispatch(
+      CommonActions.reset({ index: 0, routes: [{ name: 'SignIn' }] })
+    );
+  };
+
+  return (
+    <View style={[styles.root, { backgroundColor: C.background }]}>
+      <StatusBar barStyle={C.statusBar} />
+
+      {/* ── Top bar: logo + close ──────────────────────────────── */}
+      {/* <View style={[styles.topBar, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
+        <Image source={IMAGES.logo} style={styles.logo} resizeMode="contain" />
+        <TouchableOpacity
+          style={[styles.closeBtn, { backgroundColor: C.background }]}
+          onPress={() => { navigation.closeDrawer(); dispatch(closeDrawer()); }}
+        >
+          <Feather name="x" size={20} color={C.title} />
+        </TouchableOpacity>
+      </View> */}
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 30 }}>
+
+        {/* ── User card ─────────────────────────────────────────── */}
+        <TouchableOpacity
+          style={[styles.userCard, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}
+          activeOpacity={0.8}
+          onPress={() => go('Profile')}
+        >
+          {picture
+            ? <Image source={{ uri: picture }} style={styles.avatar} />
+            : (
+              <View style={[styles.avatar, styles.avatarInitial, { backgroundColor: C.primary }]}>
+                <Text style={[styles.avatarTxt, { color: C.white }]}>{initials}</Text>
+              </View>
+            )
+          }
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.userName, { color: C.title }]}>{name}</Text>
+            {!!email && (
+              <Text style={[styles.userEmail, { color: C.textLight }]} numberOfLines={1}>{email}</Text>
+            )}
+            <Text style={[styles.viewProfile, { color: C.primary }]}>View Profile →</Text>
+          </View>
+          <Feather name="chevron-right" size={18} color={C.textLight} />
+        </TouchableOpacity>
+
+        {/* ── Nav groups ────────────────────────────────────────── */}
+        {NAV_GROUPS.map((group) => (
+          <View key={group.title} style={styles.group}>
+            <Text style={[styles.groupTitle, { color: C.textLight }]}>
+              {group.title.toUpperCase()}
+            </Text>
+            <View style={[styles.groupCard, { backgroundColor: C.card }]}>
+              {group.items.map((item, idx) => (
+                <TouchableOpacity
+                  key={item.label}
+                  style={[
+                    styles.navRow,
+                    { borderBottomColor: C.borderColor },
+                    idx === group.items.length - 1 && { borderBottomWidth: 0 },
+                  ]}
+                  activeOpacity={0.7}
+                  onPress={() => go(item.route, POLICY_PARAMS[item.label])}
+                >
+                  <View style={[styles.navIcon, { backgroundColor: C.primaryLight }]}>
+                    <Feather name={item.icon as any} size={16} color={C.primary} />
+                  </View>
+                  <Text style={[styles.navLabel, { color: C.title }]}>{item.label}</Text>
+                  <Feather name="chevron-right" size={15} color={C.textLight} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        ))}
+
+        {/* ── Preferences (dark/light mode) ─────────────────────── */}
+        <View style={styles.group}>
+          <Text style={[styles.groupTitle, { color: C.textLight }]}>PREFERENCES</Text>
+          <View style={[styles.groupCard, { backgroundColor: C.card }]}>
+            <TouchableOpacity
+              style={[styles.navRow, { borderBottomWidth: 0 }]}
+              activeOpacity={0.7}
+              onPress={toggleTheme}
+            >
+              <View style={[styles.navIcon, { backgroundColor: C.primaryLight }]}>
+                <Feather name={isDark ? 'sun' : 'moon'} size={16} color={C.primary} />
+              </View>
+              <Text style={[styles.navLabel, { color: C.title }]}>
+                {isDark ? 'Light Mode' : 'Dark Mode'}
+              </Text>
+              <Feather name="chevron-right" size={15} color={C.textLight} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* ── Logout ────────────────────────────────────────────── */}
+        <View style={[styles.group, { marginTop: 4 }]}>
+          <TouchableOpacity
+            style={[styles.logoutBtn, {
+              backgroundColor: 'rgba(255,49,49,0.08)',
+              borderColor: 'rgba(255,49,49,0.2)',
+            }]}
+            activeOpacity={0.8}
+            onPress={handleLogout}
+          >
+            <Feather name="log-out" size={18} color={C.danger} />
+            <Text style={[styles.logoutTxt, { color: C.danger }]}>Log Out</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Footer ────────────────────────────────────────────── */}
+        <View style={styles.footer}>
+          <Text style={[styles.footerTxt, { color: C.textLight }]}>BMG Jewellers</Text>
+          <Text style={[styles.footerSub, { color: C.textLight }]}>App Version 1.0</Text>
+        </View>
+
+      </ScrollView>
+    </View>
+  );
+};
+
+/* ─── styles ───────────────────────────────────────────────────── */
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+
+  topBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingTop: 48, paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  logo:     { width: 120, height: 46 },
+  closeBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+
+  userCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingHorizontal: 16, paddingVertical: 18,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    marginBottom: 8,
+  },
+  avatar:        { width: 52, height: 52, borderRadius: 26 },
+  avatarInitial: { alignItems: 'center', justifyContent: 'center' },
+  avatarTxt:     { ...FONTS.h5, fontWeight: '700' },
+  userName:      { ...FONTS.font, ...FONTS.fontSemiBold },
+  userEmail:     { ...FONTS.fontSm, marginTop: 1 },
+  viewProfile:   { ...FONTS.fontXs, fontWeight: '600', marginTop: 4 },
+
+  group:      { marginHorizontal: 16, marginBottom: 12 },
+  groupTitle: {
+    ...FONTS.fontXs, fontWeight: '700', letterSpacing: 1,
+    marginBottom: 6, marginLeft: 4,
+  },
+  groupCard: {
+    borderRadius: 14, overflow: 'hidden',
+    elevation: 1, shadowColor: '#000', shadowOpacity: 0.04,
+    shadowRadius: 4, shadowOffset: { width: 0, height: 1 },
+  },
+
+  navRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingHorizontal: 14, paddingVertical: 13,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  navIcon:  { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  navLabel: { flex: 1, ...FONTS.font },
+
+  logoutBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 10, paddingVertical: 14, borderRadius: 14, borderWidth: 1,
+  },
+  logoutTxt: { ...FONTS.font, ...FONTS.fontSemiBold },
+
+  footer:    { alignItems: 'center', paddingTop: 8 },
+  footerTxt: { ...FONTS.fontSm, ...FONTS.fontSemiBold },
+  footerSub: { ...FONTS.fontXs, marginTop: 2 },
+});
 
 export default Sidebar;

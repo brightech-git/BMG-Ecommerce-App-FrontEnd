@@ -11,3 +11,11 @@ export const getUserById = (id: string | number) =>
 
 export const updateUserById = (id: string | number, updatedData: any) =>
   callApi<any, any>({ method: 'put', url: PROFILE.UPDATE.replace(':id', String(id)), data: updatedData });
+
+export const changePasswordApi = (oldPassword: string, newPassword: string, token: string) =>
+  callApi<any, any>({
+    method: 'post',
+    url: PROFILE.CHANGE_PASSWORD,
+    data: { oldPassword, newPassword },
+    headers: { Authorization: token },
+  });

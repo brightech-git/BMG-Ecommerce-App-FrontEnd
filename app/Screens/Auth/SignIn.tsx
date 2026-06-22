@@ -29,6 +29,7 @@ const SignIn = ({ navigation }: SignInScreenProps) => {
 
     useEffect(() => {
         if (token) navigation.reset({ index: 0, routes: [{ name: 'DrawerNavigation' }] });
+        console.log("User Token",token);
     }, [token]);
 
     useEffect(() => {

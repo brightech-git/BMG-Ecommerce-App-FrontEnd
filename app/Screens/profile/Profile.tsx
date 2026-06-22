@@ -42,6 +42,10 @@ const Profile = () => {
       },
     ]);
 
+  const SectionLabel = ({ title }: { title: string }) => (
+    <Text style={[styles.sectionLabel, { color: C.textLight }]}>{title.toUpperCase()}</Text>
+  );
+
   const Row = ({ icon, label, onPress, danger, right }: any) => (
     <TouchableOpacity
       style={[styles.row, { borderBottomColor: C.borderColor }]}
@@ -91,17 +95,21 @@ const Profile = () => {
           </TouchableOpacity>
         </View>
 
+        <SectionLabel title="My Account" />
         <View style={[styles.group, { backgroundColor: C.card }]}>
-          <Row icon="shopping-bag" label="My Orders"     onPress={() => navigation.navigate('Myorder')} />
-          <Row icon="map-pin"      label="My Addresses"  onPress={() => navigation.navigate('SavedAddresses', {})} />
-          <Row icon="heart"        label="Wishlist"      onPress={() => navigation.navigate('Wishlist')} />
-          <Row icon="tag"          label="Offers & Deals" onPress={() => navigation.navigate('Offers')} />
-          <Row icon="bell"         label="Notifications" onPress={() => navigation.navigate('Notification')} />
+          <Row icon="shopping-bag"  label="My Orders"     onPress={() => navigation.navigate('Myorder')} />
+          <Row icon="map-pin"       label="My Addresses"  onPress={() => navigation.navigate('SavedAddresses', {})} />
+          <Row icon="heart"         label="Wishlist"      onPress={() => navigation.navigate('Wishlist')} />
+          <Row icon="shopping-cart" label="My Cart"       onPress={() => navigation.navigate('MyCart')} />
+          <Row icon="tag"           label="Offers & Deals" onPress={() => navigation.navigate('Offers')} />
+          <Row icon="bell"          label="Notifications" onPress={() => navigation.navigate('Notification')} />
         </View>
 
+        <SectionLabel title="Settings" />
         <View style={[styles.group, { backgroundColor: C.card }]}>
-          <Row icon="user"  label="Edit Profile" onPress={() => navigation.navigate('EditProfile')} />
-          <Row icon="globe" label="Language"     onPress={() => navigation.navigate('Language')} />
+          <Row icon="user"  label="Edit Profile"    onPress={() => navigation.navigate('EditProfile')} />
+          <Row icon="lock"  label="Change Password" onPress={() => navigation.navigate('ChangePassword')} />
+          <Row icon="globe" label="Language"        onPress={() => navigation.navigate('Language')} />
           <Row
             icon={isDark ? 'moon' : 'sun'}
             label={isDark ? 'Dark Mode' : 'Light Mode'}
@@ -117,21 +125,12 @@ const Profile = () => {
           />
         </View>
 
+        <SectionLabel title="More" />
         <View style={[styles.group, { backgroundColor: C.card }]}>
-          <Row icon="help-circle" label="FAQ"        onPress={() => navigation.navigate('Questions')} />
-          <Row icon="phone"       label="Contact Us" onPress={() => navigation.navigate('ContactUs')} />
-          <Row icon="info"        label="About Us"   onPress={() => navigation.navigate('AboutUs')} />
+          <Row icon="help-circle" label="Help & Info" onPress={() => navigation.navigate('HelpCenter')} />
         </View>
 
-        <View style={[styles.group, { backgroundColor: C.card }]}>
-          <Row icon="shield"     label="Privacy Policy"        onPress={() => navigation.navigate('PolicyScreen', { type: 'privacy' })} />
-          <Row icon="file-text"  label="Terms & Conditions"    onPress={() => navigation.navigate('PolicyScreen', { type: 'terms' })} />
-          <Row icon="rotate-ccw" label="Refund Policy"         onPress={() => navigation.navigate('PolicyScreen', { type: 'refund' })} />
-          <Row icon="truck"      label="Shipping & Delivery"   onPress={() => navigation.navigate('PolicyScreen', { type: 'shipping' })} />
-          <Row icon="x-circle"   label="Cancellation & Return" onPress={() => navigation.navigate('PolicyScreen', { type: 'cancellation' })} />
-          <Row icon="star"       label="Why Choose Us"         onPress={() => navigation.navigate('PolicyScreen', { type: 'why-choose-us' })} />
-        </View>
-
+        <SectionLabel title="Account" />
         <View style={[styles.group, { backgroundColor: C.card }]}>
           <Row icon="log-out" label="Log Out" danger onPress={doLogout} />
         </View>
@@ -149,6 +148,7 @@ const styles = StyleSheet.create({
   avatarTxt:   { ...FONTS.h4 },
   name:        { ...FONTS.h6, ...FONTS.fontSemiBold },
   sub:         { ...FONTS.fontSm, marginTop: 1 },
+  sectionLabel: { marginHorizontal: SIZES.padding + 4, marginBottom: 6, marginTop: 4, ...FONTS.fontXs, fontWeight: '700', letterSpacing: 1 },
   group:       { marginHorizontal: SIZES.padding, marginBottom: 14, borderRadius: 14, overflow: 'hidden', elevation: 1, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 1 } },
   row:         { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 14, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
   rowIcon:     { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },

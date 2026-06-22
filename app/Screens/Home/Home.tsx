@@ -1,254 +1,494 @@
 // app/Screens/Home/Home.tsx
-import React, { useMemo } from 'react';
+// Modern app-first Home — all sections driven from useBudgetBanners() + rate/product hooks.
+// Categories  → budget.data.bmgWorld
+// Budget      → budget.data.budget_banner
+// Occasion    → budget.data.shopByOccasion
+// Promo       → budget.data.heroBanner
+import React, { useMemo, useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  FlatList, Dimensions, StatusBar, RefreshControl,
+  FlatList, Dimensions, StatusBar, RefreshControl, Linking, Image,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useSelector } from 'react-redux';
+import { LinearGradient } from 'expo-linear-gradient';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { FONTS, SIZES } from '../../constants/theme';
+import { IMAGES } from '../../constants/Images';
 import { useTheme, ThemeColors } from '../../context/ThemeContext';
 import { useTodayRate } from '../../api/hooks/useRate';
-import { useBudgetBanners, useNewArrivals, useTrending, useRecentlyViewed } from '../../api/hooks/useHome';
+import {
+  useBudgetBanners, useNewArrivals, useTrending,
+  useRecentlyViewed, useSuggestedProducts,
+} from '../../api/hooks/useHome';
 import { useCart } from '../../api/hooks/useCart';
 import { useWishlist } from '../../api/hooks/useWishlist';
 import { firstImage, absUrl } from '../../utils/image';
 import { SmartImage } from '../../components/common/SmartImage';
+import { toCardItem } from '../../components/ProductCard/ProductCard';
 
 const { width } = Dimensions.get('window');
 const PAD = SIZES.padding;
-const GAP = 10;
+const GAP = 12;
+const BMG_SCHEME_URL = 'https://play.google.com/store/apps/details?id=com.bmg.bmgscheme';
 type Nav = StackNavigationProp<RootStackParamList>;
 
-const asArray = (d: any): any[] => (Array.isArray(d) ? d : d?.data ?? []);
-
-const ratioToFraction = (ratio?: string): number => {
-  if (!ratio || typeof ratio !== 'string') return 1;
-  const [w, h] = ratio.split('/').map(Number);
-  if (!w || !h) return 1;
-  return h / w;
+/* ─── image helpers ────────────────────────────────────────────── */
+const mobileUrl = (img: any): string | undefined => {
+  if (!img) return undefined;
+  if (img.isSingle) return absUrl(img.url);
+  return absUrl(img.mobile?.url ?? img.desktop?.url);
 };
 
-const pickImage = (img: any): { url?: string; link?: string; ratio?: string; filterId?: any } => {
-  if (!img) return {};
-  if (img.isSingle && img.url) return { url: img.url, link: img.link, ratio: img.ratio, filterId: img.filterId };
-  const v = img.mobile || img.desktop || img;
-  return { url: v.url ?? img.url, link: v.link ?? img.link, ratio: v.ratio ?? img.ratio, filterId: v.filterId ?? img.filterId };
+const nameFromUrl = (url?: string): string => {
+  if (!url) return '';
+  const seg = (url.split('/').pop() ?? '').replace(/\.[^.]+$/, '');
+  const clean = seg.replace(/^[0-9a-f-]{36}_/i, '');
+  return clean.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
-const linkToParams = (link?: string, title?: string) => {
-  const p: any = { title };
+const parseLink = (link?: string, filterId?: string | number | null): Record<string, any> => {
+  const p: Record<string, any> = {};
+  if (filterId != null && filterId !== '') p.filterIds = Number(filterId);
   if (!link) return p;
   link.split('&').forEach((pair) => {
     const [k, v] = pair.split('=');
-    if (!k || v === undefined || v === '') return;
-    const key = k.trim();
-    const val = decodeURIComponent(v.trim());
+    if (!k || v === undefined) return;
+    const key = k.trim(), val = decodeURIComponent(v.trim());
     if (key === 'itemName') p.ItemName = val;
     else if (key === 'itemId') p.itemId = val;
-    else if (key === 'filterId') p.filterId = val;
+    else if (key === 'filterId') p.filterIds = Number(val);
     else p[key] = val;
   });
   return p;
 };
 
-const BudgetSection = ({
-  section, onOpen,
-}: {
-  section: any;
-  onOpen: (link: string | undefined, filterId: any, title?: string) => void;
-}) => {
-  const images = Array.isArray(section?.images) ? section.images : [];
-  if (images.length === 0) return null;
-  const perRow    = Math.max(1, Number(section?.visibleCount?.mobile) || 1);
-  const fullBleed = perRow === 1;
-  const itemW     = fullBleed ? width : (width - PAD * 2 - GAP * (perRow - 1)) / perRow;
-  const ratioFrac = ratioToFraction(pickImage(images[0]).ratio);
-  const itemH     = Math.round(itemW * ratioFrac);
+const asArray = (d: any): any[] => {
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.data)) return d.data;
+  if (Array.isArray(d?.products)) return d.products;
+  if (Array.isArray(d?.items)) return d.items;
+  return [];
+};
+
+/* ─── sub-components ───────────────────────────────────────────── */
+const SecHeader = ({ title, onSeeAll, C }: { title: string; onSeeAll?: () => void; C: ThemeColors }) => (
+  <View style={styles.secHead}>
+    <Text style={[styles.secTitle, { color: C.title }]}>{title}</Text>
+    {onSeeAll && (
+      <TouchableOpacity onPress={onSeeAll}>
+        <Text style={[styles.seeAll, { color: C.primary }]}>See All</Text>
+      </TouchableOpacity>
+    )}
+  </View>
+);
+
+const CatChip = ({ img, C, onPress }: { img: any; C: ThemeColors; onPress: () => void }) => {
+  const uri = mobileUrl(img);
+  const name = nameFromUrl(img.isSingle ? img.url : (img.mobile?.url ?? img.desktop?.url));
   return (
-    <View style={{ marginTop: section?.title ? 6 : 14 }}>
-      {!!section?.title && (
-        <View style={styles.secHead}>
-          <Text style={styles.secTitle}>{section.title}</Text>
-        </View>
-      )}
-      <FlatList
-        data={images} horizontal pagingEnabled={fullBleed}
-        showsHorizontalScrollIndicator={false}
-        keyExtractor={(_, i) => String(i)}
-        contentContainerStyle={{ paddingHorizontal: fullBleed ? 0 : PAD, gap: GAP }}
-        renderItem={({ item }) => {
-          const { url, link, filterId } = pickImage(item);
-          return (
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => onOpen(link, filterId, section?.title)}
-              style={{ width: itemW, height: itemH, borderRadius: fullBleed ? 0 : 12, overflow: 'hidden' }}
-            >
-              <SmartImage uri={absUrl(url)} style={{ width: itemW, height: itemH }} />
-            </TouchableOpacity>
-          );
-        }}
-      />
-    </View>
+    <TouchableOpacity style={styles.catWrap} activeOpacity={0.8} onPress={onPress}>
+      <View style={[styles.catImg, { borderColor: C.borderColor }]}>
+        {uri
+          ? <SmartImage uri={uri} style={styles.catImgInner} />
+          : <Feather name="star" size={22} color={C.primary} />}
+      </View>
+    </TouchableOpacity>
   );
 };
 
-const ProductTile = ({ item, onPress, C }: { item: any; onPress: () => void; C: ThemeColors }) => (
-  <TouchableOpacity style={[styles.tile, { backgroundColor: C.card }]} activeOpacity={0.85} onPress={onPress}>
-    <SmartImage uri={firstImage(item.ImagePath)} style={[styles.tileImg, { backgroundColor: C.borderColor }]} />
-    <Text style={[styles.tileName, { color: C.title }]} numberOfLines={1}>{item.ITEMNAME}</Text>
-    <Text style={[styles.tilePrice, { color: C.primary }]}>{'\u20b9'}{item.FinalAmount}</Text>
-  </TouchableOpacity>
-);
+const ImgCard = ({ img, size, C, onPress }: { img: any; size: number; C: ThemeColors; onPress: () => void }) => {
+  const uri = mobileUrl(img);
+  return (
+    <TouchableOpacity
+      style={[styles.imgCard, { width: size, height: size, backgroundColor: C.card }]}
+      activeOpacity={0.88}
+      onPress={onPress}
+    >
+      {uri
+        ? <SmartImage uri={uri} style={{ width: size, height: size, borderRadius: 14 }} />
+        : <View style={[styles.imgCardPlaceholder, { backgroundColor: C.borderColor }]} />}
+    </TouchableOpacity>
+  );
+};
 
+const ProductCard = ({ item, onPress, C }: { item: any; onPress: () => void; C: ThemeColors }) => {
+  const img = firstImage(item.ImagePath);
+  const hasOffer = item.OfferPercentage && item.OfferPercentage !== '0';
+  return (
+    <TouchableOpacity style={[styles.pCard, { backgroundColor: C.card }]} activeOpacity={0.88} onPress={onPress}>
+      <View style={styles.pImgWrap}>
+        <SmartImage uri={img} style={[styles.pImg, { backgroundColor: C.borderColor }]} />
+        {hasOffer && (
+          <View style={[styles.offerPill, { backgroundColor: C.danger }]}>
+            <Text style={[styles.offerPillTxt, { color: C.white }]}>{item.OfferPercentage}% OFF</Text>
+          </View>
+        )}
+      </View>
+      <View style={styles.pInfo}>
+        <Text style={[styles.pName, { color: C.title }]} numberOfLines={2}>{item.ITEMNAME}</Text>
+        {!!item.SUBITEMNAME && (
+          <Text style={[styles.pSub, { color: C.textLight }]} numberOfLines={1}>{item.SUBITEMNAME}</Text>
+        )}
+        <View style={styles.pPriceRow}>
+          <Text style={[styles.pPrice, { color: C.primary }]}>{'₹'}{item.FinalAmount}</Text>
+          {!!item.OriginalAmount && item.OriginalAmount !== item.FinalAmount && (
+            <Text style={[styles.pOrig, { color: C.textLight }]}>{'₹'}{item.OriginalAmount}</Text>
+          )}
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+/* ─── main component ───────────────────────────────────────────── */
 const Home = () => {
   const navigation = useNavigation<Nav>();
   const { colors: C } = useTheme();
-  const rate         = useTodayRate();
-  const budget       = useBudgetBanners();
-  const newArrivals  = useNewArrivals();
-  const trending     = useTrending();
-  const { cartCount }      = useCart();
-  const { favoritesCount } = useWishlist();
-  const recentlyViewed     = useRecentlyViewed();
 
-  const sections = useMemo(() => {
-    const data = (budget.data as any)?.data ?? {};
-    return Object.values<any>(data)
-      .filter((s) => s && s.isVisible !== false)
-      .sort((a, b) => (a.displayOrder ?? 99) - (b.displayOrder ?? 99));
+  const user = useSelector((s: any) => s.auth?.user);
+  const firstName = (user?.username || user?.name || '').split(' ')[0] || 'there';
+
+  // Incremented on pull-to-refresh so all SmartImage components remount and retry
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const rate = useTodayRate();
+  const budget = useBudgetBanners();
+  const newArrivals = useNewArrivals();
+  const trending = useTrending();
+  const recentlyViewed = useRecentlyViewed();
+  const suggested = useSuggestedProducts();
+  const { cartCount } = useCart();
+  const { favoritesCount } = useWishlist();
+
+  const { cats, bmgTitle, budgetImgs, occasionImgs, heroImgs } = useMemo(() => {
+    const d = (budget.data as any)?.data ?? {};
+    return {
+      cats: (d.bmgWorld?.images ?? []) as any[],
+      bmgTitle: (d.bmgWorld?.title ?? 'BMG World') as string,
+      budgetImgs: (d.budget_banner?.images ?? []) as any[],
+      occasionImgs: (d.shopByOccasion?.images ?? []) as any[],
+      heroImgs: (d.heroBanner?.images ?? []).slice(0, 2) as any[],
+    };
   }, [budget.data]);
 
-  const arrivals = useMemo(() => asArray(newArrivals.data).slice(0, 10), [newArrivals.data]);
-  const trend    = useMemo(() => asArray(trending.data).slice(0, 10), [trending.data]);
-
+  const arrivals = useMemo(() => asArray(newArrivals.data).slice(0, 12), [newArrivals.data]);
+  const trend = useMemo(() => asArray(trending.data).slice(0, 12), [trending.data]);
   const recent = useMemo(() => {
     const raw = recentlyViewed.data as any;
     if (!raw) return [];
-    if (Array.isArray(raw))                return raw;
-    if (Array.isArray(raw.data))           return raw.data;
-    if (Array.isArray(raw.products))       return raw.products;
-    if (Array.isArray(raw.items))          return raw.items;
+    if (Array.isArray(raw)) return raw;
+    if (Array.isArray(raw.data)) return raw.data;
     if (Array.isArray(raw.recentlyViewed)) return raw.recentlyViewed;
     return [];
   }, [recentlyViewed.data]);
 
-  const onRefresh = () => {
-    rate.refetch(); budget.refetch(); newArrivals.refetch();
-    trending.refetch(); recentlyViewed.refetch();
-  };
-  const refreshing =
-    rate.isRefetching || budget.isRefetching ||
+  // useSuggestedProducts already returns grouped categories
+  const suggestCats = suggested.categories ?? [];
+
+  const rate_ = (rate.data ?? {}) as any;
+  const goldRate = rate_.GOLDRATE ?? rate_.gold ?? rate_.goldRate;
+  const silverRate = rate_.SILVERRATE ?? rate_.silver ?? rate_.silverRate;
+
+  const onRefresh = useCallback(() => {
+    rate.refetch(); budget.refetch();
+    newArrivals.refetch(); trending.refetch(); recentlyViewed.refetch();
+    setRefreshKey((k) => k + 1);
+  }, [rate, budget, newArrivals, trending, recentlyViewed]);
+  const refreshing = rate.isRefetching || budget.isRefetching ||
     newArrivals.isRefetching || trending.isRefetching || recentlyViewed.isRefetching;
 
-  const r: any   = rate.data ?? {};
-  const goGold   = r.GOLDRATE ?? r.gold ?? r.goldRate;
-  const goSilver = r.SILVERRATE ?? r.silver ?? r.silverRate;
-
-  const openLink = (link: string | undefined, filterId: any, title?: string) => {
-    const p = linkToParams(link, title);
-    if (!p.itemId && !p.ItemName && !p.filterId && filterId != null) p.filterId = String(filterId);
-    navigation.navigate('Products', p);
+  const navImg = (img: any) => {
+    const link = img.isSingle ? img.link : (img.mobile?.link ?? img.desktop?.link ?? '');
+    const fId = img.isSingle ? img.filterId : (img.mobile?.filterId ?? img.desktop?.filterId);
+    navigation.navigate('Products', parseLink(link, fId));
   };
+
+  const SIDE = (width - PAD * 2 - GAP) / 2.4;
 
   return (
     <View style={[styles.safe, { backgroundColor: C.background }]}>
       <StatusBar barStyle={C.statusBar} backgroundColor={C.card} />
 
-      <View style={[styles.topbar, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
-        <Text style={[styles.brand, { color: C.title }]}>
-          BMG <Text style={{ color: C.secondary }}>Jewels</Text>
-        </Text>
-        <View style={{ flexDirection: 'row' }}>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Search')}>
-            <Feather name="search" size={20} color={C.title} />
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
+        {/* Menu icon — left */}
+        <TouchableOpacity style={[styles.iconBtn, { backgroundColor: C.background }]}
+          onPress={() => (navigation as any).openDrawer?.() ?? (navigation as any).getParent?.()?.openDrawer?.()}>
+          <Feather name="menu" size={22} color={C.title} />
+        </TouchableOpacity>
+
+        {/* Logo + Greeting — centre */}
+        <View style={styles.headerLeft}>
+          <Image source={IMAGES.logo} style={styles.headerLogo} resizeMode="contain" />
+          <View style={styles.headerGreeting}>
+            <Text style={[styles.greeting, { color: C.textLight }]}>Hi, {firstName} {'👋'}</Text>
+            <Text style={[styles.subGreeting, { color: C.title }]}>Find your perfect jewel</Text>
+          </View>
+        </View>
+
+        {/* Wishlist + Cart — right */}
+        <View style={styles.headerIcons}>
+          <TouchableOpacity style={[styles.iconBtn, { backgroundColor: C.background }]} onPress={() => navigation.navigate('Wishlist')}>
+            <Feather name="heart" size={19} color={C.title} />
+            {favoritesCount > 0 && <View style={[styles.badge, { backgroundColor: C.danger }]}><Text style={styles.badgeTxt}>{favoritesCount}</Text></View>}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Wishlist')}>
-            <Feather name="heart" size={20} color={C.title} />
-            {favoritesCount > 0 && (
-              <View style={[styles.badge, { backgroundColor: C.danger }]}>
-                <Text style={[styles.badgeTxt, { color: C.white }]}>{favoritesCount}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('MyCart')}>
-            <Feather name="shopping-bag" size={20} color={C.title} />
-            {cartCount > 0 && (
-              <View style={[styles.badge, { backgroundColor: C.primary }]}>
-                <Text style={[styles.badgeTxt, { color: C.white }]}>{cartCount}</Text>
-              </View>
-            )}
+          <TouchableOpacity style={[styles.iconBtn, { backgroundColor: C.background }]} onPress={() => navigation.navigate('MyCart')}>
+            <Feather name="shopping-bag" size={19} color={C.title} />
+            {cartCount > 0 && <View style={[styles.badge, { backgroundColor: C.primary }]}><Text style={styles.badgeTxt}>{cartCount}</Text></View>}
           </TouchableOpacity>
         </View>
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: SIZES.TAB_BAR_HEIGHT }}
+        contentContainerStyle={{ paddingBottom: SIZES.TAB_BAR_HEIGHT + 10 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} />}
       >
-        {(goGold || goSilver) && (
-          <View style={[styles.rateStrip, { backgroundColor: C.primaryLight }]}>
-            <Feather name="trending-up" size={15} color={C.secondary} />
-            <Text style={[styles.rateTxt, { color: C.text }]}>
-              {"Today's Rate  —  Gold: "}{String(goGold ?? '-')}{"  |  Silver: "}{String(goSilver ?? '-')}
-            </Text>
+        {/* ── Search Bar ─────────────────────────────────────── */}
+        <TouchableOpacity
+          style={[styles.searchBar, { backgroundColor: C.input, borderColor: C.borderColor }]}
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate('Search')}
+        >
+          <Feather name="search" size={16} color={C.textLight} />
+          <Text style={[styles.searchPlaceholder, { color: C.placeholder }]}>Search rings, chains, bangles…</Text>
+        </TouchableOpacity>
+
+        {/* ── Gold & Silver Rate Card ─────────────────────────── */}
+        {(goldRate || silverRate) && (
+          <View style={[styles.rateCard, { backgroundColor: C.card }]}>
+            <View style={styles.rateCardLeft}>
+              <View style={[styles.rateIconWrap, { backgroundColor: 'rgba(201,177,93,0.15)' }]}>
+                <MaterialCommunityIcons name="gold" size={22} color="#C9B15D" />
+              </View>
+              <View>
+                <Text style={[styles.rateLabel, { color: C.textLight }]}>Gold (22K)</Text>
+                <Text style={[styles.rateValue, { color: C.title }]}>
+                  {'₹'}{String(goldRate ?? '—')}<Text style={[styles.rateUnit, { color: C.textLight }]}>/g</Text>
+                </Text>
+              </View>
+            </View>
+            <View style={[styles.rateDivider, { backgroundColor: C.borderColor }]} />
+            <View style={styles.rateCardRight}>
+              <View style={[styles.rateIconWrap, { backgroundColor: 'rgba(148,163,184,0.15)' }]}>
+                <MaterialCommunityIcons name="shimmer" size={22} color="#94A3B8" />
+              </View>
+              <View>
+                <Text style={[styles.rateLabel, { color: C.textLight }]}>Silver</Text>
+                <Text style={[styles.rateValue, { color: C.title }]}>
+                  {'₹'}{String(silverRate ?? '—')}<Text style={[styles.rateUnit, { color: C.textLight }]}>/g</Text>
+                </Text>
+              </View>
+            </View>
+            <View style={[styles.rateLiveChip, { backgroundColor: 'rgba(21,158,66,0.12)' }]}>
+              <View style={styles.rateDot} />
+              <Text style={[styles.rateLiveTxt, { color: '#159E42' }]}>Live</Text>
+            </View>
           </View>
         )}
 
-        {sections.map((sec, i) => (
-          <BudgetSection key={sec.imageKey ?? i} section={sec} onOpen={openLink} />
-        ))}
 
+        {/* ── Promo Banners (heroBanner — max 2) ─────────────── */}
+        {heroImgs.length > 0 && (
+          <>
+            <SecHeader title="Special Offers" C={C} />
+            <FlatList
+              data={heroImgs} horizontal showsHorizontalScrollIndicator={false}
+              keyExtractor={(_, i) => String(i)}
+              contentContainerStyle={{ paddingHorizontal: PAD, gap: GAP }}
+              renderItem={({ item }: any) => {
+                const uri = mobileUrl(item);
+                const W = width - PAD * 2;
+                return (
+                  <TouchableOpacity
+                    activeOpacity={0.9}
+                    style={{ width: W, height: W * 0.5, borderRadius: 16, overflow: 'hidden' }}
+                    onPress={() => navImg(item)}
+                  >
+                    <SmartImage uri={uri} style={{ width: W, height: W * 0.5 }} />
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </>
+        )}
+
+        {/* ── Categories (bmgWorld) ───────────────────────────── */}
+        {cats.length > 0 && (
+          <>
+            <SecHeader title={bmgTitle} C={C} onSeeAll={() => navigation.navigate('Category')} />
+            <FlatList
+              data={cats} horizontal showsHorizontalScrollIndicator={false}
+              keyExtractor={(_, i) => String(i)}
+              contentContainerStyle={styles.catList}
+              renderItem={({ item }: any) => (
+                <CatChip img={item} C={C} onPress={() => navImg(item)} />
+              )}
+            />
+          </>
+        )}
+
+
+
+        {/* ── Suggested for You — single mixed card ──────────── */}
+        {suggestCats.length > 0 && (() => {
+          // Pick first product from each category to make a mixed 2×2 (or 2×3) grid
+          const mixed = suggestCats.map((cat: any) => ({
+            ...cat.products[0],
+            _cat: cat.name,
+            _accent: cat.accentColor,
+            _bg: cat.headerColor,
+          })).filter(Boolean);
+          return (
+            <View style={[styles.suggestCard, { backgroundColor: C.card }]}>
+              {/* Header */}
+              <View style={styles.suggestCardHeader}>
+                <Text style={[styles.suggestCardTitle, { color: C.title }]}>Suggested for You</Text>
+                <TouchableOpacity
+                  style={[styles.suggestArrow, { backgroundColor: C.primary }]}
+                  onPress={() => navigation.navigate('Products', { title: 'Suggested for You' })}
+                >
+                  <Feather name="arrow-right" size={13} color="#fff" />
+                </TouchableOpacity>
+              </View>
+
+              {/* 2-column grid of mixed products */}
+              <View style={styles.suggestGrid}>
+                {mixed.map((product: any, idx: number) => {
+                  const img = toCardItem({ TAGKEY: product.TAGKEY, ITEMNAME: product.ITEMNAME, SUBITEMNAME: product.SUBITEMNAME, FinalAmount: product.FinalAmount, OriginalAmount: product.OriginalAmount, OfferPercentage: product.OfferPercentage, ImagePath: product.ImagePath }).images[0];
+                  const hasOffer = product.OfferPercentage && product.OfferPercentage !== '0';
+                  return (
+                    <TouchableOpacity
+                      key={product.TAGKEY ?? idx}
+                      style={[styles.suggestCell, { backgroundColor: product._bg }]}
+                      activeOpacity={0.87}
+                      onPress={() => navigation.navigate('ProductDetails', { tagKey: product.TAGKEY })}
+                    >
+                      <View style={styles.suggestImgWrap}>
+                        <SmartImage uri={img} style={styles.suggestImg} resizeMode="cover" />
+                        {hasOffer && (
+                          <View style={[styles.suggestBadge, { backgroundColor: product._accent }]}>
+                            <Text style={styles.suggestBadgeTxt}>{product.OfferPercentage}% OFF</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={[styles.suggestCatLabel, { color: product._accent }]}>{product._cat}</Text>
+                      <Text style={[styles.suggestItemName, { color: C.title }]} numberOfLines={1}>{product.ITEMNAME}</Text>
+                      <Text style={[styles.suggestItemPrice, { color: product._accent }]}>{'₹'}{product.FinalAmount}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          );
+        })()}
+
+        {/* ── Shop by Budget ──────────────────────────────────── */}
+        {budgetImgs.length > 0 && (
+          <>
+            <SecHeader title="Shop by Budget" C={C} />
+            <FlatList
+              data={budgetImgs} horizontal showsHorizontalScrollIndicator={false}
+              keyExtractor={(_, i) => String(i)}
+              contentContainerStyle={styles.imgList}
+              renderItem={({ item }: any) => (
+                <ImgCard img={item} size={SIDE} C={C} onPress={() => navImg(item)} />
+              )}
+            />
+          </>
+        )}
+
+        {/* ── Savings / Scheme Card ──────────────────────────── */}
+        <View style={styles.schemeOuter}>
+          <LinearGradient
+            colors={['#C9B15D', '#A0893A']}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            style={styles.schemeCard}
+          >
+            <View style={styles.schemeLeft}>
+              <Text style={styles.schemeTag}>BMG DigiSilver</Text>
+              <Text style={styles.schemeTitle}>Monthly Gold{'\n'}Savings Scheme</Text>
+              <Text style={styles.schemeDesc}>Save as little as {'₹'}1,000/month{'\n'}and get jewellery worth more!</Text>
+              <View style={styles.schemeBtns}>
+                <TouchableOpacity style={styles.schemeBtnPrimary} onPress={() => Linking.openURL(BMG_SCHEME_URL)}>
+                  <Text style={styles.schemeBtnPrimaryTxt}>Join Now</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.schemeBtnOutline} onPress={() => Linking.openURL(BMG_SCHEME_URL)}>
+                  <Text style={styles.schemeBtnOutlineTxt}>Learn More</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={styles.schemeRight}>
+              <MaterialCommunityIcons name="gold" size={80} color="rgba(255,255,255,0.15)" />
+              <MaterialCommunityIcons name="ring" size={40} color="rgba(255,255,255,0.25)"
+                style={{ position: 'absolute', bottom: 8, right: 0 }} />
+            </View>
+          </LinearGradient>
+        </View>
+
+        {/* ── Shop by Occasion ────────────────────────────────── */}
+        {occasionImgs.length > 0 && (
+          <>
+            <SecHeader title="Shop by Occasion" C={C} />
+            <FlatList
+              data={occasionImgs} horizontal showsHorizontalScrollIndicator={false}
+              keyExtractor={(_, i) => String(i)}
+              contentContainerStyle={styles.imgList}
+              renderItem={({ item }: any) => (
+                <ImgCard img={item} size={SIDE} C={C} onPress={() => navImg(item)} />
+              )}
+            />
+          </>
+        )}
+
+        {/* ── New Arrivals ────────────────────────────────────── */}
         {arrivals.length > 0 && (
           <>
-            <View style={styles.secHead}>
-              <Text style={[styles.secTitle, { color: C.title }]}>New Arrivals</Text>
-            </View>
+            <SecHeader title="New Arrivals" C={C} onSeeAll={() => navigation.navigate('Products', { title: 'New Arrivals' })} />
             <FlatList
               data={arrivals} horizontal showsHorizontalScrollIndicator={false}
               keyExtractor={(it: any, i) => String(it.TAGKEY ?? i)}
-              contentContainerStyle={styles.hList}
+              contentContainerStyle={styles.cardList}
               renderItem={({ item }) => (
-                <ProductTile item={item} C={C} onPress={() => navigation.navigate('ProductDetails', { tagKey: item.TAGKEY })} />
+                <ProductCard item={item} C={C} onPress={() => navigation.navigate('ProductDetails', { tagKey: item.TAGKEY })} />
               )}
             />
           </>
         )}
 
+        {/* ── Trending Designs ────────────────────────────────── */}
         {trend.length > 0 && (
           <>
-            <View style={styles.secHead}>
-              <Text style={[styles.secTitle, { color: C.title }]}>Trending Now</Text>
-            </View>
+            <SecHeader title="Trending Designs" C={C} onSeeAll={() => navigation.navigate('Products', { title: 'Trending' })} />
             <FlatList
               data={trend} horizontal showsHorizontalScrollIndicator={false}
               keyExtractor={(it: any, i) => String(it.TAGKEY ?? i)}
-              contentContainerStyle={styles.hList}
+              contentContainerStyle={styles.cardList}
               renderItem={({ item }) => (
-                <ProductTile item={item} C={C} onPress={() => navigation.navigate('ProductDetails', { tagKey: item.TAGKEY })} />
+                <ProductCard item={item} C={C} onPress={() => navigation.navigate('ProductDetails', { tagKey: item.TAGKEY })} />
               )}
             />
           </>
         )}
 
+
+
+
+
+
+        {/* ── Recently Viewed ─────────────────────────────────── */}
         {recent.length > 0 && (
           <>
-            <View style={styles.secHead}>
-              <Text style={[styles.secTitle, { color: C.title }]}>Recently Viewed</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('RecentlyViewed')}>
-                <Text style={[styles.seeAll, { color: C.primary }]}>See All</Text>
-              </TouchableOpacity>
-            </View>
+            <SecHeader title="Recently Viewed" C={C} onSeeAll={() => navigation.navigate('RecentlyViewed')} />
             <FlatList
               data={recent} horizontal showsHorizontalScrollIndicator={false}
               keyExtractor={(it: any, i) => String(it.TAGKEY ?? i)}
-              contentContainerStyle={styles.hList}
+              contentContainerStyle={styles.cardList}
               renderItem={({ item }) => (
-                <ProductTile item={item} C={C} onPress={() => navigation.navigate('ProductDetails', { tagKey: item.TAGKEY })} />
+                <ProductCard item={item} C={C} onPress={() => navigation.navigate('ProductDetails', { tagKey: item.TAGKEY })} />
               )}
             />
           </>
@@ -258,25 +498,102 @@ const Home = () => {
   );
 };
 
-const TILE_W = 140;
+/* ─── styles ───────────────────────────────────────────────────── */
+const CARD_W = 155;
+const CAT_W = 100;
+const SG_IMG = 88;   // suggested mini product image height
 
 const styles = StyleSheet.create({
-  safe:    { flex: 1 },
-  topbar:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: PAD, paddingVertical: 12, borderBottomWidth: 1 },
-  brand:   { ...FONTS.h5, ...FONTS.fontSemiBold },
-  iconBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  badge:   { position: 'absolute', top: 4, right: 2, width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  badgeTxt:  { fontSize: 9, fontWeight: '700' },
-  rateStrip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: PAD, paddingVertical: 10 },
-  rateTxt:   { ...FONTS.fontSm, flex: 1 },
-  secHead:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: PAD, paddingTop: 20, paddingBottom: 8 },
-  secTitle:  { ...FONTS.h6, ...FONTS.fontSemiBold },
-  seeAll:    { ...FONTS.fontSm, ...FONTS.fontSemiBold },
-  hList:     { paddingHorizontal: PAD, gap: GAP },
-  tile:      { width: TILE_W, borderRadius: 12, overflow: 'hidden', elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
-  tileImg:   { width: TILE_W, height: TILE_W },
-  tileName:  { ...FONTS.fontSm, ...FONTS.fontSemiBold, padding: 8, paddingBottom: 2 },
-  tilePrice: { ...FONTS.fontSm, ...FONTS.fontBold, paddingHorizontal: 8, paddingBottom: 8 },
+  safe: { flex: 1 },
+
+  // Header
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: PAD, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  headerLogo: { width: 44, height: 44, borderRadius: 10 },
+  headerGreeting: { flexShrink: 1 },
+  greeting: { ...FONTS.fontXs, letterSpacing: 0.3 },
+  subGreeting: { ...FONTS.fontSm, ...FONTS.fontSemiBold, marginTop: 1 },
+  headerIcons: { flexDirection: 'row', gap: 6 },
+  iconBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  badge: { position: 'absolute', top: 0, right: 0, width: 15, height: 15, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  badgeTxt: { fontSize: 8, fontWeight: '800', color: '#fff' },
+
+  // Search bar
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: PAD, marginTop: 14, marginBottom: 4, paddingHorizontal: 14, paddingVertical: 11, borderRadius: 14, borderWidth: 1 },
+  searchPlaceholder: { ...FONTS.fontSm, flex: 1 },
+
+  // Rate card
+  rateCard: { flexDirection: 'row', alignItems: 'center', marginHorizontal: PAD, marginTop: 16, borderRadius: 18, padding: 16, elevation: 3, shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, position: 'relative' },
+  rateCardLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  rateCardRight: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  rateDivider: { width: 1, height: 36, marginHorizontal: 12 },
+  rateIconWrap: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  rateLabel: { ...FONTS.fontXs, marginBottom: 2 },
+  rateValue: { ...FONTS.h6, ...FONTS.fontBold },
+  rateUnit: { ...FONTS.fontXs, ...FONTS.fontSemiBold },
+  rateLiveChip: { position: 'absolute', top: 10, right: 12, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
+  rateDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#159E42' },
+  rateLiveTxt: { ...FONTS.fontXs, fontWeight: '700' },
+
+  // Section header
+  secHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: PAD, paddingTop: 22, paddingBottom: 10 },
+  secTitle: { ...FONTS.h6, ...FONTS.fontSemiBold },
+  seeAll: { ...FONTS.fontSm, ...FONTS.fontSemiBold },
+
+  // Category chips (bmgWorld)
+  catList: { paddingHorizontal: PAD, gap: 10 },
+  catWrap: { alignItems: 'center', width: CAT_W },
+  catImg: { width: 88, height: 88, borderRadius: 44, borderWidth: 1.5, overflow: 'hidden', marginBottom: 6 },
+  catImgInner: { width: 88, height: 88 },
+  catName: { ...FONTS.fontSm, textAlign: 'center', lineHeight: 16 },
+
+  // Image cards (budget / occasion)
+  imgList: { paddingHorizontal: PAD, gap: GAP },
+  imgCard: { borderRadius: 14, overflow: 'hidden', elevation: 2, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
+  imgCardPlaceholder: { flex: 1 },
+
+  // Standard product cards (New Arrivals, Trending, Recently Viewed)
+  cardList: { paddingHorizontal: PAD, gap: GAP },
+  pCard: { width: CARD_W, borderRadius: 16, overflow: 'hidden', elevation: 2, shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
+  pImgWrap: { position: 'relative' },
+  pImg: { width: CARD_W, height: CARD_W },
+  offerPill: { position: 'absolute', top: 8, left: 8, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 },
+  offerPillTxt: { ...FONTS.fontXs, fontWeight: '700' },
+  pInfo: { padding: 10, gap: 3 },
+  pName: { ...FONTS.fontSm, ...FONTS.fontSemiBold, lineHeight: 17 },
+  pSub: { ...FONTS.fontXs },
+  pPriceRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
+  pPrice: { ...FONTS.font, ...FONTS.fontBold },
+  pOrig: { ...FONTS.fontXs, textDecorationLine: 'line-through' },
+
+  // Suggested for You — single mixed card
+  suggestCard: { marginHorizontal: PAD, marginTop: 6, borderRadius: 16, overflow: 'hidden', elevation: 3, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
+  suggestCardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 12 },
+  suggestCardTitle: { ...FONTS.h6, ...FONTS.fontBold },
+  suggestArrow: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  suggestGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 10, paddingBottom: 10, gap: 10 },
+  suggestCell: { width: '47%', borderRadius: 12, overflow: 'hidden', padding: 10, flexGrow: 1 },
+  suggestImgWrap: { width: '100%', borderRadius: 8, overflow: 'hidden' },
+  suggestImg: { width: '100%', height: 120, borderRadius: 8 },
+  suggestBadge: { position: 'absolute', top: 4, left: 4, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 },
+  suggestBadgeTxt: { ...FONTS.fontXs, fontWeight: '800', color: '#fff' },
+  suggestCatLabel: { ...FONTS.fontXs, fontWeight: '700', marginTop: 6, letterSpacing: 0.3 },
+  suggestItemName: { ...FONTS.fontXs, ...FONTS.fontSemiBold, marginTop: 2, lineHeight: 14, color: '#444' },
+  suggestItemPrice: { ...FONTS.fontSm, ...FONTS.fontBold, marginTop: 3 },
+
+  // Savings scheme card
+  schemeOuter: { marginHorizontal: PAD, marginTop: 22, borderRadius: 20, overflow: 'hidden', elevation: 4, shadowColor: '#C9B15D', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
+  schemeCard: { flexDirection: 'row', padding: 22, minHeight: 170 },
+  schemeLeft: { flex: 1 },
+  schemeRight: { width: 90, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  schemeTag: { fontSize: 9, fontWeight: '800', color: 'rgba(255,255,255,0.7)', letterSpacing: 1.5, marginBottom: 6 },
+  schemeTitle: { ...FONTS.h5, ...FONTS.fontBold, color: '#fff', lineHeight: 26, marginBottom: 8 },
+  schemeDesc: { ...FONTS.fontSm, color: 'rgba(255,255,255,0.8)', lineHeight: 18, marginBottom: 16 },
+  schemeBtns: { flexDirection: 'row', gap: 10 },
+  schemeBtnPrimary: { backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 },
+  schemeBtnPrimaryTxt: { ...FONTS.fontSm, ...FONTS.fontBold, color: '#A0893A' },
+  schemeBtnOutline: { borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.6)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 },
+  schemeBtnOutlineTxt: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: '#fff' },
 });
 
 export default Home;

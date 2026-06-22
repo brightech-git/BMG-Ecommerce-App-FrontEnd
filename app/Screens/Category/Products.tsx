@@ -17,24 +17,33 @@ type Props = StackScreenProps<RootStackParamList, 'Products'>;
 
 const Products = ({ route, navigation }: Props) => {
   const params = route.params ?? {};
-  const title = params.title || params.ItemName || params.search || 'Products';
+  const title = params.title || params.occasion || params.ItemName || params.search || 'Products';
 
   const filters = useMemo(() => {
     const f: Record<string, any> = {};
-    if (params.search) f.search = params.search;
-    if (params.ItemName) f.ItemName = params.ItemName;
+    if (params.search)      f.search      = params.search;
+    if (params.ItemName)    f.ItemName    = params.ItemName;
     if (params.SubItemName) f.SubItemName = params.SubItemName;
-    if (params.itemId) f.itemId = params.itemId;
-    if (params.metal) f.metal = params.metal;
-    if (params.filterId) f.filterId = params.filterId;
-    if (params.gender) f.gender = params.gender;
+    if (params.itemId)      f.itemId      = params.itemId;
+    if (params.metal)       f.metal       = params.metal;
+    // filterIds (plural) → backend @RequestParam List<Integer> filterIds
+    if (params.filterIds)   f.filterIds   = Number(params.filterIds);
+    // legacy filterId string kept for any other callers still using the old key
+    if (params.filterId && !params.filterIds) f.filterIds = Number(params.filterId);
+    if (params.gender)      f.gender      = params.gender;
+    if (params.priceRange)  f.priceRange  = params.priceRange;
+    if (params.occasion)    f.occasion    = params.occasion;
+    console.log('[Products] nav params:', params);
+    console.log('[Products] filter payload sent to API:', f);
     return f;
-  }, [params.search, params.ItemName, params.SubItemName, params.itemId, params.metal, params.filterId, params.gender]);
+  }, [params.search, params.ItemName, params.SubItemName, params.itemId, params.metal, params.filterId, params.filterIds, params.gender, params.priceRange, params.occasion]);
 
   const {
     products, totalProducts, isLoading, isError, error,
     refetch, fetchNextPage, hasNextPage, isFetchingNextPage,
   } = useProductListing(filters);
+
+  console.log('[Products] response — totalProducts:', totalProducts, '| loaded:', products.length, '| isLoading:', isLoading, '| isError:', isError, error ?? '');
 
   const cardItems = useMemo(
     () => products.map((p) => toCardItem({ ...p, ImagePath: p.ImagePath ?? undefined })),

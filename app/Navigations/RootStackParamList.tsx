@@ -21,6 +21,7 @@ export type RootStackParamList = {
     ResetPassword: undefined;
     Settings: undefined;
     ChangePassword: undefined;
+    HelpCenter: undefined;
     TwoStepAuthentication: undefined;
     BottomNavigation: undefined;
     SingleChat: undefined;
@@ -41,6 +42,9 @@ export type RootStackParamList = {
         SubItemName?: string;
         filterId?: string;
         gender?: string;
+        priceRange?: string;
+        occasion?: string;
+        filterIds?: number | string;   // → backend List<Integer> filterIds
     } | undefined;
     Language: undefined;
     MyCart: undefined;
@@ -93,10 +97,4 @@ export type RootStackParamList = {
     Swipeable: undefined;
     Tabs: undefined;
     Tables: undefined;
-    Toggles: undefined;
-    Inputs: undefined;
-    Footers: undefined;
-    TabStyle1: undefined;
-    TabStyle2: undefined;
-    TabStyle3: undefined
-};
+    Toggles: unde

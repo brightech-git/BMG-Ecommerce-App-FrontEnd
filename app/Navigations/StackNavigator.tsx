@@ -42,6 +42,8 @@ import OrderReturn from "../Screens/profile/OrderReturn";
 import AboutUs from "../Screens/AboutUs/AboutUs";
 import ContactUs from "../Screens/ContactUs/ContactUs";
 import PolicyScreen from "../Screens/Policy/PolicyScreen";
+import ChangePassword from "../Screens/profile/ChangePassword";
+import HelpCenter from "../Screens/profile/HelpCenter";
 
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -115,6 +117,8 @@ const StackNavigator = () => {
       <Stack.Screen name={"AboutUs"} component={AboutUs} />
             <Stack.Screen name={"ContactUs"} component={ContactUs} />
       <Stack.Screen name={"PolicyScreen"} component={PolicyScreen} />
+      <Stack.Screen name={"ChangePassword"} component={ChangePassword} />
+      <Stack.Screen name={"HelpCenter"} component={HelpCenter} />
     </Stack.Navigator>
   );
 };

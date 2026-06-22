@@ -115,9 +115,10 @@ export const SHIPPING = {
 
 // Profile
 export const PROFILE = {
-  ME:     '/user/profile',
-  BY_ID:  '/auth/user/getUserMasterDataById/:id',
-  UPDATE: '/auth/user/update/:id',
+  ME:              '/user/profile',
+  BY_ID:           '/auth/user/getUserMasterDataById/:id',
+  UPDATE:          '/auth/user/update/:id',
+  CHANGE_PASSWORD: '/user/change-password',
 };
 
 // Notification / Contact

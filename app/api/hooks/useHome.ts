@@ -1,7 +1,8 @@
 // app/api/hooks/useHome.ts
 // Aggregates the home-screen content sources used by the website home page.
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthToken } from './useAuthToken';
+import { filterProducts } from '../services/productService';
 import {
   getHeroBanners, getCategoryImages, getBudgetCategories,
   getNewArrivals, getTrending, getOfferBanners, getInstantOffers,
@@ -42,6 +43,42 @@ export const useRecentlyViewed = () => {
     enabled: !!token,
     staleTime: 1000 * 60 * 2,
   });
+};
+
+/**
+ * Fetches 4 products each from 5 jewellery categories in parallel.
+ * Returns data grouped by category so the UI can render a Flipkart-style
+ * "section card" per category — each card shows a 2×2 product mini-grid.
+ */
+const SUGGEST_CATS = [
+  { id: 2,  name: 'Rings',     headerColor: '#FFF0E6', accentColor: '#E07B39' },
+  { id: 6,  name: 'Earrings',  headerColor: '#FFF0E6', accentColor: '#D64F7F' },
+  { id: 13, name: 'Bangles',   headerColor: '#FFF0E6', accentColor: '#4F6FD6' },
+  { id: 4,  name: 'Necklaces', headerColor: '#FFF0E6', accentColor: '#1A9E6A' },
+];
+const PER_CAT = 4;
+
+export const useSuggestedProducts = () => {
+  const results = useQueries({
+    queries: SUGGEST_CATS.map((cat) => ({
+      queryKey: ['suggestedCat', cat.id],
+      queryFn: () => filterProducts({ itemId: cat.id, pageSize: PER_CAT, page: 1 }),
+      staleTime: 1000 * 60 * 10,
+    })),
+  });
+
+  const isLoading = results.some((r) => r.isLoading);
+
+  // Return one entry per category; filter out empty ones
+  const categories = SUGGEST_CATS.map((cat, i) => {
+    const raw = (results[i].data as any)?.data ?? [];
+    return {
+      ...cat,
+      products: (Array.isArray(raw) ? raw : []).slice(0, PER_CAT) as any[],
+    };
+  }).filter((c) => c.products.length > 0);
+
+  return { categories, isLoading };
 };
 
 export const useRecordRecentlyViewed = () => {

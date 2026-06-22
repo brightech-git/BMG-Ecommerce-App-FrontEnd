@@ -1,55 +1,96 @@
 // app/Screens/Category/Category.tsx
-// Website: home "Bmg World" categories. Data: /mainCategory_images/list -> [{item_name, image_path}].
-// Tap -> Products?ItemName=. NOTE: root App.tsx provides SafeAreaView, so use a plain View.
+// Shows the bmgWorld categories from /budget-categories/getOnlyVisible —
+// the same data source used in the Home screen category section.
 import React, { useMemo } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, FlatList, Dimensions, StatusBar,
+  View, Text, TouchableOpacity, StyleSheet,
+  FlatList, Dimensions, StatusBar,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
-import { COLORS, FONTS, SIZES } from '../../constants/theme';
-import { useCategoryImages } from '../../api/hooks/useCatalog';
+import { FONTS, SIZES } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
+import { useBudgetBanners } from '../../api/hooks/useHome';
 import { absUrl } from '../../utils/image';
 import { SmartImage } from '../../components/common/SmartImage';
 import { Loader, EmptyState, ErrorState } from '../../components/common/StateViews';
+import { CartWishlistBadge } from '../../components/common/CartWishlistBadge';
 
 const { width } = Dimensions.get('window');
-const GAP = 12;
-const COLS = 2;
+const GAP    = 12;
+const COLS   = 2;
 const CARD_W = (width - SIZES.padding * 2 - GAP) / COLS;
 
 type Nav = StackNavigationProp<RootStackParamList>;
 
-const titleCase = (s = '') =>
-  s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+/* ── same helpers as Home.tsx ──────────────────────────────────── */
+const mobileUrl = (img: any): string | undefined => {
+  if (!img) return undefined;
+  if (img.isSingle) return absUrl(img.url);
+  return absUrl(img.mobile?.url ?? img.desktop?.url);
+};
 
+const nameFromUrl = (url?: string): string => {
+  if (!url) return '';
+  const seg   = (url.split('/').pop() ?? '').replace(/\.[^.]+$/, '');
+  const clean = seg.replace(/^[0-9a-f-]{36}_/i, '');
+  return clean.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+const parseLink = (link?: string, filterId?: string | number | null): Record<string, any> => {
+  const p: Record<string, any> = {};
+  if (filterId != null && filterId !== '') p.filterIds = Number(filterId);
+  if (!link) return p;
+  link.split('&').forEach((pair) => {
+    const [k, v] = pair.split('=');
+    if (!k || v === undefined) return;
+    const key = k.trim(), val = decodeURIComponent(v.trim());
+    if (key === 'itemName')      p.ItemName  = val;
+    else if (key === 'itemId')   p.itemId    = val;
+    else if (key === 'filterId') p.filterIds = Number(val);
+    else                         p[key]      = val;
+  });
+  return p;
+};
+
+/* ── component ─────────────────────────────────────────────────── */
 const Category = () => {
-  const navigation = useNavigation<Nav>();
-  const { data, isLoading, isError, error, refetch } = useCategoryImages();
+  const navigation   = useNavigation<Nav>();
+  const { colors: C } = useTheme();
+  const { data, isLoading, isError, error, refetch } = useBudgetBanners();
 
-  const items = useMemo(() => {
-    const raw = Array.isArray(data) ? data : (data as any)?.data ?? [];
-    return raw.map((c: any) => ({
-      name: c.item_name || c.ItemName || c.itemName || c.title || c.name || '',
-      image: absUrl(c.image_path || c.imagePath || c.image || c.ImagePath),
-    })).filter((c: any) => c.name);
+  const items: any[] = useMemo(() => {
+    const d = (data as any)?.data ?? {};
+    return (d.bmgWorld?.images ?? []) as any[];
   }, [data]);
 
+  const navItem = (img: any) => {
+    const link   = img.isSingle ? img.link : (img.mobile?.link   ?? img.desktop?.link   ?? '');
+    const fId    = img.isSingle ? img.filterId : (img.mobile?.filterId ?? img.desktop?.filterId);
+    const rawUrl = img.isSingle ? img.url : (img.mobile?.url ?? img.desktop?.url);
+    const params = parseLink(link, fId);
+    if (!params.itemId && !params.ItemName && !params.filterIds) return;
+    const title  = nameFromUrl(rawUrl);
+    navigation.navigate('Products', { ...params, title });
+  };
+
   return (
-    <View style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.header}>
+    <View style={[styles.safe, { backgroundColor: C.background }]}>
+      <StatusBar barStyle={C.statusBar} backgroundColor={C.card} />
+
+      <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
         {navigation.canGoBack() && (
           <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
-            <Feather name="arrow-left" size={22} color={COLORS.title} />
+            <Feather name="arrow-left" size={22} color={C.title} />
           </TouchableOpacity>
         )}
-        <Text style={styles.hTitle}>Categories</Text>
+        <Text style={[styles.hTitle, { color: C.title }]}>BMG World</Text>
         <TouchableOpacity style={styles.hBtn} onPress={() => navigation.navigate('Search')}>
-          <Feather name="search" size={20} color={COLORS.title} />
+          <Feather name="search" size={20} color={C.title} />
         </TouchableOpacity>
+        <CartWishlistBadge />
       </View>
 
       {isLoading ? (
@@ -61,24 +102,24 @@ const Category = () => {
       ) : (
         <FlatList
           data={items}
-          keyExtractor={(it, i) => `${it.name}-${i}`}
+          keyExtractor={(_, i) => String(i)}
           numColumns={COLS}
-          contentContainerStyle={{ padding: SIZES.padding, paddingBottom: SIZES.TAB_BAR_HEIGHT }}
+          contentContainerStyle={{ padding: SIZES.padding, paddingBottom: SIZES.TAB_BAR_HEIGHT + 10 }}
           columnWrapperStyle={{ gap: GAP, marginBottom: GAP }}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[styles.card, { width: CARD_W }]}
-              activeOpacity={0.85}
-              onPress={() => navigation.navigate('Products', { ItemName: item.name, title: titleCase(item.name) })}
-            >
-              <SmartImage uri={item.image} style={styles.img} />
-              <View style={styles.cardFooter}>
-                <Text style={styles.cardTitle} numberOfLines={1}>{titleCase(item.name)}</Text>
-                <Feather name="chevron-right" size={16} color={COLORS.primary} />
-              </View>
-            </TouchableOpacity>
-          )}
+          renderItem={({ item }: any) => {
+            const uri  = mobileUrl(item);
+            const name = nameFromUrl(item.isSingle ? item.url : (item.mobile?.url ?? item.desktop?.url));
+            return (
+              <TouchableOpacity
+                style={[styles.card, { width: CARD_W, backgroundColor: C.card }]}
+                activeOpacity={0.85}
+                onPress={() => navItem(item)}
+              >
+                <SmartImage uri={uri} style={[styles.img, { backgroundColor: C.borderColor }]} />
+              </TouchableOpacity>
+            );
+          }}
         />
       )}
     </View>
@@ -86,21 +127,14 @@ const Category = () => {
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F9F6F1' },
-  header: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 12, paddingVertical: 12, backgroundColor: COLORS.white,
-    borderBottomWidth: 1, borderBottomColor: COLORS.borderColor,
-  },
-  hBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
-  card: {
-    backgroundColor: COLORS.white, borderRadius: 14, overflow: 'hidden',
-    elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 5, shadowOffset: { width: 0, height: 2 },
-  },
-  img: { width: '100%', height: CARD_W },
-  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 10 },
-  cardTitle: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title, flex: 1 },
+  safe:       { flex: 1 },
+  header:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1 },
+  hBtn:       { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  hTitle:     { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold },
+  card:       { borderRadius: 14, overflow: 'hidden', elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
+  img:        { width: '100%', height: CARD_W },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 10, borderTopWidth: StyleSheet.hairlineWidth },
+  cardTitle:  { ...FONTS.fontSm, ...FONTS.fontSemiBold, flex: 1 },
 });
 
 export default Category;

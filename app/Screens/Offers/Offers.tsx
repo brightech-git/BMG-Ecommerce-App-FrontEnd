@@ -43,7 +43,7 @@ const linkToParams = (link?: string, title?: string) => {
     const val = decodeURIComponent(v.trim());
     if (key === 'itemName') p.ItemName = val;
     else if (key === 'itemId') p.itemId = val;
-    else if (key === 'filterId') p.filterId = val;
+    else if (key === 'filterId') p.filterIds = Number(val);  // backend expects List<Integer> filterIds
     else p[key] = val;
   });
   return p;
