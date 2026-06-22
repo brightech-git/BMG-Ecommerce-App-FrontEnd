@@ -127,3 +127,12 @@ export const MISC = {
   DEVICE_REGISTER:   '/device/register',
   NOTIFICATION_LIST: '/notification/list',
 };
+
+export const NOTIF = {
+  GET_USER:       (userId: number) => `/notifications/user/${userId}`,
+  UNREAD_COUNT:   (userId: number) => `/notifications/user/${userId}/unread-count`,
+  MARK_READ:      (notifId: number, userId: number) => `/notifications/read/${notifId}/user/${userId}`,
+  MARK_ALL_READ:  (userId: number) => `/notifications/read/all/${userId}`,
+  DELETE_ONE:     (id: number) => `/notifications/notification/${id}`,
+  DELETE_BY_USER: (userId: number) => `/notifications/user/${userId}`,
+};

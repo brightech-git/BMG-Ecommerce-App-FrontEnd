@@ -183,9 +183,9 @@ const BottomTab = ({ state, descriptors, navigation } : Props) => {
                                         style={{ width: 21, height: 21, tintColor: isFocused ? COLORS.white : colors.title, resizeMode: 'contain' }}
                                         source={
                                             label == 'Home' ? IMAGES.home :
-                                            label == 'Wishlist' ? IMAGES.heart2 :
                                             label == 'MyCart' ? IMAGES.shopping2 :
                                             label == 'Category' ? IMAGES.document :
+                                            label == 'Wishlist' ? IMAGES.heart2 :
                                             label == 'Notification' ? IMAGES.bell2 : IMAGES.home
                                         }
 

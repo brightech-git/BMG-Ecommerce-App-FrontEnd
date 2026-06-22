@@ -52,9 +52,9 @@ export const useRecentlyViewed = () => {
  */
 const SUGGEST_CATS = [
   { id: 2,  name: 'Rings',     headerColor: '#FFF0E6', accentColor: '#E07B39' },
-  { id: 6,  name: 'Earrings',  headerColor: '#FFF0E6', accentColor: '#D64F7F' },
-  { id: 13, name: 'Bangles',   headerColor: '#FFF0E6', accentColor: '#4F6FD6' },
-  { id: 4,  name: 'Necklaces', headerColor: '#FFF0E6', accentColor: '#1A9E6A' },
+  { id: 6,  name: 'Earrings',  headerColor: '#FFF0E6', accentColor: '#E07B39' },
+  { id: 13, name: 'Bangles',   headerColor: '#FFF0E6', accentColor: '#E07B39' },
+  { id: 4,  name: 'Necklaces', headerColor: '#FFF0E6', accentColor: '#E07B39' },
 ];
 const PER_CAT = 4;
 

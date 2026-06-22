@@ -19,7 +19,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type ViewMode = 'list' | 'grid2' | 'grid3';
+export type ViewMode = 'list' | 'grid2';
 
 export interface ProductCardItem {
   id: string;
@@ -254,66 +254,34 @@ const GridCard = ({
   );
 };
 
-// ─── View Mode Toggle ─────────────────────────────────────────────────────────
-
-const MODES: { key: ViewMode; label: string }[] = [
-  { key: 'list',  label: '☰  List' },
-  { key: 'grid2', label: '⊞  2×2'  },
-  { key: 'grid3', label: '⊟  Grid' },
-];
-
-const ViewToggle = ({
-  mode,
-  onChange,
-}: {
-  mode: ViewMode;
-  onChange: (m: ViewMode) => void;
-}) => (
-  <View style={s.toggle}>
-    {MODES.map(m => (
-      <TouchableOpacity
-        key={m.key}
-        style={[s.toggleBtn, mode === m.key && s.toggleBtnActive]}
-        onPress={() => onChange(m.key)}
-      >
-        <Text style={[s.toggleTxt, mode === m.key && s.toggleTxtActive]}>
-          {m.label}
-        </Text>
-      </TouchableOpacity>
-    ))}
-  </View>
-);
-
 // ─── ProductList ──────────────────────────────────────────────────────────────
 
 interface ProductListProps {
   products: ProductCardItem[];
-  defaultMode?: ViewMode;
+  mode?: ViewMode;
   onPress?: (item: ProductCardItem) => void;
   onEndReached?: () => void;
   loadingMore?: boolean;
+  contentContainerStyle?: object;
 }
 
 export const ProductList: React.FC<ProductListProps> = ({
   products,
-  defaultMode = 'grid2',
+  mode = 'grid2',
   onPress,
   onEndReached,
   loadingMore = false,
+  contentContainerStyle,
 }) => {
-  const [mode, setMode] = useState<ViewMode>(defaultMode);
-
   const PAD = 12;
   const GAP = 10;
   const col2W = (SCREEN_WIDTH - PAD * 2 - GAP) / 2;
-  const col3W = (SCREEN_WIDTH - PAD * 2 - GAP * 2) / 3;
 
-  const numCols = mode === 'list' ? 1 : mode === 'grid2' ? 2 : 3;
-  const cardW   = mode === 'grid2' ? col2W : col3W;
+  const numCols = mode === 'list' ? 1 : 2;
+  const cardW   = col2W;
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F9F6F1' }}>
-      <ViewToggle mode={mode} onChange={setMode} />
 
       <FlatList
         key={`mode-${mode}`}
@@ -324,6 +292,7 @@ export const ProductList: React.FC<ProductListProps> = ({
           paddingHorizontal: mode === 'list' ? 0 : PAD,
           paddingBottom: 32,
           paddingTop: 8,
+          ...contentContainerStyle,
         }}
         columnWrapperStyle={
           numCols > 1 ? { gap: GAP, marginBottom: GAP } : undefined
@@ -394,32 +363,6 @@ const s = StyleSheet.create({
     borderRadius: 5,
   },
   badgeText: { color: WHITE, fontSize: 10, fontWeight: '700' },
-
-  // Toggle
-  toggle: {
-    flexDirection: 'row',
-    backgroundColor: '#EDE8DF',
-    margin: 12,
-    borderRadius: 10,
-    padding: 3,
-    gap: 3,
-  },
-  toggleBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  toggleBtnActive: {
-    backgroundColor: GOLD,
-    shadowColor: GOLD,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  toggleTxt:       { fontSize: 13, fontWeight: '600', color: MUTED },
-  toggleTxtActive: { color: WHITE },
 
   // List card
   listCard: {

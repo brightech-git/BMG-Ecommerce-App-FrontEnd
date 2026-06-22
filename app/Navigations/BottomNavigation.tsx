@@ -5,45 +5,26 @@ import BottomTab from '../layout/BottomTab';
 import MyCart from '../Screens/MyCart/MyCart';
 import Category from '../Screens/Category/Category';
 import Notification from '../Screens/Notification/Notification';
-import { BottomTabParamList } from './BottomTabParamList';
 import Wishlist from '../Screens/Wishlist/Wishlist';
+import { BottomTabParamList } from './BottomTabParamList';
 
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 
 const BottomNavigation = () => {
-
-    // const theme = useTheme();
-    // const { colors } = theme;
- 
     return (
         <Tab.Navigator
             initialRouteName='Home'
             screenOptions={{
-                headerShown : false
+                headerShown: false,
             }}
-            tabBar={(props:any) => <BottomTab {...props}/>}
+            tabBar={(props: any) => <BottomTab {...props} />}
         >
-            <Tab.Screen 
-                name="Home" 
-                component={HomeScreen} 
-            />
-            <Tab.Screen 
-                name="Wishlist" 
-                component={Wishlist} 
-            />
-            <Tab.Screen 
-                name="MyCart" 
-                component={MyCart} 
-            />
-            <Tab.Screen 
-                name="Category" 
-                component={Category} 
-            />
-            <Tab.Screen
-                name="Notification"
-                component={Notification}
-            />
+            <Tab.Screen name="Category"     component={Category} />
+            <Tab.Screen name="MyCart"       component={MyCart} />
+            <Tab.Screen name="Home"         component={HomeScreen} />
+            <Tab.Screen name="Wishlist"     component={Wishlist} />
+            <Tab.Screen name="Notification" component={Notification} />
         </Tab.Navigator>
     );
 };
