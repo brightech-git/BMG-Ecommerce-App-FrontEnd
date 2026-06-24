@@ -30,9 +30,9 @@ const HIDDEN_ROUTES = new Set([
 
 /* ─── Tab definitions ───────────────────────────────────────────── */
 const TABS = [
-  { label: 'Category',     icon: IMAGES.document,  route: 'Category' },
-  { label: 'MyCart',       icon: IMAGES.shopping2, route: 'MyCart' },
   { label: 'Home',         icon: IMAGES.home,      route: 'Home' },
+  { label: 'MyCart',       icon: IMAGES.shopping2, route: 'MyCart' },
+  { label: 'Category',     icon: IMAGES.document,  route: 'Category' },
   { label: 'Wishlist',     icon: IMAGES.heart2,    route: 'Wishlist' },
   { label: 'Notification', icon: IMAGES.bell2,     route: 'Notification' },
 ] as const;

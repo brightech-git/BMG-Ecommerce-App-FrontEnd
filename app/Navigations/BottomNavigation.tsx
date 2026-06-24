@@ -20,9 +20,9 @@ const BottomNavigation = () => {
             }}
             tabBar={(props: any) => <BottomTab {...props} />}
         >
-            <Tab.Screen name="Category"     component={Category} />
-            <Tab.Screen name="MyCart"       component={MyCart} />
             <Tab.Screen name="Home"         component={HomeScreen} />
+            <Tab.Screen name="MyCart"       component={MyCart} />
+            <Tab.Screen name="Category"     component={Category} />
             <Tab.Screen name="Wishlist"     component={Wishlist} />
             <Tab.Screen name="Notification" component={Notification} />
         </Tab.Navigator>

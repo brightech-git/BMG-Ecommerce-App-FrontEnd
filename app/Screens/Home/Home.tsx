@@ -358,7 +358,7 @@ const Home = () => {
               {/* 2-column grid of mixed products */}
               <View style={styles.suggestGrid}>
                 {mixed.map((product: any, idx: number) => {
-                  const img = toCardItem({ TAGKEY: product.TAGKEY, ITEMNAME: product.ITEMNAME, SUBITEMNAME: product.SUBITEMNAME, FinalAmount: product.FinalAmount, OriginalAmount: product.OriginalAmount, OfferPercentage: product.OfferPercentage, ImagePath: product.ImagePath }).images[0];
+                  const img = firstImage(product.ImagePath);
                   const hasOffer = product.OfferPercentage && product.OfferPercentage !== '0';
                   return (
                     <TouchableOpacity

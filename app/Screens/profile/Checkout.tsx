@@ -114,16 +114,23 @@ const Checkout = () => {
     lastShippingKey.current = key;
 
     setShippingLoading(true);
+    console.log('[Shipping] REQUEST params:', { destinationPincode: String(pincode), weightInGrams: totalWeightInGrams });
     axiosInstance.get(SHIPPING.CALCULATE, {
       params: { destinationPincode: String(pincode), weightInGrams: totalWeightInGrams },
     }).then((res: any) => {
+      console.log('[Shipping] RESPONSE status:', res.status);
+      console.log('[Shipping] RESPONSE data:', JSON.stringify(res.data, null, 2));
       const d = res.data;
       const fee = num(
         d?.totalAmount ?? d?.shippingCharge ?? d?.amount ?? d?.rate ??
         d?.totalCharge ?? d?.data?.totalAmount ?? d?.data?.shippingCharge ?? 0
       );
+      console.log('[Shipping] Resolved fee:', fee);
       setShippingFee(fee);
     }).catch((e: any) => {
+      console.log('[Shipping] ERROR status:', e?.response?.status);
+      console.log('[Shipping] ERROR response data:', JSON.stringify(e?.response?.data, null, 2));
+      console.log('[Shipping] ERROR message:', e?.message);
       setShippingFee(0);
     }).finally(() => setShippingLoading(false));
   }, [selected, totalWeightInGrams]);
