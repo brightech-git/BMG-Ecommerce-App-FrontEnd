@@ -186,7 +186,7 @@ const BottomTab = ({ state, descriptors, navigation } : Props) => {
                                             label == 'MyCart' ? IMAGES.shopping2 :
                                             label == 'Category' ? IMAGES.document :
                                             label == 'Wishlist' ? IMAGES.heart2 :
-                                            label == 'Notification' ? IMAGES.bell2 : IMAGES.home
+                                            label == 'Profile' ? IMAGES.profile : IMAGES.home
                                         }
 
                                     />

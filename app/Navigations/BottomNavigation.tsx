@@ -4,7 +4,7 @@ import HomeScreen from '../Screens/Home/Home';
 import BottomTab from '../layout/BottomTab';
 import MyCart from '../Screens/MyCart/MyCart';
 import Category from '../Screens/Category/Category';
-import Notification from '../Screens/Notification/Notification';
+import Profile from '../Screens/profile/Profile';
 import Wishlist from '../Screens/Wishlist/Wishlist';
 import { BottomTabParamList } from './BottomTabParamList';
 
@@ -24,7 +24,7 @@ const BottomNavigation = () => {
             <Tab.Screen name="MyCart"       component={MyCart} />
             <Tab.Screen name="Category"     component={Category} />
             <Tab.Screen name="Wishlist"     component={Wishlist} />
-            <Tab.Screen name="Notification" component={Notification} />
+            <Tab.Screen name="Profile"      component={Profile} />
         </Tab.Navigator>
     );
 };

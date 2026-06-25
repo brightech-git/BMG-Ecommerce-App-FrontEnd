@@ -30,11 +30,11 @@ const HIDDEN_ROUTES = new Set([
 
 /* ─── Tab definitions ───────────────────────────────────────────── */
 const TABS = [
-  { label: 'Home',         icon: IMAGES.home,      route: 'Home' },
-  { label: 'MyCart',       icon: IMAGES.shopping2, route: 'MyCart' },
-  { label: 'Category',     icon: IMAGES.document,  route: 'Category' },
-  { label: 'Wishlist',     icon: IMAGES.heart2,    route: 'Wishlist' },
-  { label: 'Notification', icon: IMAGES.bell2,     route: 'Notification' },
+  { label: 'Home',     icon: IMAGES.home,      route: 'Home' },
+  { label: 'MyCart',   icon: IMAGES.shopping2, route: 'MyCart' },
+  { label: 'Category', icon: IMAGES.document,  route: 'Category' },
+  { label: 'Wishlist', icon: IMAGES.heart2,    route: 'Wishlist' },
+  { label: 'Profile',  icon: IMAGES.profile,   route: 'Profile' },
 ] as const;
 
 /* ─── Individual tab item (defined outside parent — stable identity) */

@@ -3,5 +3,5 @@ export type BottomTabParamList = {
     MyCart: undefined;
     Category: undefined;
     Wishlist: undefined;
-    Notification: undefined;
+    Profile: undefined;
 };

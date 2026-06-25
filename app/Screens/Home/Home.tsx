@@ -229,15 +229,14 @@ const Home = () => {
           </View>
         </View>
 
-        {/* Wishlist + Cart — right */}
+        {/* Wishlist + Notification — right */}
         <View style={styles.headerIcons}>
           <TouchableOpacity style={[styles.iconBtn, { backgroundColor: C.background }]} onPress={() => navigation.navigate('Wishlist')}>
             <Feather name="heart" size={19} color={C.title} />
             {favoritesCount > 0 && <View style={[styles.badge, { backgroundColor: C.danger }]}><Text style={styles.badgeTxt}>{favoritesCount}</Text></View>}
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.iconBtn, { backgroundColor: C.background }]} onPress={() => navigation.navigate('MyCart')}>
-            <Feather name="shopping-bag" size={19} color={C.title} />
-            {cartCount > 0 && <View style={[styles.badge, { backgroundColor: C.primary }]}><Text style={styles.badgeTxt}>{cartCount}</Text></View>}
+          <TouchableOpacity style={[styles.iconBtn, { backgroundColor: C.background }]} onPress={() => navigation.navigate('Notification')}>
+            <Feather name="bell" size={19} color={C.title} />
           </TouchableOpacity>
         </View>
       </View>
