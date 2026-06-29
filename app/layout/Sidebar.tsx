@@ -23,26 +23,16 @@ interface NavGroup { title: string; items: NavItem[] }
 
 const NAV_GROUPS: NavGroup[] = [
   {
-    title: 'Shop',
+    title: 'Explore',
     items: [
-      { icon: 'home',        label: 'Home',        route: 'BottomNavigation' },
-      { icon: 'grid',        label: 'Categories',  route: 'Category' },
-      { icon: 'tag',         label: 'Offers',      route: 'Offers' },
-      { icon: 'search',      label: 'Search',      route: 'Search' },
+      { icon: 'home',   label: 'Home',       route: 'BottomNavigation' },
+      { icon: 'grid',   label: 'Categories', route: 'Category' },
+      { icon: 'tag',    label: 'Offers',     route: 'Offers' },
+      { icon: 'search', label: 'Search',     route: 'Search' },
     ],
   },
   {
-    title: 'My Account',
-    items: [
-      { icon: 'shopping-bag',  label: 'My Orders',    route: 'Myorder' },
-      { icon: 'heart',         label: 'Wishlist',     route: 'Wishlist' },
-      { icon: 'shopping-cart', label: 'My Cart',      route: 'MyCart' },
-      { icon: 'map-pin',       label: 'Addresses',    route: 'SavedAddresses' },
-      { icon: 'user',          label: 'Edit Profile', route: 'EditProfile' },
-    ],
-  },
-  {
-    title: 'Support',
+    title: 'Help & Support',
     items: [
       { icon: 'help-circle', label: 'Help & Info', route: 'HelpCenter' },
       { icon: 'phone',       label: 'Contact Us',  route: 'ContactUs' },

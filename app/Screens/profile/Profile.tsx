@@ -90,26 +90,36 @@ const Profile = () => {
             {!!email && <Text style={[styles.sub, { color: C.textLight }]}>{email}</Text>}
             {!!phone && <Text style={[styles.sub, { color: C.textLight }]}>{phone}</Text>}
           </View>
+          {/* Edit profile button — uncomment when edit screen is ready
           <TouchableOpacity onPress={() => navigation.navigate('EditProfile')}>
             <Feather name="edit-2" size={18} color={C.primary} />
           </TouchableOpacity>
+          */}
+        </View>
+
+        <SectionLabel title="My Activity" />
+        <View style={[styles.group, { backgroundColor: C.card }]}>
+          <Row icon="shopping-bag"  label="My Orders"     onPress={() => navigation.navigate('Myorder')} />
+          <Row icon="heart"         label="Wishlist"      onPress={() => navigation.navigate('Wishlist')} />
+          <Row icon="shopping-cart" label="My Cart"       onPress={() => navigation.navigate('MyCart')} />
+          <Row icon="tag"           label="Offers & Deals" onPress={() => navigation.navigate('Offers')} />
         </View>
 
         <SectionLabel title="My Account" />
         <View style={[styles.group, { backgroundColor: C.card }]}>
-          <Row icon="shopping-bag"  label="My Orders"     onPress={() => navigation.navigate('Myorder')} />
-          <Row icon="map-pin"       label="My Addresses"  onPress={() => navigation.navigate('SavedAddresses', {})} />
-          <Row icon="heart"         label="Wishlist"      onPress={() => navigation.navigate('Wishlist')} />
-          <Row icon="shopping-cart" label="My Cart"       onPress={() => navigation.navigate('MyCart')} />
-          <Row icon="tag"           label="Offers & Deals" onPress={() => navigation.navigate('Offers')} />
-          <Row icon="bell"          label="Notifications" onPress={() => navigation.navigate('Notification')} />
+          <Row icon="map-pin" label="My Addresses"  onPress={() => navigation.navigate('SavedAddresses', {})} />
+          <Row icon="bell"    label="Notifications" onPress={() => navigation.navigate('Notification')} />
         </View>
 
         <SectionLabel title="Settings" />
         <View style={[styles.group, { backgroundColor: C.card }]}>
-          <Row icon="user"  label="Edit Profile"    onPress={() => navigation.navigate('EditProfile')} />
+          {/* Edit Profile — uncomment when edit screen is ready
+          <Row icon="user" label="Edit Profile" onPress={() => navigation.navigate('EditProfile')} />
+          */}
           <Row icon="lock"  label="Change Password" onPress={() => navigation.navigate('ChangePassword')} />
-          <Row icon="globe" label="Language"        onPress={() => navigation.navigate('Language')} />
+          {/* Language — uncomment when multi-language is supported
+          <Row icon="globe" label="Language" onPress={() => navigation.navigate('Language')} />
+          */}
           <Row
             icon={isDark ? 'moon' : 'sun'}
             label={isDark ? 'Dark Mode' : 'Light Mode'}
@@ -123,11 +133,6 @@ const Profile = () => {
               />
             }
           />
-        </View>
-
-        <SectionLabel title="More" />
-        <View style={[styles.group, { backgroundColor: C.card }]}>
-          <Row icon="help-circle" label="Help & Info" onPress={() => navigation.navigate('HelpCenter')} />
         </View>
 
         <SectionLabel title="Account" />

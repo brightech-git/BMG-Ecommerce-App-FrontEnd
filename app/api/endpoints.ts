@@ -54,22 +54,30 @@ export const WISHLIST = {
   DELETE:  '/wishlist/:tagKey',
 };
 
+// Onboarding app banners
+export const ONBOARD = {
+  BANNER_LIST: '/App_banner/list',
+};
+
 // Home / Banners content
 export const HOME = {
-  BANNER_LIST:       '/banner/list',
-  CATEGORY_IMAGES:   '/mainCategory_images/list',
-  GENDER_IMAGES:     '/gender_images/list',
-  OFFER_BANNERS:     '/offer_banner/list',
-  INSTANT_OFFERS:    '/instant_offers/list',
-  FEATURED_PRODUCTS: '/feature_product/list',
-  BEST_DESIGN:       '/best_design/list',
-  LATEST_COLLECTION: '/latest_collection/list',
-  BUDGET_CATEGORIES: '/budget-categories/getOnlyVisible', 
-  NEW_ARRIVALS:      '/new-arrivals',
-  TRENDING:          '/trending/top10',
+  // ── Active ──────────────────────────────────────────────────────
+  BUDGET_CATEGORIES:   '/budget-categories/getOnlyVisible',
+  NEW_ARRIVALS:        '/new-arrivals',
+  TRENDING:            '/trending/top10',
   RECENTLY_VIEWED:     '/recently-viewed/list',   // GET  — requires auth token
-  RECENTLY_VIEWED_ADD: '/recently-viewed/add',         // POST { tagKey } — records a view
-  COMPANY:           '/company/all',
+  RECENTLY_VIEWED_ADD: '/recently-viewed/add',    // POST { tagKey } — records a view
+
+  // ── Unused — commented out for later use ────────────────────────
+  // BANNER_LIST:       '/banner/list',
+  // CATEGORY_IMAGES:   '/mainCategory_images/list',
+  // GENDER_IMAGES:     '/gender_images/list',
+  // OFFER_BANNERS:     '/offer_banner/list',
+  // INSTANT_OFFERS:    '/instant_offers/list',
+  // FEATURED_PRODUCTS: '/feature_product/list',
+  // BEST_DESIGN:       '/best_design/list',
+  // LATEST_COLLECTION: '/latest_collection/list',
+  // COMPANY:           '/company/all',
 };
 
 // Orders

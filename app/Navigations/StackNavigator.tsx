@@ -45,13 +45,19 @@ import PolicyScreen from "../Screens/Policy/PolicyScreen";
 import ChangePassword from "../Screens/profile/ChangePassword";
 import HelpCenter from "../Screens/profile/HelpCenter";
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+
+
+
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 const StackNavigator = () => {
   const dispatch = useDispatch<any>();
   const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | null>(null);
-
+ 
+//  AsyncStorage.clear()
   useEffect(() => {
     (async () => {
       const [onboarded, token, user] = await Promise.all([
@@ -80,7 +86,9 @@ const StackNavigator = () => {
         cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
       }}
     >
-      <Stack.Screen name="Onbording" component={Onbording} />
+      {initialRoute === 'Onbording' && (
+        <Stack.Screen name="Onbording" component={Onbording} />
+      )}
       <Stack.Screen name={"SignIn"} component={SignIn} />
       <Stack.Screen name={"SignUp"} component={SignUp} />
       <Stack.Screen name={"ForgotPassword"} component={ForgotPassword} />

@@ -14,7 +14,7 @@ export type RootStackParamList = {
     ForgotPassword: undefined;
     EnterCode: { contactNumber: string };
     SignUpVerifyOTP: { contactNumber: string };
-    GoogleContactUpload: undefined;
+    GoogleContactUpload: { userId: number; token: string };
     GoogleContactVerify: { contactNumber: string; userId: number };
     EmailVerify: undefined;
     NewPassword: undefined;

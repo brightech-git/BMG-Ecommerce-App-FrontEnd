@@ -11,16 +11,16 @@ import CustomInput from '../../components/Input/CustomInput';
 import { IMAGES } from '../../constants/Images';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { updateGoogleContact } from '../../api/services/authService';
-import { AsyncStorageHelper } from '../../utils/AsyncStorageHelper';
 import { useToast } from '../../components/commoncomponents/Toast';
 
 type Props = StackScreenProps<RootStackParamList, 'GoogleContactUpload'>;
 
-const GoogleContactUpload = ({ navigation }: Props) => {
+const GoogleContactUpload = ({ navigation, route }: Props) => {
     const theme = useTheme();
     const { colors }: { colors: any } = theme;
     const toast = useToast();
 
+    const { userId, token } = route.params;
     const [contactNumber, setContactNumber] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -31,14 +31,17 @@ const GoogleContactUpload = ({ navigation }: Props) => {
         }
         try {
             setLoading(true);
-            const userIdStr = await AsyncStorageHelper.getUserId();
-            if (!userIdStr) throw new Error('Session expired, please login again');
-            const userId = Number(userIdStr);
+            console.log('[GoogleContactUpload] userId from params:', userId);
+            console.log('[GoogleContactUpload] token from params:', token);
+            console.log('[GoogleContactUpload] contactNumber:', contactNumber.trim());
+            if (!userId) throw new Error('Session expired, please login again');
             const res = await updateGoogleContact({ userId, contactNumber: contactNumber.trim() });
+            console.log('[GoogleContactUpload] API response:', JSON.stringify(res));
             if (!res.otp && res.errorMessage) throw new Error(res.errorMessage);
             toast.success(res.message ?? 'OTP sent successfully', { position: 'top' });
             navigation.navigate('GoogleContactVerify', { contactNumber: contactNumber.trim(), userId });
         } catch (err: any) {
+            console.log('[GoogleContactUpload] Error:', JSON.stringify(err));
             toast.error(err.message ?? 'Failed to send OTP', { position: 'top', duration: 4000 });
         } finally {
             setLoading(false);

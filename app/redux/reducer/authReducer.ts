@@ -16,10 +16,13 @@ export const registerThunk = createAsyncThunk(
   'auth/register',
   async (payload: RegisterPayload, { rejectWithValue }) => {
     try {
+      console.log('[Register] Payload:', JSON.stringify(payload));
       const res = await registerUser(payload);
+      console.log('[Register] API Response:', JSON.stringify(res));
       if (!res.otp) return rejectWithValue(res.message ?? 'Registration failed');
       return res;
     } catch (err: any) {
+      console.log('[Register] Error:', JSON.stringify(err));
       return rejectWithValue(err.message ?? 'Registration failed');
     }
   }
@@ -80,7 +83,9 @@ export const verifyOtpThunk = createAsyncThunk(
   'auth/verifyOtp',
   async (payload: VerifyOtpPayload, { rejectWithValue }) => {
     try {
+      console.log('[VerifyOTP] Payload:', JSON.stringify(payload));
       const res = await verifyOtp(payload);
+      console.log('[VerifyOTP] API Response:', JSON.stringify(res));
       if (!res.token && !res.user?.token) return rejectWithValue(res.message ?? 'OTP verification failed');
       const token = (res.token ?? res.user?.token)!;
       const user: UserData = res.user ?? { token };
@@ -88,6 +93,7 @@ export const verifyOtpThunk = createAsyncThunk(
       queryClient.clear();
       return { user, token };
     } catch (err: any) {
+      console.log('[VerifyOTP] Error:', JSON.stringify(err));
       return rejectWithValue(err.message ?? 'OTP verification failed');
     }
   }

@@ -8,14 +8,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated, Dimensions, Image, Platform,
-  Text, TouchableOpacity, View,
+  Text, TouchableOpacity, View, StyleSheet,
 } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import { IMAGES } from '../constants/Images';
 import { GlobalStyleSheet } from '../constants/StyleSheet';
 import { widthPercentageToDP as wp } from 'react-native-responsive-screen';
 import { navigateToTab } from '../Navigations/navigationRef';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useCart } from '../api/hooks/useCart';
 
 /* ─── Routes where this overlay must NOT appear ─────────────────── */
 const HIDDEN_ROUTES = new Set([
@@ -33,19 +33,21 @@ const TABS = [
   { label: 'Home',     icon: IMAGES.home,      route: 'Home' },
   { label: 'MyCart',   icon: IMAGES.shopping2, route: 'MyCart' },
   { label: 'Category', icon: IMAGES.document,  route: 'Category' },
-  { label: 'Wishlist', icon: IMAGES.heart2,    route: 'Wishlist' },
   { label: 'Profile',  icon: IMAGES.profile,   route: 'Profile' },
 ] as const;
+
+const TAB_COUNT = TABS.length;
 
 /* ─── Individual tab item (defined outside parent — stable identity) */
 type TabItemProps = {
   tab: typeof TABS[number];
   isFocused: boolean;
   titleColor: string;
+  cartCount: number;
   onPress: () => void;
 };
 
-const TabItem = ({ tab, isFocused, titleColor, onPress }: TabItemProps) => {
+const TabItem = ({ tab, isFocused, titleColor, cartCount, onPress }: TabItemProps) => {
   const iconTranslateY = useRef(new Animated.Value(isFocused ? -18 : 0)).current;
 
   useEffect(() => {
@@ -55,6 +57,9 @@ const TabItem = ({ tab, isFocused, titleColor, onPress }: TabItemProps) => {
       useNativeDriver: true,
     }).start();
   }, [isFocused]);
+
+  const isCart = tab.route === 'MyCart';
+  const displayLabel = tab.route === 'MyCart' ? 'Cart' : tab.label;
 
   return (
     <TouchableOpacity
@@ -70,24 +75,48 @@ const TabItem = ({ tab, isFocused, titleColor, onPress }: TabItemProps) => {
       }}
     >
       <Animated.View style={{ transform: [{ translateY: iconTranslateY }] }}>
-        <Image
-          style={{
-            width: 21,
-            height: 21,
-            tintColor: isFocused ? COLORS.white : titleColor,
-            resizeMode: 'contain',
-          }}
-          source={tab.icon}
-        />
+        <View>
+          <Image
+            style={{
+              width: 21,
+              height: 21,
+              tintColor: isFocused ? COLORS.white : titleColor,
+              resizeMode: 'contain',
+            }}
+            source={tab.icon}
+          />
+          {isCart && cartCount > 0 && (
+            <View style={tabStyles.badge}>
+              <Text style={tabStyles.badgeTxt}>{cartCount > 99 ? '99+' : cartCount}</Text>
+            </View>
+          )}
+        </View>
       </Animated.View>
       {isFocused && (
         <Text style={{ ...FONTS.fontMedium, color: titleColor, fontSize: 11, zIndex: 15 }}>
-          {tab.label}
+          {displayLabel}
         </Text>
       )}
     </TouchableOpacity>
   );
 };
+
+const tabStyles = StyleSheet.create({
+  badge: {
+    position: 'absolute',
+    top: -5, right: -7,
+    minWidth: 16, height: 16, borderRadius: 8,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  badgeTxt: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: '700',
+    lineHeight: 12,
+  },
+});
 
 /* ─── Props ─────────────────────────────────────────────────────── */
 type Props = {
@@ -104,9 +133,10 @@ const PersistentBottomTab = ({
   rootRoute, activeRoute, isDark, cardColor, titleColor, bgColor,
 }: Props) => {
   const [tabWidth, setTabWidth] = useState(wp('100%'));
+  const { cartCount } = useCart();
   const tabWD = tabWidth < SIZES.container
-    ? (tabWidth - 20) / 5
-    : SIZES.container / 5;
+    ? (tabWidth - 20) / TAB_COUNT
+    : SIZES.container / TAB_COUNT;
 
   const circlePosition = useRef(new Animated.Value(0)).current;
 
@@ -205,6 +235,7 @@ const PersistentBottomTab = ({
               tab={tab}
               isFocused={activeIndex === index}
               titleColor={titleColor}
+              cartCount={cartCount}
               onPress={() => handleTabPress(tab.route, index)}
             />
           ))}

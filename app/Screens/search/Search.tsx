@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { View, Text, SafeAreaView, Image, TouchableOpacity, ActivityIndicator, Platform } from 'react-native'
 import { useTheme } from '@react-navigation/native'
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,19 +19,11 @@ const Search = ({ navigation }: SearchScreenProps) => {
     const theme = useTheme();
     const { colors }: { colors: any } = theme;
 
-    const { query, setQuery, products, recentSearches, loading, loadingMore, hasMore, error, loadMore } = useSearch();
-    const [localRecentSearches, setLocalRecentSearches] = useState<string[]>([]);
-
-    // Sync recentSearches from API into local state
-    React.useEffect(() => {
-        if (recentSearches.length > 0) setLocalRecentSearches(recentSearches);
-    }, [recentSearches]);
-
-    const removeRecentItem = (index: number) => {
-        setLocalRecentSearches(prev => prev.filter((_, i) => i !== index));
-    };
-
-    const clearAllRecent = () => setLocalRecentSearches([]);
+    const {
+        query, setQuery, products,
+        recentSearches, removeRecent, clearRecent,
+        loading, loadingMore, hasMore, error, loadMore,
+    } = useSearch();
 
     const showResults = query.trim().length > 0;
     const cardItems = products.map(p => toCardItem({ ...p, ImagePath: p.ImagePath ?? undefined }));
@@ -87,20 +79,20 @@ const Search = ({ navigation }: SearchScreenProps) => {
                 )}
 
                 {/* Recent Searches — show only when no query */}
-                {!showResults && localRecentSearches.length > 0 && (
+                {!showResults && recentSearches.length > 0 && (
                     <View style={{ marginTop: 30 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                            <Text style={{ ...FONTS.Marcellus, fontSize: 20, color: colors.title }}>Search History</Text>
-                            <TouchableOpacity activeOpacity={0.5} onPress={clearAllRecent}>
+                            <Text style={{ ...FONTS.Marcellus, fontSize: 20, color: colors.title }}>Recent Searches</Text>
+                            <TouchableOpacity activeOpacity={0.5} onPress={clearRecent}>
                                 <Text style={{ ...FONTS.fontMedium, fontSize: 12, color: colors.title }}>Clear All</Text>
                             </TouchableOpacity>
                         </View>
-                        {localRecentSearches.map((item, index) => (
+                        {recentSearches.map((item, index) => (
                             <View key={index} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 5 }}>
-                                <TouchableOpacity onPress={() => setQuery(item)}>
+                                <TouchableOpacity style={{ flex: 1 }} onPress={() => setQuery(item)}>
                                     <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title }}>{item}</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity activeOpacity={0.5} onPress={() => removeRecentItem(index)}>
+                                <TouchableOpacity activeOpacity={0.5} onPress={() => removeRecent(item)}>
                                     <Image
                                         style={{ height: 19, width: 19, resizeMode: 'contain', opacity: 0.5, tintColor: colors.title }}
                                         source={IMAGES.close}

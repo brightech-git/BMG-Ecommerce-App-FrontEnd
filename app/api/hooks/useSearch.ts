@@ -1,21 +1,28 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { searchProducts, SearchProduct, SearchResponse } from '../services/searchService';
+import { AsyncStorageHelper } from '../../utils/AsyncStorageHelper';
 
 const PAGE_SIZE = 10;
 
 export const useSearch = () => {
-    const [query, setQuery] = useState('');
-    const [products, setProducts] = useState<SearchProduct[]>([]);
+    const [query, setQuery]               = useState('');
+    const [products, setProducts]         = useState<SearchProduct[]>([]);
     const [recentSearches, setRecentSearches] = useState<string[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [loadingMore, setLoadingMore] = useState(false);
-    const [hasMore, setHasMore] = useState(false);
-    const [page, setPage] = useState(0);
-    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading]           = useState(false);
+    const [loadingMore, setLoadingMore]   = useState(false);
+    const [hasMore, setHasMore]           = useState(false);
+    const [page, setPage]                 = useState(0);
+    const [error, setError]               = useState<string | null>(null);
 
-    const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const currentQuery = useRef('');
+    const debounceTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const currentQuery   = useRef('');
 
+    // ── Load recent searches from AsyncStorage on mount ──────────────
+    useEffect(() => {
+        AsyncStorageHelper.getRecentSearches().then(setRecentSearches);
+    }, []);
+
+    // ── Fetch products ────────────────────────────────────────────────
     const fetchProducts = useCallback(async (search: string, pageNum: number, isLoadMore = false) => {
         if (!search.trim()) {
             setProducts([]);
@@ -32,10 +39,15 @@ export const useSearch = () => {
                 setProducts(prev => [...prev, ...res.data]);
             } else {
                 setProducts(res.data);
-                setRecentSearches(res.recentSearches);
             }
             setHasMore(res.hasMore);
             setPage(res.currentPage);
+
+            // Save to AsyncStorage only on first page (new search, not load-more)
+            if (!isLoadMore) {
+                const updated = await AsyncStorageHelper.addRecentSearch(search);
+                setRecentSearches(updated);
+            }
         } catch (err: any) {
             setError(err?.message ?? 'Something went wrong');
         } finally {
@@ -43,7 +55,7 @@ export const useSearch = () => {
         }
     }, []);
 
-    // Debounced search — fires on every character change
+    // ── Debounced search ──────────────────────────────────────────────
     useEffect(() => {
         if (debounceTimer.current) clearTimeout(debounceTimer.current);
 
@@ -64,17 +76,31 @@ export const useSearch = () => {
         };
     }, [query, fetchProducts]);
 
+    // ── Load more ─────────────────────────────────────────────────────
     const loadMore = useCallback(() => {
         if (!hasMore || loadingMore || loading) return;
-        const nextPage = page + 1;
-        fetchProducts(currentQuery.current, nextPage, true);
+        fetchProducts(currentQuery.current, page + 1, true);
     }, [hasMore, loadingMore, loading, page, fetchProducts]);
+
+    // ── Remove a single recent search ─────────────────────────────────
+    const removeRecent = useCallback(async (term: string) => {
+        const updated = await AsyncStorageHelper.removeRecentSearch(term);
+        setRecentSearches(updated);
+    }, []);
+
+    // ── Clear all recent searches ─────────────────────────────────────
+    const clearRecent = useCallback(async () => {
+        await AsyncStorageHelper.clearRecentSearches();
+        setRecentSearches([]);
+    }, []);
 
     return {
         query,
         setQuery,
         products,
         recentSearches,
+        removeRecent,
+        clearRecent,
         loading,
         loadingMore,
         hasMore,

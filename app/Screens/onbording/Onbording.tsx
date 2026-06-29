@@ -1,240 +1,203 @@
+// app/Screens/onbording/Onbording.tsx
 import React, { useRef, useState, useMemo } from 'react';
 import { useTheme } from '@react-navigation/native';
-import { View, SafeAreaView, Text, Image, Animated, ScrollView, StyleSheet, Platform,TouchableOpacity } from 'react-native';
+import {
+  View, Text, Image, Animated,
+  StyleSheet, Platform, TouchableOpacity,
+  ActivityIndicator, FlatList,
+} from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import Button from '../../components/Button/Button';
-import { IMAGES } from '../../constants/Images';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
-import { GlobalStyleSheet } from '../../constants/StyleSheet';
 import { AsyncStorageHelper } from '../../utils/AsyncStorageHelper';
+import { callApi } from '../../api/apiClient';
+import { ONBOARD } from '../../api/endpoints';
+import { absUrl } from '../../utils/image';
 
-
-const DATA = [
-    {
-        title: "The Natural \nBeauty Of A Jewelry Collection",
-        desc: 'Sophisticated Collection Inspired By Passion',
-    },
-    {
-        title: "The Natural \nBeauty Of A Jewelry Collection",
-        desc: 'Sophisticated Collection Inspired By Passion',
-    },
-    {
-        title: "The Natural \nBeauty Of A Jewelry Collection",
-        desc: 'Sophisticated Collection Inspired By Passion',
-    },
-]
-
-
-type OnbordingScreenProps = StackScreenProps<RootStackParamList, 'Onbording'>;
-
-const Onbording = ({navigation} : OnbordingScreenProps) => {
-
-    const theme = useTheme();
-    const { colors } : {colors : any} = theme;
-    const scrollRef = useRef<any>(null);
-    const scrollX = useRef(new Animated.Value(0)).current;
-
-    const [currentIndex, setCurrentIndex] = useState(0);
-
-    const handleNext = async () => {
-        if (currentIndex === DATA.length - 1) {
-            await AsyncStorageHelper.setOnboarded();
-            navigation.navigate('SignIn');
-            return;
-        }
-        const nextIndex = currentIndex + 1;
-        scrollRef.current?.scrollTo({ x: SIZES.width * nextIndex, animated: true });
-        setCurrentIndex(nextIndex);
-    }
-
-    const handleSwipe = (e: any) => {
-        const index = Math.round(e.nativeEvent.contentOffset.x / SIZES.width);
-        setCurrentIndex(index);
-    }
-
-    return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-            <ScrollView contentContainerStyle={{ flexGrow:1 }}>
-                <View style={[GlobalStyleSheet.container,{padding:0, flex: 1,overflow:'hidden'}]}>
-                    <View style={[GlobalStyleSheet.row,{justifyContent:'space-between'}]}>
-                        <View 
-                            style={[
-                                GlobalStyleSheet.col50,
-                                {transform: [{ rotate: '-41.8deg' }],
-                                height:undefined,
-                                aspectRatio:1/1.5,
-                                backgroundColor:'#C7C8CC',
-                                marginTop:-40,
-                                marginLeft:-40,
-                                overflow:'hidden',
-                                borderBottomLeftRadius:160,
-                                borderBottomRightRadius:160,
-                                borderTopRightRadius:100,
-                                }
-                            ]}
-                        >
-                            <Image
-                                style={{width:'100%',height:undefined,aspectRatio:2.4/3.2,transform: [{ rotate: '41.8deg' },{scale : 1.5}],marginTop:60,marginLeft:Platform.OS === 'web' ? 0: 25}}
-                                source={IMAGES.item1}
-                            />
-                        </View>
-                        <View style={[GlobalStyleSheet.col50,{width:144,height:144,borderRadius:100,backgroundColor:COLORS.white,marginRight:50,marginTop:-30,alignItems:'center'}]}>
-                            <Image
-                                style={{resizeMode:'contain',width:'100%',height:undefined,aspectRatio:1/1,marginTop:40}}
-                                source={IMAGES.item3}
-                            />
-                        </View>
-                    </View>
-                    <View style={[GlobalStyleSheet.row,{justifyContent:'space-between'}]}>
-                        <View style={[GlobalStyleSheet.col50,{width:190,height:190,borderRadius:150,backgroundColor:COLORS.primary,marginLeft:-30,marginTop:70,overflow:'hidden',alignItems:'center',justifyContent:'center'}]}>
-                            <Image
-                                style={{width:'100%',height:undefined,aspectRatio:1/1.1,marginLeft:20,marginTop:10}}
-                                source={IMAGES.item21}
-                            />
-                        </View>
-                        <View style={[
-                                GlobalStyleSheet.col50,
-                                {transform: [{ rotate: '-135deg' }],
-                                height:undefined,
-                                aspectRatio:1/1,
-                                backgroundColor:COLORS.secondary,
-                                marginTop:'-60%',
-                                marginRight:-80,
-                                overflow:'hidden',
-                                borderRadius:160
-                                }
-                            ]}
-                        >
-                            <Image
-                                style={{width:'100%',height:undefined,aspectRatio:1/1.3,transform: [{ rotate: '135deg' },{scale :Platform.OS === 'web' ? 2 : 1.6}],marginTop:52}}
-                                source={IMAGES.item2}
-                            />
-                        </View>
-                    </View>
-                </View>
-                <View style={{marginTop:10}}>
-                    <View style={[styles.indicatorConatiner,Platform.OS === "ios" && { 
-                        bottom:10
-                    }]} pointerEvents="none">
-                        {DATA.map((x, i) => (
-                            <Indicator i={i} key={i} scrollValue={scrollX} />
-                        ))}
-                    </View>
-                    <ScrollView
-                        // contentContainerStyle={{ marginTop: 20 }}
-                        ref={scrollRef}
-                        horizontal
-                        pagingEnabled
-                        scrollEventThrottle={16}
-                        decelerationRate="fast"
-                        showsHorizontalScrollIndicator={false}
-                        onScroll={
-                            Animated.event(
-                                [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-                                { useNativeDriver: false },
-                            )
-                        }
-                        onMomentumScrollEnd={handleSwipe}
-                    >
-                        {DATA.map((data, index) => (
-
-                            <View style={[styles.slideItem,Platform.OS === "ios" && {
-                                // paddingBottom:35
-                            }]} key={index}>
-                                <View style={{paddingHorizontal:30 }}>
-                                    <Text style={{ ...FONTS.Marcellus, fontSize:30, textAlign:'left', color: colors.title }}>{data.title}</Text>
-                                    <Text style={{ ...FONTS.fontRegular, fontSize: 18, textAlign: 'left', lineHeight: 24, color: colors.title, paddingTop: 10 ,paddingRight:100}}>{data.desc}</Text>
-                                </View>
-                            </View>
-
-                            ))
-                        }
-                    </ScrollView>
-                </View>
-                <View style={[GlobalStyleSheet.container,{paddingHorizontal:40}]}>
-                    <View style={[GlobalStyleSheet.row,{justifyContent:'space-between',alignItems:'center'}]}>
-                        <TouchableOpacity
-                           onPress={async () => {
-                               await AsyncStorageHelper.setOnboarded();
-                               navigation.navigate('SignIn');
-                           }}
-                        >
-                            <Text style={{...FONTS.fontRegular,fontSize:16,color:colors.title,textDecorationLine:'underline'}}>Skip</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity 
-                            style={{width: currentIndex === DATA.length - 1 ? '45%' : '30%'}}
-                        >
-                            <Button
-                                onPress={handleNext}
-                                title={currentIndex === DATA.length - 1 ? 'Get Started' : 'Next'}
-                                btnRounded
-                                color={COLORS.primary}
-                            />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </ScrollView>
-        </SafeAreaView>
-    )
+interface AppBanner {
+  id: number;
+  title: string;
+  subtitle: string;
+  image_path: string;
 }
 
-function Indicator({ i, scrollValue } : any) {
+const fetchBanners = () =>
+  callApi<null, AppBanner[]>({ method: 'get', url: ONBOARD.BANNER_LIST });
 
-    const theme = useTheme();
-    const { colors }: {colors : any} = theme;
+/* ─── Dot indicator ──────────────────────────────────────────────── */
+function Dot({ i, scrollValue }: { i: number; scrollValue: Animated.Value }) {
+  const translateX = useMemo(() => scrollValue.interpolate({
+    inputRange: [
+      -SIZES.width + i * SIZES.width,
+       i * SIZES.width,
+       SIZES.width + i * SIZES.width,
+    ],
+    outputRange: [-20, 0, 20],
+  }), [scrollValue, i]);
 
-    const translateX = useMemo(() => scrollValue.interpolate({
-        inputRange: [-SIZES.width + i * SIZES.width, i * SIZES.width, SIZES.width + i * SIZES.width],
-        outputRange: [-20, 0, 20],
-    }), [scrollValue, i]);
+  return (
+    <View style={styles.dot}>
+      <Animated.View style={[styles.dotActive, { transform: [{ translateX }] }]} />
+    </View>
+  );
+}
+
+/* ─── Screen ─────────────────────────────────────────────────────── */
+type Props = StackScreenProps<RootStackParamList, 'Onbording'>;
+
+const Onbording = ({ navigation }: Props) => {
+  const theme = useTheme();
+  const { colors }: { colors: any } = theme;
+
+  const flatRef = useRef<FlatList>(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const { data: banners = [], isLoading } = useQuery({
+    queryKey: ['app-banners'],
+    queryFn: fetchBanners,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const handleSkip = async () => {
+    await AsyncStorageHelper.setOnboarded();
+    navigation.navigate('SignIn');
+  };
+
+  const handleNext = async () => {
+    if (currentIndex === banners.length - 1) {
+      await handleSkip();
+      return;
+    }
+    const next = currentIndex + 1;
+    flatRef.current?.scrollToIndex({ index: next, animated: true });
+    setCurrentIndex(next);
+  };
+
+  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
+    if (viewableItems.length > 0) setCurrentIndex(viewableItems[0].index ?? 0);
+  }).current;
+
+  const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
+
+  if (isLoading) {
     return (
-        <View style={[styles.indicator, { backgroundColor:theme.dark ? 'rgba(255,255,255,0.20)':'rgba(195, 123, 95, 0.20)', borderColor:theme.dark ? 'rgba(255,255,255,0.20)':'rgba(195, 123, 95, 0.20)' }]}>
-            <Animated.View
-                style={[styles.activeIndicator, { transform: [{ translateX }], backgroundColor: COLORS.primary }]}
-            />
-        </View>
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
     );
-}
+  }
 
+  if (!isLoading && banners.length === 0) {
+    AsyncStorageHelper.setOnboarded().then(() => navigation.navigate('SignIn'));
+    return null;
+  }
+
+  const isLast = currentIndex === banners.length - 1;
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Full-screen image slides — no SafeAreaView so image fills edge-to-edge */}
+      <Animated.FlatList
+        ref={flatRef}
+        data={banners}
+        keyExtractor={(item) => String(item.id)}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+          { useNativeDriver: false },
+        )}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        renderItem={({ item }) => (
+          <Image
+            source={{ uri: absUrl(item.image_path) ?? '' }}
+            style={styles.image}
+            resizeMode="cover"
+          />
+        )}
+        style={StyleSheet.absoluteFill}
+      />
+
+      {/* Buttons overlaid at the bottom of the image */}
+      <View style={styles.overlay}>
+        {/* Dots */}
+        <View style={styles.dots}>
+          {banners.map((_, i) => (
+            <Dot key={i} i={i} scrollValue={scrollX} />
+          ))}
+        </View>
+
+        {/* Buttons */}
+        <View style={styles.btnRow}>
+          <TouchableOpacity onPress={handleSkip}>
+            <Text style={styles.skip}>Skip</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={{ width: isLast ? '48%' : '32%' }}>
+            <Button
+              onPress={handleNext}
+              title={isLast ? 'Get Started' : 'Next'}
+              btnRounded
+              color={COLORS.primary}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
+  image: {
+    width: SIZES.width,
+    height: SIZES.height,
+  },
 
-    slideItem: {
-        width: SIZES.width,
-        paddingBottom: 30,    
-    },
-    slideItem2: {
-        width: SIZES.width,
-        alignItems:'center',
-        justifyContent: 'center',
-        // padding: 20,
-        paddingBottom: 0,
-        paddingTop:20,
-    },
+  overlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingBottom: Platform.OS === 'ios' ? 44 : 28,
+    paddingHorizontal: 40,
+    paddingTop: 16,
+    // backgroundColor: 'rgba(0,0,0,0.28)',
+  },
+  dots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  dot: {
+    height: 10, width: 10, borderRadius: 5,
+    marginHorizontal: 5, borderWidth: 1, overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.30)',
+    borderColor: 'rgba(255,255,255,0.30)',
+  },
+  dotActive: {
+    height: '100%', width: '100%',
+    backgroundColor: COLORS.primary, borderRadius: 10,
+  },
 
-    indicatorConatiner: {
-        alignSelf: 'flex-end',
-        position: 'absolute',
-        flexDirection: 'row',
-        paddingRight:30,
-        top:-30
-    },
-    indicator: {
-        height: 10,
-        width: 10,
-        borderRadius: 5,
-        marginHorizontal: 5,
-        borderWidth: 1,
-        overflow: 'hidden',
-    },
-    activeIndicator: {
-        height: '100%',
-        width: '100%',
-        backgroundColor: COLORS.primary,
-        borderRadius: 10,
-    },
+  btnRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  skip: {
+    ...FONTS.fontRegular,
+    fontSize: 16,
+    color: COLORS.white,
+    textDecorationLine: 'underline',
+  },
+});
 
-})
 export default Onbording;

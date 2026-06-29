@@ -3,6 +3,7 @@ import { UserData } from '../types/auth';
 
 // ── Storage Keys ──────────────────────────────────────────────────
 const KEYS = {
+  RECENT_SEARCHES: '@recent_searches',
   TOKEN:          '@auth_token',
   USER:           '@user',
   USER_ID:        '@user_id',
@@ -90,6 +91,36 @@ const clearSession = () =>
     // MPIN_SET intentionally kept — MPIN persists across logout/login
   ]);
 
+// ── Recent searches (max 10, newest first) ────────────────────────
+const MAX_RECENT = 10;
+
+const getRecentSearches = async (): Promise<string[]> => {
+  const raw = await AsyncStorage.getItem(KEYS.RECENT_SEARCHES);
+  return raw ? JSON.parse(raw) : [];
+};
+
+const addRecentSearch = async (term: string): Promise<string[]> => {
+  const trimmed = term.trim();
+  if (!trimmed) return getRecentSearches();
+  const current = await getRecentSearches();
+  // Remove duplicate, prepend new term, keep latest 10
+  const updated = [trimmed, ...current.filter(s => s.toLowerCase() !== trimmed.toLowerCase())]
+    .slice(0, MAX_RECENT);
+  await AsyncStorage.setItem(KEYS.RECENT_SEARCHES, JSON.stringify(updated));
+  return updated;
+};
+
+const removeRecentSearch = async (term: string): Promise<string[]> => {
+  const current = await getRecentSearches();
+  const updated = current.filter(s => s !== term);
+  await AsyncStorage.setItem(KEYS.RECENT_SEARCHES, JSON.stringify(updated));
+  return updated;
+};
+
+const clearRecentSearches = async (): Promise<void> => {
+  await AsyncStorage.removeItem(KEYS.RECENT_SEARCHES);
+};
+
 // ── Clear everything including onboarding ────────────────────────
 const clearAll = () => AsyncStorage.multiRemove(Object.values(KEYS));
 
@@ -118,4 +149,8 @@ export const AsyncStorageHelper = {
   getSocialMedia,
   clearSession,
   clearAll,
+  getRecentSearches,
+  addRecentSearch,
+  removeRecentSearch,
+  clearRecentSearches,
 };

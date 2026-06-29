@@ -45,7 +45,7 @@ const SignUp = ({ navigation } : SignUpScreenProps) => {
     }, []);
 
     useEffect(() => {
-        if (pendingOtpUser) navigation.replace('SignUpVerifyOTP', { contactNumber: pendingOtpUser.contactNumber });
+        if (pendingOtpUser) navigation.navigate('SignUpVerifyOTP', { contactNumber: pendingOtpUser.contactNumber });
     }, [pendingOtpUser]);
 
     useEffect(() => {
@@ -67,6 +67,25 @@ const SignUp = ({ navigation } : SignUpScreenProps) => {
         }
         register({ ...form, hashKey });
     };
+
+    useEffect(() => {
+        if (!error) return;
+        const msg = error.toLowerCase();
+        // Backend already created the user but OTP wasn't verified — send them to OTP page
+        if (
+            msg.includes('already') ||
+            msg.includes('otp') ||
+            msg.includes('pending') ||
+            msg.includes('registered')
+        ) {
+            toast.warning('OTP already sent. Please verify your number.', { position: 'top' });
+            clearError();
+            navigation.navigate('SignUpVerifyOTP', { contactNumber: form.contactNumber.trim() });
+            return;
+        }
+        toast.error(error, { position: 'top', duration: 4000 });
+        clearError();
+    }, [error]);
 
     return (
         <ScrollView contentContainerStyle={{ flexGrow: 1 }}>

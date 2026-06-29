@@ -214,11 +214,10 @@ const Home = () => {
 
       {/* ── Header ─────────────────────────────────────────────── */}
       <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
-        {/* Menu icon — left */}
-        <TouchableOpacity style={[styles.iconBtn, { backgroundColor: C.background }]}
-          onPress={() => (navigation as any).openDrawer?.() ?? (navigation as any).getParent?.()?.openDrawer?.()}>
-          <Feather name="menu" size={22} color={C.title} />
-        </TouchableOpacity>
+        {/* Notification — left */}
+        {/* <TouchableOpacity style={[styles.iconBtn, { backgroundColor: C.background }]} onPress={() => navigation.navigate('Notification')}>
+          <Feather name="bell" size={19} color={C.title} />
+        </TouchableOpacity> */}
 
         {/* Logo + Greeting — centre */}
         <View style={styles.headerLeft}>
@@ -229,14 +228,15 @@ const Home = () => {
           </View>
         </View>
 
-        {/* Wishlist + Notification — right */}
+        {/* Wishlist + Menu — right */}
         <View style={styles.headerIcons}>
           <TouchableOpacity style={[styles.iconBtn, { backgroundColor: C.background }]} onPress={() => navigation.navigate('Wishlist')}>
             <Feather name="heart" size={19} color={C.title} />
             {favoritesCount > 0 && <View style={[styles.badge, { backgroundColor: C.danger }]}><Text style={styles.badgeTxt}>{favoritesCount}</Text></View>}
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.iconBtn, { backgroundColor: C.background }]} onPress={() => navigation.navigate('Notification')}>
-            <Feather name="bell" size={19} color={C.title} />
+          <TouchableOpacity style={[styles.iconBtn, { backgroundColor: C.background }]}
+            onPress={() => (navigation as any).openDrawer?.() ?? (navigation as any).getParent?.()?.openDrawer?.()}>
+            <Feather name="menu" size={22} color={C.title} />
           </TouchableOpacity>
         </View>
       </View>
@@ -409,7 +409,7 @@ const Home = () => {
           >
             <View style={styles.schemeLeft}>
               <Text style={styles.schemeTag}>BMG DigiSilver</Text>
-              <Text style={styles.schemeTitle}>Monthly Gold{'\n'}Savings Scheme</Text>
+              <Text style={styles.schemeTitle}>Monthly Silver{'\n'}Savings Scheme</Text>
               <Text style={styles.schemeDesc}>Save as little as {'₹'}1,000/month{'\n'}and get jewellery worth more!</Text>
               <View style={styles.schemeBtns}>
                 <TouchableOpacity style={styles.schemeBtnPrimary} onPress={() => Linking.openURL(BMG_SCHEME_URL)}>

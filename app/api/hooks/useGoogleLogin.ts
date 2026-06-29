@@ -18,16 +18,22 @@ export const useGoogleLogin = () => {
       configureGoogleSignIn();
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
+      console.log('Google SignIn Raw Response:', JSON.stringify(userInfo, null, 2));
       const idToken = userInfo?.data?.idToken ?? (userInfo as any)?.idToken;
       const picture = userInfo?.data?.user?.photo ?? (userInfo as any)?.user?.photo ?? undefined;
+      console.log('Extracted idToken:', idToken);
+      console.log('Extracted picture:', picture);
       if (!idToken) throw new Error('No idToken received from Google');
       const result = await dispatch(googleLoginThunk({ idToken, picture }));
+      console.log('Google Login Dispatch Result:', JSON.stringify(result, null, 2));
       if (googleLoginThunk.fulfilled.match(result)) {
         const { user: loggedUser, token: authToken } = result.payload;
+        console.log('Logged User:', JSON.stringify(loggedUser, null, 2));
+        console.log('Auth Token:', authToken);
         if (loggedUser?.contactNumber && loggedUser.contactNumber.trim() !== '') {
           navigation.navigate('DrawerNavigation', { screen: 'Home' });
         } else {
-          navigation.navigate('GoogleContactUpload');
+          navigation.navigate('GoogleContactUpload', { userId: loggedUser.id, token: authToken });
         }
       }
     } catch (err: any) {
