@@ -1,16 +1,10 @@
 // app/Screens/ContactUs/ContactUs.tsx
-// Website page: /contact. Mirrors the website contact form.
-// Files created: app/Screens/ContactUs/ContactUs.tsx
-// Files modified: StackNavigator.tsx (register route), RootStackParamList.tsx (add type).
-// Navigation: accessible from Profile → "Contact Us" row.
-// API: POST /contact/submit  (MISC.CONTACT_SUBMIT)
-// Payload: { name, email, phone, subject, message }
-// States: submitting, success view, validation errors.
-// NOTE: root App.tsx provides SafeAreaView — use a plain View container.
+// Shows real company info from /company/all + contact form POST /contact/submit
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, StatusBar, KeyboardAvoidingView, Platform,
+  ScrollView, StatusBar, KeyboardAvoidingView, Platform, Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -19,6 +13,7 @@ import { callApi } from '../../api/apiClient';
 import { MISC } from '../../api/endpoints';
 import { toastError, toastSuccess } from '../../utils/toast';
 import { useProfile } from '../../api/hooks/useProfile';
+import { useCompany } from '../../api/hooks/useCompany';
 
 const SUBJECTS = [
   'Order Enquiry',
@@ -28,6 +23,22 @@ const SUBJECTS = [
   'Feedback',
   'Other',
 ];
+
+/* ── Tiny helpers ── */
+const openLink = (url?: string | null) => {
+  if (!url?.trim()) return;
+  Linking.openURL(url.trim()).catch(() => {});
+};
+
+const callPhone = (phone?: string | null) => {
+  if (!phone) return;
+  Linking.openURL(`tel:${phone.replace(/\s+/g, '')}`).catch(() => {});
+};
+
+const openMail = (email?: string | null) => {
+  if (!email) return;
+  Linking.openURL(`mailto:${email}`).catch(() => {});
+};
 
 const Field = ({
   label, value, onChangeText, placeholder, multiline, keyboardType, maxLength,
@@ -53,6 +64,7 @@ const Field = ({
 const ContactUs = () => {
   const navigation = useNavigation<any>();
   const { profile } = useProfile();
+  const { data: company, isLoading: companyLoading } = useCompany();
   const u: any = profile ?? {};
 
   const [name,    setName]    = useState<string>(u.username ?? u.name ?? u.customerName ?? '');
@@ -78,28 +90,38 @@ const ContactUs = () => {
       await callApi<any, any>({
         method: 'post',
         url: MISC.CONTACT_SUBMIT,
-        data: {
-          name:    name.trim(),
-          email:   email.trim(),
-          phone:   phone.trim(),
-          subject,
-          message: message.trim(),
-        },
+        data: { name: name.trim(), email: email.trim(), phone: phone.trim(), subject, message: message.trim() },
       });
       setDone(true);
     } catch (e: any) {
       const msg =
-        e?.response?.data?.message ??
-        e?.response?.data?.error ??
-        e?.message ??
-        'Could not send message. Please try again.';
+        e?.response?.data?.message ?? e?.response?.data?.error ??
+        e?.message ?? 'Could not send message. Please try again.';
       toastError('Send failed', msg);
     } finally {
       setSub(false);
     }
   };
 
-  // ── Success view ──────────────────────────────────────────────────
+  /* ── Resolve company fields ── */
+  const companyName = company?.COMPANYNAME ?? 'BMG JEWELLERS PRIVATE LIMITED';
+  const companyAddr = [
+    company?.ADDRESS1,
+    company?.ADDRESS2,
+    company?.ADDRESS3,
+    company?.AREACODE,
+  ].filter(Boolean).join(', ');
+  const companyPhone = company?.PHONE ?? '7094670946';
+  const companyEmail = company?.EMAIL ?? 'contact@bmgjewellers.in';
+
+  const socials = [
+    { icon: 'instagram',  url: company?.INSTALINK,     label: 'Instagram' },
+    { icon: 'facebook',   url: company?.FACEBOOKLINK,  label: 'Facebook' },
+    { icon: 'twitter',    url: company?.TWITTERLINK,   label: 'Twitter / X' },
+    { icon: 'youtube',    url: company?.YOUTUBELINK,   label: 'YouTube' },
+  ].filter(s => !!s.url);
+
+  /* ── Success view ── */
   if (submitted) {
     return (
       <View style={styles.safe}>
@@ -117,7 +139,7 @@ const ContactUs = () => {
           </View>
           <Text style={styles.successTitle}>Message Sent!</Text>
           <Text style={styles.successSub}>
-            Thank you for reaching out. Our team will get back to you within 24–48 hours.
+            Thank you for reaching out.{'\n'}Our team will get back to you within 24–48 hours.
           </Text>
           <TouchableOpacity style={styles.primaryBtn} onPress={() => navigation.goBack()}>
             <Text style={styles.primaryTxt}>Go Back</Text>
@@ -127,7 +149,7 @@ const ContactUs = () => {
     );
   }
 
-  // ── Form view ─────────────────────────────────────────────────────
+  /* ── Form view ── */
   return (
     <KeyboardAvoidingView
       style={styles.safe}
@@ -147,20 +169,63 @@ const ContactUs = () => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Contact info strip */}
-        <View style={styles.infoStrip}>
-          <View style={styles.infoItem}>
-            <Feather name="phone" size={16} color={COLORS.primary} />
-            <Text style={styles.infoTxt}>+91 98765 43210</Text>
+        {/* ── Company Info Card ── */}
+        {companyLoading ? (
+          <View style={[styles.infoCard, { justifyContent: 'center', alignItems: 'center', paddingVertical: 20 }]}>
+            <ActivityIndicator color={COLORS.primary} />
           </View>
-          <View style={styles.infoDivider} />
-          <View style={styles.infoItem}>
-            <Feather name="mail" size={16} color={COLORS.primary} />
-            <Text style={styles.infoTxt}>support@bmgjewellers.com</Text>
-          </View>
-        </View>
+        ) : (
+          <View style={styles.infoCard}>
+            {/* Company name */}
+            <Text style={styles.companyName}>{companyName}</Text>
 
-        {/* Form fields */}
+            {/* Address */}
+            {!!companyAddr && (
+              <View style={styles.infoRow}>
+                <View style={styles.infoIconBox}>
+                  <Feather name="map-pin" size={15} color={COLORS.primary} />
+                </View>
+                <Text style={styles.infoText}>{companyAddr}</Text>
+              </View>
+            )}
+
+            {/* Phone — tappable */}
+            <TouchableOpacity style={styles.infoRow} onPress={() => callPhone(companyPhone)} activeOpacity={0.7}>
+              <View style={styles.infoIconBox}>
+                <Feather name="phone" size={15} color={COLORS.primary} />
+              </View>
+              <Text style={[styles.infoText, styles.infoLink]}>+91 {companyPhone}</Text>
+            </TouchableOpacity>
+
+            {/* Email — tappable */}
+            <TouchableOpacity style={styles.infoRow} onPress={() => openMail(companyEmail)} activeOpacity={0.7}>
+              <View style={styles.infoIconBox}>
+                <Feather name="mail" size={15} color={COLORS.primary} />
+              </View>
+              <Text style={[styles.infoText, styles.infoLink]}>{companyEmail}</Text>
+            </TouchableOpacity>
+
+            {/* Social media row */}
+            {socials.length > 0 && (
+              <View style={styles.socialsRow}>
+                {socials.map((s) => (
+                  <TouchableOpacity
+                    key={s.label}
+                    style={styles.socialBtn}
+                    onPress={() => openLink(s.url)}
+                    activeOpacity={0.75}
+                  >
+                    <Feather name={s.icon as any} size={18} color={COLORS.primary} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* ── Contact Form ── */}
+        <Text style={styles.formHeading}>Send us a message</Text>
+
         <Field label="Full Name *" value={name} onChangeText={setName} placeholder="Your name" />
         <Field label="Email Address *" value={email} onChangeText={setEmail}
           placeholder="your@email.com" keyboardType="email-address" />
@@ -194,7 +259,9 @@ const ContactUs = () => {
           disabled={submitting}
           onPress={onSubmit}
         >
-          <Feather name="send" size={16} color={COLORS.white} style={{ marginRight: 8 }} />
+          {submitting
+            ? <ActivityIndicator size="small" color={COLORS.white} style={{ marginRight: 8 }} />
+            : <Feather name="send" size={16} color={COLORS.white} style={{ marginRight: 8 }} />}
           <Text style={styles.submitTxt}>{submitting ? 'Sending…' : 'Send Message'}</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -210,20 +277,51 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderBottomWidth: 1, borderBottomColor: COLORS.borderColor,
   },
-  hBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
+  hBtn:   { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  hTitle: { flex: 1, textAlign: 'center', ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
   scroll: { padding: SIZES.padding, paddingBottom: 40 },
-  // Info strip
-  infoStrip: {
-    flexDirection: 'row', backgroundColor: COLORS.white, borderRadius: 14,
-    padding: 14, marginBottom: 20, gap: 12,
-    elevation: 1, shadowColor: '#000', shadowOpacity: 0.05,
-    shadowRadius: 4, shadowOffset: { width: 0, height: 2 },
+
+  // Company info card
+  infoCard: {
+    backgroundColor: COLORS.white, borderRadius: 16, padding: 16, marginBottom: 20,
+    elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
   },
-  infoItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  infoDivider: { width: 1, backgroundColor: COLORS.borderColor },
-  infoTxt: { flex: 1, ...FONTS.fontXs, color: COLORS.text },
-  // Form
+  companyName: {
+    ...FONTS.h6, ...FONTS.fontSemiBold, color: COLORS.title,
+    marginBottom: 14, textAlign: 'center',
+  },
+  infoRow: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 12,
+  },
+  infoIconBox: {
+    width: 30, height: 30, borderRadius: 15,
+    backgroundColor: COLORS.primary + '12',
+    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+  },
+  infoText: { flex: 1, ...FONTS.fontSm, color: COLORS.text, lineHeight: 20, paddingTop: 5 },
+  infoLink: { color: COLORS.primary, textDecorationLine: 'underline' },
+
+  // Social buttons
+  socialsRow: {
+    flexDirection: 'row', gap: 10, justifyContent: 'center',
+    paddingTop: 4, marginTop: 4,
+    borderTopWidth: 1, borderTopColor: COLORS.borderColor,
+    paddingBottom: 2,
+  },
+  socialBtn: {
+    width: 42, height: 42, borderRadius: 21,
+    backgroundColor: COLORS.primary + '10',
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: COLORS.primary + '30',
+  },
+
+  // Form heading
+  formHeading: {
+    ...FONTS.h6, ...FONTS.fontSemiBold, color: COLORS.title, marginBottom: 16,
+  },
+
+  // Form fields
   fieldWrap: { marginBottom: 14 },
   label: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title, marginBottom: 6 },
   input: {
@@ -232,6 +330,7 @@ const styles = StyleSheet.create({
     ...FONTS.font, color: COLORS.title,
   },
   textarea: { minHeight: 110, lineHeight: 20 },
+
   // Chips
   chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
   chip: {
@@ -240,10 +339,11 @@ const styles = StyleSheet.create({
     borderRadius: SIZES.radius, borderWidth: 1.5,
     borderColor: COLORS.borderColor, backgroundColor: COLORS.white,
   },
-  chipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  chipTxt: { ...FONTS.fontSm, color: COLORS.text },
+  chipActive:    { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  chipTxt:       { ...FONTS.fontSm, color: COLORS.text },
   chipTxtActive: { color: COLORS.white },
-  charCount: { ...FONTS.fontXs, color: COLORS.textLight, textAlign: 'right', marginTop: -8, marginBottom: 4 },
+  charCount:     { ...FONTS.fontXs, color: COLORS.textLight, textAlign: 'right', marginTop: -8, marginBottom: 4 },
+
   // Submit
   submitBtn: {
     backgroundColor: COLORS.primary, borderRadius: SIZES.radius_lg,
@@ -252,6 +352,7 @@ const styles = StyleSheet.create({
   },
   submitBtnDisabled: { opacity: 0.6 },
   submitTxt: { ...FONTS.fontLg, ...FONTS.fontSemiBold, color: COLORS.white },
+
   // Success
   successCenter: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   successCircle: {

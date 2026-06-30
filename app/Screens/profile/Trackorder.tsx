@@ -1,12 +1,10 @@
 // app/Screens/profile/Trackorder.tsx
-// APIs used (matches website OrderDetails.jsx):
-//   PRIMARY: GET /order/tracking/:orderId  → order details + status (website's useTrackingById)
-//   FALLBACK: GET /order/getOrder?orderId= → basic order data
-//   GET /order/track/user?orderId=         → fallback user-level tracking events
-//   GET /order/invoice/:orderId            → invoice PDF URL (on demand)
-//   POST /dtdc/track                       → live DTDC courier tracking
-//   POST /order/update-status              → cancel order
-//   POST /order/reorder                    → reorder
+// Primary:  GET /order/track/user?orderId= → { current_status, timeline[], order_id, items[], canCancel }
+// Secondary:GET /order/getOrder?orderId=   → payment / address fallback
+// Status:   GET /order/status-master       → { flow[{key,label,icon,step}], terminal[...] }
+// Cancel:   POST /order/update-status
+// Reorder:  POST /order/reorder
+// Invoice:  GET /order/invoice/:orderId    (on demand)
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
@@ -17,23 +15,28 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import {
-  useOrderById, useOrderTracking, useOrderTrackByUser,
-  useCancelOrder, useReorder, useOrderInvoice, useDtdcTrack,
+  useOrderById, useOrderTrackByUser, useOrderStatusMaster,
+  useCancelOrder, useReorder, useOrderInvoice,
 } from '../../api/hooks/useOrders';
-import { firstImage, absUrl } from '../../utils/image';
+import { absUrl } from '../../utils/image';
 import { SmartImage } from '../../components/common/SmartImage';
 import { Loader, ErrorState } from '../../components/common/StateViews';
 import { toastSuccess, toastError } from '../../utils/toast';
 
 type Props = StackScreenProps<RootStackParamList, 'Trackorder'>;
 
-/* ── Helpers ────────────────────────────────────────────────── */
-const num = (v: any) => { const n = parseFloat(String(v ?? '0').replace(/[^0-9.]/g, '')); return isNaN(n) ? 0 : n; };
+/* ── Helpers ─────────────────────────────────────────────────── */
+const num = (v: any) => {
+  const n = parseFloat(String(v ?? '0').replace(/[^0-9.]/g, ''));
+  return isNaN(n) ? 0 : n;
+};
 
 const fmtDate = (raw: any) => {
   if (!raw) return '';
   try {
-    return new Date(raw).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    return new Date(raw).toLocaleDateString('en-IN', {
+      day: '2-digit', month: 'short', year: 'numeric',
+    });
   } catch { return String(raw).slice(0, 10); }
 };
 
@@ -41,84 +44,64 @@ const fmtDateTime = (raw: any) => {
   if (!raw) return '';
   try {
     return new Date(raw).toLocaleString('en-IN', {
-      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
     });
   } catch { return String(raw).replace('T', ' ').slice(0, 16); }
 };
 
-// Unwrap different backend response shapes
-const unwrap = (raw: any) => raw?.data ?? raw ?? {};
+// Map Feather icon names that may come from the API
+const ICON_MAP: Record<string, string> = {
+  'shopping-bag': 'shopping-bag',
+  'box': 'box',
+  'package': 'package',
+  'truck': 'truck',
+  'navigation': 'navigation',
+  'map-pin': 'map-pin',
+  'home': 'home',
+  'clock': 'clock',
+  'loader': 'loader',
+  'check': 'check',
+  'check-circle': 'check-circle',
+  'x-circle': 'x-circle',
+  'rotate-ccw': 'rotate-ccw',
+  'refresh-ccw': 'refresh-cw',
+  'alert-circle': 'alert-circle',
+};
+const safeIcon = (icon?: string) => ICON_MAP[icon ?? ''] ?? 'circle';
 
-const toEvents = (raw: any): any[] => {
-  const d = raw?.data ?? raw;
-  if (!d) return [];
-  // DTDC response wraps events under shipments[].scans
-  if (Array.isArray(d?.shipments)) {
-    const scans: any[] = [];
-    for (const s of d.shipments) {
-      if (Array.isArray(s?.scans)) scans.push(...s.scans);
-    }
-    if (scans.length > 0) return scans;
-  }
-  return (
-    d?.trackingEvents ?? d?.events ??
-    d?.timeline ?? d?.history ?? d?.statusHistory ??
-    (Array.isArray(d) ? d : [])
-  );
+// Terminal status keys (show different UI — no stepper)
+const TERMINAL_KEYS = new Set(['CANCELLED', 'RETURNED', 'REFUNDED', 'NOT_DELIVERED']);
+
+// Color for a given status key
+const statusColor = (key = '') => {
+  const k = key.toUpperCase();
+  if (k === 'DELIVERED')     return '#16a34a';
+  if (k === 'CANCELLED')     return '#dc2626';
+  if (k === 'RETURNED')      return '#dc2626';
+  if (k === 'REFUNDED')      return '#dc2626';
+  if (k === 'NOT_DELIVERED') return '#dc2626';
+  if (k === 'SHIPPED' || k === 'IN_TRANSIT') return '#2563eb';
+  if (k === 'OUT_FOR_DELIVERY') return '#7c3aed';
+  if (k === 'PACKING' || k === 'READY_TO_SHIP') return '#7c3aed';
+  if (k === 'PLACED' || k === 'PENDING') return '#d97706';
+  return COLORS.warning;
 };
 
-// Best image from an order item
-// Tracking API uses image_path (snake_case); getOrder API uses imagePath (camelCase)
-const itemImg = (it: any): string | undefined => {
-  const raw = it?.image_path ?? it?.imagePath ?? it?.image;
-  if (raw) return absUrl(raw);
-  if (it?.ImagePath) return firstImage(it.ImagePath);
-  return undefined;
-};
+/* ── Small UI pieces ─────────────────────────────────────────── */
+const Card = ({ children, style }: any) => (
+  <View style={[styles.card, style]}>{children}</View>
+);
 
-/* ── Status config ──────────────────────────────────────────── */
-const STATUS_CFG: { key: string; color: string; icon: string }[] = [
-  { key: 'delivered',   color: '#16a34a', icon: 'check-circle' },
-  { key: 'cancelled',   color: '#dc2626', icon: 'x-circle' },
-  { key: 'out for delivery', color: '#7c3aed', icon: 'navigation' },
-  { key: 'shipped',     color: '#2563eb', icon: 'truck' },
-  { key: 'transit',     color: '#2563eb', icon: 'truck' },
-  { key: 'processing',  color: '#d97706', icon: 'settings' },
-  { key: 'confirmed',   color: '#059669', icon: 'check' },
-  { key: 'pending',     color: '#d97706', icon: 'clock' },
-];
-const getStatusCfg = (s = '') => {
-  const t = s.toLowerCase();
-  return STATUS_CFG.find(c => t.includes(c.key)) ?? { color: COLORS.warning, icon: 'clock' };
-};
+const SecTitle = ({ title }: { title: string }) => (
+  <Text style={styles.secTitle}>{title}</Text>
+);
 
-// 7-step progress tracker matching website flow
-const STEPS = [
-  'Order\nCreated', 'Confirmed', 'Packing',
-  'Ready to\nShip', 'Shipped', 'Out for\nDelivery', 'Delivered',
-];
-const stepIndex = (s = '') => {
-  const t = s.toLowerCase();
-  if (t.includes('delivered') && !t.includes('out')) return 6;
-  if (t.includes('out for delivery') || t.includes('out_for_delivery')) return 5;
-  if (t.includes('shipped') || t.includes('transit')) return 4;
-  if (t.includes('ready to ship') || t.includes('ready_to_ship') || t.includes('readytoship')) return 3;
-  if (t.includes('packing') || t.includes('packed')) return 2;
-  if (t.includes('confirmed') || t.includes('processing') || t.includes('approved')) return 1;
-  return 0; // Order Created / Pending
-};
-
-const isCancellable = (s = '') => {
-  const t = s.toLowerCase();
-  return !t.includes('delivered') && !t.includes('cancelled') && !t.includes('cancel') && !t.includes('shipped');
-};
-
-/* ── Small UI pieces ────────────────────────────────────────── */
-const Card = ({ children, style }: any) => <View style={[styles.card, style]}>{children}</View>;
-
-const SecTitle = ({ title }: { title: string }) => <Text style={styles.secTitle}>{title}</Text>;
-
-const InfoRow = ({ label, value, valueStyle }: { label: string; value?: string | null; valueStyle?: any }) =>
+const InfoRow = ({
+  label, value, valueStyle,
+}: {
+  label: string; value?: string | null; valueStyle?: any;
+}) =>
   value ? (
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}</Text>
@@ -129,95 +112,124 @@ const InfoRow = ({ label, value, valueStyle }: { label: string; value?: string |
 /* ── Screen ─────────────────────────────────────────────────── */
 const Trackorder = ({ route, navigation }: Props) => {
   const { orderId, seedOrder } = route.params;
-  const [refreshing, setRefreshing] = useState(false);
+  const [refreshing, setRefreshing]       = useState(false);
+  const [timelineExpanded, setTimelineExp] = useState(false);
 
-  // PRIMARY: GET /order/tracking/:orderId — matches website's useTrackingById
-  // Returns: current_status, order_items, total_amount, payment_mode, delivery_address, etc.
+  // PRIMARY: /order/track/user?orderId= — real API used by the app
+  // Returns: current_status, timeline[], order_id, items[], canCancel
   const {
     data: trackRaw, isLoading, isError,
-    refetch: refetchTrack, isFetching: fetchingTrack,
-  } = useOrderTracking(orderId);
-
-  // SECONDARY: GET /order/getOrder?orderId= — camelCase fields, used as fallback
-  const {
-    data: orderRaw,
-    refetch: refetchOrder,
-  } = useOrderById(orderId);
-
-  const {
-    data: userTrackRaw, isLoading: userTrackLoading,
-    refetch: refetchUserTrack,
+    refetch: refetchTrack, isFetching,
   } = useOrderTrackByUser(orderId);
 
+  // SECONDARY: /order/getOrder?orderId= — fallback for payment/address fields
+  const { data: orderRaw, refetch: refetchOrder } = useOrderById(orderId);
+
+  // STATUS MASTER: /order/status-master — dynamic flow steps + terminal statuses
+  const { data: masterRaw } = useOrderStatusMaster();
+
+  // Invoice (on demand)
   const { refetch: fetchInvoice, isFetching: invoiceLoading } = useOrderInvoice(orderId);
 
+  // Cancel / Reorder mutations
   const { mutate: cancelOrder, isPending: cancelling } = useCancelOrder();
-  const { mutate: reorder, isPending: reordering } = useReorder();
+  const { mutate: reorder,     isPending: reordering  } = useReorder();
 
-  // Resolve order data — priority: tracking API → getOrder API → seedOrder from list
-  // Tracking API (snake_case) is preferred — matches website's approach
-  const order = useMemo(() => {
-    const tracked = unwrap(trackRaw);
-    // Tracking API returns current_status or order_id when successful
-    if (tracked?.current_status || tracked?.order_id || tracked?.orderId) return tracked;
-    const fetched = unwrap(orderRaw);
-    if (fetched?.orderId || fetched?.status || fetched?.current_status) return fetched;
-    return seedOrder ?? {};
-  }, [trackRaw, orderRaw, seedOrder]);
+  /* ── Data resolution ─── */
+  // Prefer tracking response; fall back to getOrder; fall back to seedOrder
+  const track = useMemo(() => {
+    const t = trackRaw?.data ?? trackRaw;
+    if (t?.current_status || t?.order_id) return t;
+    return null;
+  }, [trackRaw]);
 
-  // Field resolution: handles both snake_case (tracking API) and camelCase (getOrder API)
-  // Website's tracking API: current_status, order_items, total_amount, payment_mode, delivery_address
-  const status     = order.current_status ?? order.status ?? order.orderStatus ?? 'Pending';
-  const orderDate  = order.order_date ?? order.orderTime ?? order.createdAt ?? order.created_at;
-  const paymentMode   = order.payment_mode ?? order.paymentMode;
-  const paymentStatus = order.payment_status ?? order.paymentStatus;
-  const transactionId = order.transaction_id ?? order.transactionId ?? order.razorpayPaymentId;
-  const paidOn        = order.payment_date ?? order.paymentDate ?? order.paidAt;
+  const orderFallback = useMemo(() => {
+    const o = orderRaw?.data ?? orderRaw;
+    return (o?.orderId || o?.current_status) ? o : (seedOrder ?? {});
+  }, [orderRaw, seedOrder]);
 
-  // Items: tracking API → order_items, getOrder API → orderItems
-  const items: any[] = order.order_items ?? order.orderItems ?? order.items ?? order.orderDetails ?? [];
+  // Prefer track for primary fields
+  const currentStatus: string =
+    track?.current_status ?? orderFallback?.status ?? orderFallback?.current_status ?? 'PENDING';
 
-  // Delivery address: tracking API → delivery_address, getOrder API → address
-  const addr: any = order.delivery_address ?? order.address ?? order.deliveryAddress ?? order.shippingAddress ?? {};
-  const addrName: string | undefined = addr.customerName ?? addr.name ?? order.customerName;
-  const addrPhone: string | undefined = addr.phone ?? order.contact ?? order.mobile;
+  const orderDate =
+    track?.order_date ?? orderFallback?.orderTime ?? orderFallback?.createdAt ??
+    orderFallback?.created_at ?? orderFallback?.order_date;
 
-  // AWB number: courierTrackingId / dtdcRefNumber (guard against literal string "null")
-  const awbNumber: string | undefined =
-    order.courierTrackingId && order.courierTrackingId !== 'null'
-      ? order.courierTrackingId
-      : order.dtdcRefNumber && order.dtdcRefNumber !== 'null'
-        ? order.dtdcRefNumber
-        : order.awbNumber ?? order.trackingId ?? order.awbNo ?? undefined;
+  // Items: tracking response has camelCase (productName, tagno, image_path)
+  const items: any[] =
+    track?.items ?? orderFallback?.order_items ?? orderFallback?.orderItems ?? orderFallback?.items ?? [];
 
-  // Action flags: from tracking API or derived from status
-  const canCancel = order.canCancel ?? isCancellable(status);
-  const canReturn = order.canReturn ?? status.toLowerCase().includes('deliver');
+  // Address: from getOrder fallback
+  const addr: any =
+    orderFallback?.delivery_address ?? orderFallback?.address ??
+    orderFallback?.deliveryAddress ?? orderFallback?.shippingAddress ?? {};
+  const addrName: string | undefined = addr?.customerName ?? addr?.name ?? orderFallback?.customerName;
+  const addrPhone: string | undefined = addr?.phone ?? orderFallback?.contact ?? orderFallback?.mobile;
 
-  // Live DTDC tracking by AWB — mirrors website trackOrder()
-  const {
-    data: dtdcLiveRaw, isLoading: dtdcLiveLoading,
-    refetch: refetchDtdcLive,
-  } = useDtdcTrack(awbNumber);
+  // Payment: from getOrder fallback
+  const paymentMode   = orderFallback?.payment_mode ?? orderFallback?.paymentMode;
+  const paymentStatus = orderFallback?.payment_status ?? orderFallback?.paymentStatus;
+  const transactionId = orderFallback?.transaction_id ?? orderFallback?.transactionId;
+  const paidOn        = orderFallback?.payment_date ?? orderFallback?.paymentDate;
 
-  // Tracking events priority: DTDC live (AWB) → /order/track/user fallback
-  const trackEvents: any[] = useMemo(() => {
-    const live = toEvents(dtdcLiveRaw);
-    if (live.length > 0) return live;
-    return toEvents(userTrackRaw);
-  }, [dtdcLiveRaw, userTrackRaw]);
+  // Amounts: compute from items if not at order level
+  const itemSubtotal = items.reduce((sum: number, it: any) => sum + num(it.price ?? it.totalAmount ?? 0), 0);
+  const shippingFee  = num(items[0]?.shippingFee ?? orderFallback?.shipping_fee ?? orderFallback?.shippingFee ?? 0);
+  const totalAmt     = num(orderFallback?.total_amount ?? orderFallback?.totalAmount ?? orderFallback?.grandTotal)
+    || (itemSubtotal + shippingFee);
+  const discountAmt  = num(orderFallback?.discountAmount ?? orderFallback?.discount ?? 0);
 
-  const trackingLoading = dtdcLiveLoading || userTrackLoading;
+  // Timeline events from tracking response
+  const timeline: any[] = track?.timeline ?? [];
 
-  const { color: sColor, icon: sIcon } = getStatusCfg(status);
-  const step      = stepIndex(status);
-  const cancelled = status.toLowerCase().includes('cancel');
+  // canCancel: from API if present
+  const canCancel: boolean = track?.canCancel ?? false;
+  const canReturn: boolean = currentStatus.toUpperCase() === 'DELIVERED';
 
+  /* ── Status master ─── */
+  const flowSteps: any[] = useMemo(() => {
+    const m = masterRaw?.data ?? masterRaw;
+    return Array.isArray(m?.flow) ? m.flow : [];
+  }, [masterRaw]);
+
+  const terminalStatuses: any[] = useMemo(() => {
+    const m = masterRaw?.data ?? masterRaw;
+    return Array.isArray(m?.terminal) ? m.terminal : [];
+  }, [masterRaw]);
+
+  // Is this a terminal state?
+  const isTerminal = TERMINAL_KEYS.has(currentStatus.toUpperCase());
+
+  // Find label + icon for current status
+  const currentStatusInfo = useMemo(() => {
+    const key = currentStatus.toUpperCase();
+    const inFlow = flowSteps.find(s => s.key === key);
+    if (inFlow) return { label: inFlow.label, icon: inFlow.icon };
+    const inTerminal = terminalStatuses.find(s => s.key === key);
+    if (inTerminal) return { label: inTerminal.label, icon: inTerminal.icon };
+    return { label: currentStatus, icon: 'clock' };
+  }, [currentStatus, flowSteps, terminalStatuses]);
+
+  // Current step index in flow (0-based) for stepper
+  const currentFlowIdx = useMemo(() => {
+    const key = currentStatus.toUpperCase();
+    const idx = flowSteps.findIndex(s => s.key === key);
+    if (idx >= 0) return idx;
+    // If status is in timeline but not in flow master (e.g. IN_PROCESSING),
+    // find the highest flow step that appears in the timeline
+    const doneKeys = new Set(timeline.map((t: any) => t.status?.toUpperCase()));
+    let highest = -1;
+    flowSteps.forEach((s, i) => { if (doneKeys.has(s.key)) highest = i; });
+    return highest;
+  }, [currentStatus, flowSteps, timeline]);
+
+  /* ── Handlers ─── */
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.allSettled([refetchTrack(), refetchOrder(), refetchUserTrack(), refetchDtdcLive()]);
+    await Promise.allSettled([refetchTrack(), refetchOrder()]);
     setRefreshing(false);
-  }, [refetchTrack, refetchOrder, refetchUserTrack, refetchDtdcLive]);
+  }, [refetchTrack, refetchOrder]);
 
   const handleCancel = () => {
     Alert.alert('Cancel Order', 'Are you sure you want to cancel this order?', [
@@ -225,8 +237,13 @@ const Trackorder = ({ route, navigation }: Props) => {
       {
         text: 'Yes, Cancel', style: 'destructive',
         onPress: () => cancelOrder(
-          { orderId, newStatus: 'CANCELLED',remarks:"Cancelled By User" },
-          { onSuccess: () => { toastSuccess('Order cancelled'); refetchOrder(); } }
+          { orderId, newStatus: 'CANCELLED', remarks: 'Cancelled by user' },
+          {
+            onSuccess: () => {
+              toastSuccess('Order cancelled');
+              refetchTrack();
+            },
+          },
         ),
       },
     ]);
@@ -241,30 +258,26 @@ const Trackorder = ({ route, navigation }: Props) => {
     });
 
   const handleInvoice = async () => {
-    // Try to get invoice URL from API first
     try {
       const result: any = await fetchInvoice();
       const raw = result?.data ?? result;
-      const url = raw?.invoiceUrl ?? raw?.url ?? raw?.pdfUrl ?? raw?.data?.invoiceUrl ?? order.invoiceUrl;
+      const url = raw?.invoiceUrl ?? raw?.url ?? raw?.pdfUrl ?? orderFallback?.invoiceUrl;
       if (url) { Linking.openURL(url); return; }
     } catch { /* fall through */ }
-    // Fallback to value already in order object
-    const url = order.invoiceUrl ?? order.invoice_url;
+    const url = orderFallback?.invoiceUrl ?? orderFallback?.invoice_url;
     if (url) Linking.openURL(url);
     else toastError('Invoice not available yet');
   };
 
-  // Show full-screen loader only if we have NO seed data yet
-  if (isLoading && !seedOrder) return <View style={styles.safe}><Loader message="Loading order…" /></View>;
-  // Show error only if fetch failed AND we have no fallback data at all
-  if (isError && !order.orderId && !order.order_id && !order.current_status)
+  /* ── Loading / Error guards ─── */
+  if (isLoading && !seedOrder) {
+    return <View style={styles.safe}><Loader message="Loading order…" /></View>;
+  }
+  if (isError && !track && !seedOrder) {
     return <View style={styles.safe}><ErrorState onRetry={refetchTrack} /></View>;
+  }
 
-  // Amount fields: tracking API → total_amount / shipping_fee / products_grandTotal
-  const totalAmt    = num(order.total_amount    ?? order.totalAmount   ?? order.amount ?? order.grandTotal ?? 0);
-  const shippingFee = num(order.shipping_fee    ?? order.shippingFee   ?? order.shipping ?? order.deliveryCharge ?? 0);
-  const subtotalAmt = num(order.products_grandTotal ?? order.subtotal  ?? order.mrpTotal ?? 0);
-  const discountAmt = num(order.discountAmount  ?? order.discount ?? order.discountAmountTotal ?? 0);
+  const sColor = statusColor(currentStatus);
 
   return (
     <View style={styles.safe}>
@@ -275,29 +288,29 @@ const Trackorder = ({ route, navigation }: Props) => {
         <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
           <Feather name="arrow-left" size={22} color={COLORS.title} />
         </TouchableOpacity>
-        <Text style={styles.hTitle}>Order #{orderId}</Text>
+        <Text style={styles.hTitle} numberOfLines={1}>Order #{orderId}</Text>
         <TouchableOpacity style={styles.hBtn} onPress={onRefresh}>
-          {fetchingTrack
+          {isFetching
             ? <ActivityIndicator size="small" color={COLORS.primary} />
             : <Feather name="refresh-cw" size={18} color={COLORS.primary} />}
         </TouchableOpacity>
       </View>
 
       <ScrollView
-        contentContainerStyle={{ padding: SIZES.padding, paddingBottom: 50 }}
+        contentContainerStyle={{ padding: SIZES.padding, paddingBottom: 56 }}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
+        }
       >
-
-        {/* ── Status card + Progress stepper ── */}
+        {/* ── Status Card ── */}
         <Card>
-          {/* Status row */}
           <View style={styles.statusRow}>
             <View style={[styles.statusIcon, { backgroundColor: sColor + '18' }]}>
-              <Feather name={sIcon as any} size={20} color={sColor} />
+              <Feather name={safeIcon(currentStatusInfo.icon) as any} size={22} color={sColor} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.statusText, { color: sColor }]}>{status}</Text>
+              <Text style={[styles.statusText, { color: sColor }]}>{currentStatusInfo.label}</Text>
               {!!orderDate && (
                 <Text style={styles.statusSub}>Placed on {fmtDate(orderDate)}</Text>
               )}
@@ -307,48 +320,40 @@ const Trackorder = ({ route, navigation }: Props) => {
             )}
           </View>
 
-          {/* Progress stepper (hidden if cancelled) */}
-          {!cancelled && (
+          {/* ── 8-Step Progress Stepper (hidden for terminal statuses) ── */}
+          {/* {!isTerminal && flowSteps.length > 0 && (
             <View style={styles.stepper}>
-              {STEPS.map((s, i) => {
-                const done = i <= step;
-                const active = i === step;
+              {flowSteps.map((step: any, i: number) => {
+                const done   = i <= currentFlowIdx;
+                const active = i === currentFlowIdx;
                 return (
-                  <React.Fragment key={s}>
+                  <React.Fragment key={step.key}>
                     <View style={styles.stepCol}>
-                      <View style={[styles.stepDot,
+                      <View style={[
+                        styles.stepDot,
                         done && { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
                         active && styles.stepDotActive,
                       ]}>
-                        {done && <Feather name="check" size={9} color="#fff" />}
+                        {done && <Feather name="check" size={8} color="#fff" />}
                       </View>
-                      <Text style={[styles.stepLabel, done && { color: COLORS.primary, ...FONTS.fontSemiBold }]}
-                        numberOfLines={2}>
-                        {s}
+                      <Text
+                        style={[styles.stepLabel, done && { color: COLORS.primary, ...FONTS.fontSemiBold }]}
+                        numberOfLines={2}
+                      >
+                        {step.label}
                       </Text>
                     </View>
-                    {i < STEPS.length - 1 && (
-                      <View style={[styles.stepLine, i < step && { backgroundColor: COLORS.primary }]} />
+                    {i < flowSteps.length - 1 && (
+                      <View style={[styles.stepLine, i < currentFlowIdx && { backgroundColor: COLORS.primary }]} />
                     )}
                   </React.Fragment>
                 );
               })}
             </View>
-          )}
-
-          {/* Courier / AWB info */}
-          {!!awbNumber && (
-            <View style={styles.awbRow}>
-              <Feather name="package" size={14} color={COLORS.textLight} />
-              <Text style={styles.awbTxt}>AWB: {awbNumber}</Text>
-              {!!order.courierName && (
-                <Text style={styles.awbCourier}> · {order.courierName}</Text>
-              )}
-            </View>
-          )}
+          )}  */}
         </Card>
 
-        {/* ── Action buttons ── */}
+        {/* ── Action Buttons ── */}
         <View style={styles.actionRow}>
           {canCancel && (
             <TouchableOpacity
@@ -384,8 +389,8 @@ const Trackorder = ({ route, navigation }: Props) => {
           </TouchableOpacity>
         </View>
 
-        {/* Return / Refund (only if delivered, using canReturn flag from tracking API) */}
-        {canReturn && !cancelled && (
+        {/* Return / Refund button */}
+        {canReturn && !isTerminal && (
           <TouchableOpacity
             style={styles.returnBtn}
             onPress={() => navigation.navigate('OrderReturn', { orderId })}
@@ -396,52 +401,144 @@ const Trackorder = ({ route, navigation }: Props) => {
           </TouchableOpacity>
         )}
 
-        {/* ── DTDC Tracking Events ── */}
-        <SecTitle title="Tracking" />
+        {/* ── Order Tracking Timeline ── */}
+        <SecTitle title="Order Timeline" />
         <Card>
-          {trackingLoading ? (
-            <View style={styles.centerRow}>
-              <ActivityIndicator size="small" color={COLORS.primary} />
-              <Text style={styles.loadingTxt}>Loading tracking events…</Text>
-            </View>
-          ) : trackEvents.length === 0 ? (
-            <View style={styles.centerRow}>
-              <Feather name="map-pin" size={18} color={COLORS.borderColor} />
-              <Text style={styles.emptyTxt}>No tracking events yet</Text>
-            </View>
-          ) : (
-            trackEvents.map((ev: any, i: number) => {
-              const label =
-                ev.status ?? ev.scanType ?? ev.title ?? ev.statusName ?? ev.action ?? ev.description ?? '—';
-              const ts  = ev.scanned_on ?? ev.date ?? ev.timestamp ?? ev.createdAt ?? ev.time;
-              const loc = ev.location ?? ev.city ?? ev.scanLocation ?? ev.origin ?? ev.place;
-              const remarks = ev.remarks ?? ev.description ?? ev.comment;
-              const isFirst = i === 0;
-              const isLast  = i === trackEvents.length - 1;
+          {(() => {
+            const doneKeys = new Set(timeline.map((t: any) => t.status?.toUpperCase()));
+
+            // Completed events — chronological (oldest first), keyed by index to avoid dups
+            const completedItems: any[] = timeline.map((ev: any, idx: number) => ({
+              uid:     `done-${idx}`,          // unique render key
+              key:     ev.status?.toUpperCase() ?? '',
+              label:   ev.label ?? ev.status ?? '',
+              remarks: ev.remarks,
+              time:    ev.updated_at,
+              done:    true,
+            }));
+
+            // Upcoming flow steps not yet in timeline
+            const upcomingItems: any[] = isTerminal ? [] : flowSteps
+              .filter((s: any) => !doneKeys.has(s.key))
+              .map((s: any, idx: number) => ({
+                uid:     `up-${idx}`,           // unique render key
+                key:     s.key,
+                label:   s.label,
+                remarks: null,
+                time:    null,
+                done:    false,
+              }));
+
+            const allSteps = [...completedItems, ...upcomingItems];
+            if (allSteps.length === 0) {
               return (
-                <View key={i} style={styles.tlRow}>
-                  <View style={styles.tlLeft}>
-                    <View style={[styles.tlDot, isFirst && styles.tlDotActive]} />
-                    {!isLast && <View style={styles.tlLine} />}
-                  </View>
-                  <View style={[styles.tlBody, !isLast && { paddingBottom: 18 }]}>
-                    <Text style={[styles.tlLabel, isFirst && { color: COLORS.primary, ...FONTS.fontSemiBold }]}>
-                      {label}
-                    </Text>
-                    {!!loc && (
-                      <Text style={styles.tlMeta}>
-                        <Feather name="map-pin" size={10} color={COLORS.textLight} /> {loc}
-                      </Text>
-                    )}
-                    {!!remarks && remarks !== label && (
-                      <Text style={styles.tlMeta}>{remarks}</Text>
-                    )}
-                    {!!ts && <Text style={styles.tlTime}>{fmtDateTime(ts)}</Text>}
-                  </View>
+                <View style={styles.centerRow}>
+                  <Feather name="map-pin" size={18} color={COLORS.borderColor} />
+                  <Text style={styles.emptyTxt}>No tracking events yet</Text>
                 </View>
               );
-            })
-          )}
+            }
+
+            const lastDoneIdx = completedItems.length - 1;  // index of current/latest done step
+
+            // Collapsed view: first created + current status + next upcoming
+            // Deduplicate in case there's only 1 completed step
+            const collapsedSet = new Set<number>();
+            collapsedSet.add(0);                                         // first (Order Created)
+            if (lastDoneIdx >= 0) collapsedSet.add(lastDoneIdx);         // current status
+            if (lastDoneIdx + 1 < allSteps.length)
+              collapsedSet.add(lastDoneIdx + 1);                         // next upcoming
+            const collapsedSteps = [...collapsedSet].map(i => allSteps[i]);
+
+            const needsToggle  = allSteps.length > collapsedSteps.length;
+            const visibleSteps = timelineExpanded || !needsToggle ? allSteps : collapsedSteps;
+
+            return (
+              <>
+                {visibleSteps.map((step: any, i: number) => {
+                  const globalIdx = allSteps.indexOf(step);
+                  const isLast    = i === visibleSteps.length - 1;
+                  const isLatest  = step.done && globalIdx === lastDoneIdx;
+                  // Show faded gap line when collapsed and there are hidden steps between items
+                  const hiddenBetween = !timelineExpanded && needsToggle &&
+                    i < visibleSteps.length - 1 &&
+                    allSteps.indexOf(visibleSteps[i + 1]) - globalIdx > 1;
+
+                  const dotBg     = step.done ? '#16a34a' : '#E5E7EB';
+                  const dotBorder = step.done ? '#16a34a' : '#D1D5DB';
+                  const nextStep  = visibleSteps[i + 1];
+                  const lineColor = step.done && nextStep?.done ? '#16a34a' : '#E5E7EB';
+
+                  return (
+                    <View key={step.uid} style={styles.tlRow}>
+                      {/* Dot + connector line */}
+                      <View style={styles.tlLeft}>
+                        <View style={[
+                          styles.tlDot,
+                          { backgroundColor: dotBg, borderColor: dotBorder },
+                          isLatest && styles.tlDotCurrent,
+                        ]}>
+                          {step.done && <Feather name="check" size={8} color="#fff" />}
+                        </View>
+                        {!isLast && (
+                          <View style={[
+                            styles.tlLine,
+                            { backgroundColor: lineColor },
+                            hiddenBetween && styles.tlLineDashed,
+                          ]} />
+                        )}
+                      </View>
+
+                      {/* Content */}
+                      <View style={[styles.tlBody, !isLast && { paddingBottom: 18 }]}>
+                        <Text style={[
+                          styles.tlLabel,
+                          step.done
+                            ? (isLatest
+                                ? { color: '#16a34a', ...FONTS.fontSemiBold }
+                                : { color: COLORS.title })
+                            : { color: COLORS.textLight },
+                        ]}>
+                          {step.label}
+                          {!!step.time && (
+                            <Text style={styles.tlDateInline}>
+                              {',  ' + fmtDate(step.time)}
+                            </Text>
+                          )}
+                        </Text>
+                        {!!step.remarks && (
+                          <Text style={styles.tlMeta}>{step.remarks}</Text>
+                        )}
+                        {!step.done && (
+                          <Text style={[styles.tlTime, { color: '#C0C0C0' }]}>Upcoming</Text>
+                        )}
+                      </View>
+                    </View>
+                  );
+                })}
+
+                {/* Toggle button */}
+                {needsToggle && (
+                  <TouchableOpacity
+                    style={styles.seeAllBtn}
+                    onPress={() => setTimelineExp(e => !e)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.seeAllTxt}>
+                      {timelineExpanded
+                        ? 'Show Less'
+                        : `See All Updates (${allSteps.length})`}
+                    </Text>
+                    <Feather
+                      name={timelineExpanded ? 'chevron-up' : 'chevron-right'}
+                      size={14}
+                      color={COLORS.primary}
+                    />
+                  </TouchableOpacity>
+                )}
+              </>
+            );
+          })()}
         </Card>
 
         {/* ── Order Items ── */}
@@ -452,30 +549,31 @@ const Trackorder = ({ route, navigation }: Props) => {
               <Text style={styles.emptyTxt}>No item details available</Text>
             </View>
           ) : items.map((it: any, i: number) => {
-            const img   = itemImg(it);
-            // Tracking API: product_name, item_id, tagno, net_wt
-            // getOrder API: productName, ITEMNAME, tagNo, TAGNO
-            const name  = it.product_name ?? it.productName ?? it.ITEMNAME ?? it.name ?? it.itemName ?? 'Item';
-            const qty   = it.quantity ?? 1;
-            const price = num(it.price ?? it.FinalAmount ?? it.totalPrice ?? 0);
-            const tagNo = it.tagno ?? it.tagNo ?? it.TAGNO;
-            const gst   = it.gstPer ?? it.GSTPER ?? it.gstPercent;
-            const weight = it.net_wt ?? it.netWt ?? it.weight;
+            // Tracking API uses: productName (camelCase), tagno, sno, image_path
+            const name   = it.productName ?? it.product_name ?? it.ITEMNAME ?? it.name ?? 'Item';
+            const qty    = it.quantity ?? 1;
+            const price  = num(it.price ?? it.totalAmount ?? 0);
+            const tagNo  = it.tagno ?? it.tagNo ?? it.TAGNO;
+            const sno    = it.sno;
+            const weight = it.netWt ?? it.net_wt ?? it.grsWt;
+            const imgRaw = it.image_path ?? it.imagePath ?? it.image;
+            const img    = imgRaw ? absUrl(imgRaw) : undefined;
+
             return (
-              <View key={i} style={[styles.itemRow, i > 0 && styles.itemRowBorder]}>
-                {img
-                  ? <SmartImage uri={img} style={styles.itemImg} />
-                  : (
-                    <View style={[styles.itemImg, styles.itemImgFallback]}>
-                      <Feather name="image" size={22} color={COLORS.borderColor} />
-                    </View>
-                  )
-                }
+              <View key={it.id ?? i} style={[styles.itemRow, i > 0 && styles.itemRowBorder]}>
+                {img ? (
+                  <SmartImage uri={img} style={styles.itemImg} />
+                ) : (
+                  <View style={[styles.itemImg, styles.itemImgFallback]}>
+                    <Feather name="image" size={22} color={COLORS.borderColor} />
+                  </View>
+                )}
                 <View style={{ flex: 1 }}>
                   <Text style={styles.itemName} numberOfLines={2}>{name}</Text>
-                  {!!tagNo && <Text style={styles.itemMeta}>Tag: {tagNo}</Text>}
+                  {!!tagNo && <Text style={styles.itemMeta}>Tag No: {tagNo}</Text>}
+                  {!!sno   && <Text style={styles.itemMeta}>SKU: {sno}</Text>}
                   {!!weight && <Text style={styles.itemMeta}>Wt: {weight}g</Text>}
-                  <Text style={styles.itemMeta}>Qty: {qty}{gst ? `  ·  GST: ${gst}%` : ''}</Text>
+                  <Text style={styles.itemMeta}>Qty: {qty}</Text>
                 </View>
                 {price > 0 && (
                   <Text style={styles.itemPrice}>₹{price.toLocaleString('en-IN')}</Text>
@@ -485,41 +583,51 @@ const Trackorder = ({ route, navigation }: Props) => {
           })}
         </Card>
 
-        {/* ── Price Breakdown ── */}
+        {/* ── Price Details ── */}
         <SecTitle title="Price Details" />
         <Card>
-          {subtotalAmt > 0 && (
-            <InfoRow label="MRP Total" value={`₹${subtotalAmt.toLocaleString('en-IN')}`} />
+          {itemSubtotal > 0 && (
+            <InfoRow label="Item Total" value={`₹${itemSubtotal.toLocaleString('en-IN')}`} />
           )}
           {discountAmt > 0 && (
-            <InfoRow label="Discount" value={`− ₹${discountAmt.toLocaleString('en-IN')}`}
-              valueStyle={{ color: '#16a34a' }} />
+            <InfoRow
+              label="Discount"
+              value={`− ₹${discountAmt.toLocaleString('en-IN')}`}
+              valueStyle={{ color: '#16a34a' }}
+            />
           )}
           <InfoRow
             label="Shipping"
-            value={shippingFee === 0 || String(order.shipping_fee ?? order.shippingFee) === 'Free'
-              ? 'FREE' : `₹${shippingFee.toLocaleString('en-IN')}`}
+            value={shippingFee === 0 ? 'FREE' : `₹${shippingFee.toLocaleString('en-IN')}`}
           />
-          {num(order.gstAmount ?? order.gst_amount ?? 0) > 0 && (
-            <InfoRow label="GST" value={`₹${num(order.gstAmount ?? order.gst_amount).toLocaleString('en-IN')}`} />
-          )}
-          <View style={[styles.infoRow, { borderTopWidth: 1, borderTopColor: COLORS.borderColor, marginTop: 6, paddingTop: 10 }]}>
+          <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total Paid</Text>
             <Text style={styles.totalValue}>₹{totalAmt.toLocaleString('en-IN')}</Text>
           </View>
         </Card>
 
         {/* ── Payment ── */}
-        <SecTitle title="Payment" />
-        <Card>
-          <InfoRow label="Method" value={paymentMode === 'CASH' || paymentMode === 'COD' ? 'Cash on Delivery' : paymentMode ?? 'Online'} />
-          <InfoRow label="Status" value={paymentStatus} />
-          <InfoRow label="Transaction ID" value={transactionId} />
-          <InfoRow label="Paid On" value={fmtDate(paidOn)} />
-        </Card>
+        {(paymentMode || paymentStatus || transactionId) && (
+          <>
+            <SecTitle title="Payment" />
+            <Card>
+              <InfoRow
+                label="Method"
+                value={
+                  paymentMode === 'CASH' || paymentMode === 'COD'
+                    ? 'Cash on Delivery'
+                    : paymentMode ?? undefined
+                }
+              />
+              <InfoRow label="Status"         value={paymentStatus} />
+              <InfoRow label="Transaction ID" value={transactionId} />
+              <InfoRow label="Paid On"        value={fmtDate(paidOn)} />
+            </Card>
+          </>
+        )}
 
         {/* ── Delivery Address ── */}
-        {!!(addrName || addr.addressLine || addr.addressLine1 || addr.address_line) && (
+        {!!(addrName || addr?.addressLine || addr?.addressLine1 || addr?.address_line) && (
           <>
             <SecTitle title="Delivery Address" />
             <Card>
@@ -528,27 +636,22 @@ const Trackorder = ({ route, navigation }: Props) => {
                   <Feather name="map-pin" size={16} color={COLORS.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  {!!addrName && (
-                    <Text style={styles.addrName}>{addrName}</Text>
-                  )}
+                  {!!addrName && <Text style={styles.addrName}>{addrName}</Text>}
                   <Text style={styles.addrLine}>
-                    {[addr.addressLine ?? addr.addressLine1 ?? addr.address_line, addr.locality].filter(Boolean).join(', ')}
+                    {[
+                      addr.addressLine ?? addr.addressLine1 ?? addr.address_line,
+                      addr.locality,
+                    ].filter(Boolean).join(', ')}
                   </Text>
                   <Text style={styles.addrLine}>
                     {[addr.city, addr.state, addr.pincode].filter(Boolean).join(', ')}
                   </Text>
-                  {!!(addr.country && addr.country !== 'India') && (
-                    <Text style={styles.addrLine}>{addr.country}</Text>
-                  )}
-                  {!!addrPhone && (
-                    <Text style={styles.addrPhone}>📞 {addrPhone}</Text>
-                  )}
+                  {!!addrPhone && <Text style={styles.addrPhone}>📞 {addrPhone}</Text>}
                 </View>
               </View>
             </Card>
           </>
         )}
-
       </ScrollView>
     </View>
   );
@@ -557,42 +660,44 @@ const Trackorder = ({ route, navigation }: Props) => {
 /* ── Styles ─────────────────────────────────────────────────── */
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F9F6F1' },
+
   header: {
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12,
     backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor,
   },
-  hBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  hBtn:   { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
   hTitle: { flex: 1, textAlign: 'center', ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
 
   card: {
     backgroundColor: COLORS.white, borderRadius: 16, padding: 16, marginBottom: 10,
-    elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
+    elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
   },
 
   // Status
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
-  statusIcon: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
+  statusIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   statusText: { ...FONTS.h6, ...FONTS.fontSemiBold },
-  statusSub: { ...FONTS.fontXs, color: COLORS.textLight, marginTop: 2 },
-  statusAmt: { ...FONTS.h5, ...FONTS.fontBold, color: COLORS.title },
+  statusSub:  { ...FONTS.fontXs, color: COLORS.textLight, marginTop: 2 },
+  statusAmt:  { ...FONTS.h5, ...FONTS.fontBold, color: COLORS.title },
 
-  // Stepper
-  stepper: { flexDirection: 'row', alignItems: 'flex-start', marginTop: 4 },
-  stepCol: { flex: 1, alignItems: 'center' },
+  // 8-step Stepper
+  stepper:      { flexDirection: 'row', alignItems: 'flex-start', marginTop: 8 },
+  stepCol:      { flex: 1, alignItems: 'center' },
   stepDot: {
-    width: 22, height: 22, borderRadius: 11,
+    width: 20, height: 20, borderRadius: 10,
     backgroundColor: '#E5E7EB', borderWidth: 2, borderColor: '#E5E7EB',
     alignItems: 'center', justifyContent: 'center',
   },
-  stepDotActive: { elevation: 3, shadowColor: COLORS.primary, shadowOpacity: 0.4, shadowRadius: 4, shadowOffset: { width: 0, height: 0 } },
-  stepLabel: { ...FONTS.fontXs, color: COLORS.textLight, marginTop: 5, textAlign: 'center', maxWidth: 44, fontSize: 9 },
-  stepLine: { flex: 1, height: 2, backgroundColor: '#E5E7EB', marginTop: 11 },
-
-  // AWB
-  awbRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12,
-    backgroundColor: '#F9F6F1', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7 },
-  awbTxt: { ...FONTS.fontSm, color: COLORS.title },
-  awbCourier: { ...FONTS.fontSm, color: COLORS.textLight },
+  stepDotActive: {
+    elevation: 3, shadowColor: COLORS.primary,
+    shadowOpacity: 0.4, shadowRadius: 4, shadowOffset: { width: 0, height: 0 },
+  },
+  stepLabel: {
+    ...FONTS.fontXs, color: COLORS.textLight, marginTop: 5,
+    textAlign: 'center', maxWidth: 40, fontSize: 8,
+  },
+  stepLine: { flex: 1, height: 2, backgroundColor: '#E5E7EB', marginTop: 10 },
 
   // Action buttons
   actionRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
@@ -603,15 +708,15 @@ const styles = StyleSheet.create({
   cancelBtn:  { borderColor: COLORS.danger  + '55', backgroundColor: COLORS.danger  + '0A' },
   invoiceBtn: { borderColor: COLORS.primary + '55', backgroundColor: COLORS.primary + '0A' },
   reorderBtn: { borderColor: COLORS.primary, backgroundColor: COLORS.primary },
-  actionTxt: { ...FONTS.fontXs, ...FONTS.fontSemiBold },
+  actionTxt:  { ...FONTS.fontXs, ...FONTS.fontSemiBold },
 
   // Return button
   returnBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     borderWidth: 1.5, borderColor: COLORS.danger + '55',
     borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10,
-    backgroundColor: COLORS.danger + '0A', marginBottom: 4, alignSelf: 'stretch',
-    justifyContent: 'center',
+    backgroundColor: COLORS.danger + '0A', marginBottom: 4,
+    alignSelf: 'stretch', justifyContent: 'center',
   },
   returnTxt: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.danger, flex: 1, textAlign: 'center' },
 
@@ -620,47 +725,63 @@ const styles = StyleSheet.create({
 
   // Helper rows
   centerRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6 },
-  loadingTxt: { ...FONTS.fontSm, color: COLORS.textLight },
-  emptyTxt: { ...FONTS.fontSm, color: COLORS.textLight },
+  emptyTxt:  { ...FONTS.fontSm, color: COLORS.textLight },
 
-  // Tracking timeline
-  tlRow: { flexDirection: 'row', gap: 12 },
-  tlLeft: { alignItems: 'center', width: 14 },
+  // Timeline
+  tlRow:  { flexDirection: 'row', gap: 12 },
+  tlLeft: { alignItems: 'center', width: 18 },
   tlDot: {
-    width: 14, height: 14, borderRadius: 7,
-    backgroundColor: '#E5E7EB', borderWidth: 2, borderColor: '#E5E7EB', marginTop: 2,
+    width: 18, height: 18, borderRadius: 9,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2,
   },
-  tlDotActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  tlLine: { flex: 1, width: 2, backgroundColor: '#E5E7EB', marginVertical: 3 },
-  tlBody: { flex: 1 },
-  tlLabel: { ...FONTS.fontSm, ...FONTS.fontMedium, color: COLORS.title },
-  tlMeta: { ...FONTS.fontXs, color: COLORS.textLight, marginTop: 2 },
-  tlTime: { ...FONTS.fontXs, color: COLORS.textLight, marginTop: 2 },
+  tlDotCurrent: {
+    width: 22, height: 22, borderRadius: 11,
+    elevation: 4, shadowColor: '#16a34a', shadowOpacity: 0.45,
+    shadowRadius: 5, shadowOffset: { width: 0, height: 0 },
+  },
+  tlLine:       { flex: 1, width: 2, backgroundColor: '#E5E7EB', marginVertical: 3 },
+  tlLineDashed: { opacity: 0.35 },  // faded line between collapsed rows to suggest hidden steps
+  tlBody:       { flex: 1, paddingBottom: 4 },
+  tlLabel:      { ...FONTS.fontSm, ...FONTS.fontMedium, color: COLORS.title },
+  tlDateInline: { ...FONTS.fontXs, color: COLORS.textLight, fontWeight: '400' },
+  tlMeta:       { ...FONTS.fontXs, color: COLORS.textLight, marginTop: 2 },
+  tlTime:       { ...FONTS.fontXs, color: COLORS.textLight, marginTop: 2, fontStyle: 'italic' },
+  seeAllBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    marginTop: 14, paddingTop: 12,
+    borderTopWidth: 1, borderTopColor: COLORS.borderColor,
+  },
+  seeAllTxt: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.primary },
 
   // Items
-  itemRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
-  itemRowBorder: { borderTopWidth: 1, borderTopColor: COLORS.borderColor },
-  itemImg: { width: 72, height: 72, borderRadius: 10 },
-  itemImgFallback: { backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
-  itemName: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title, lineHeight: 18 },
-  itemMeta: { ...FONTS.fontXs, color: COLORS.textLight, marginTop: 3 },
-  itemPrice: { ...FONTS.font, ...FONTS.fontBold, color: COLORS.title },
+  itemRow:        { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
+  itemRowBorder:  { borderTopWidth: 1, borderTopColor: COLORS.borderColor },
+  itemImg:        { width: 72, height: 72, borderRadius: 10 },
+  itemImgFallback:{ backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
+  itemName:       { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title, lineHeight: 18 },
+  itemMeta:       { ...FONTS.fontXs, color: COLORS.textLight, marginTop: 3 },
+  itemPrice:      { ...FONTS.font, ...FONTS.fontBold, color: COLORS.title },
 
-  // Price details / Payment
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 5 },
+  // Price / Payment
+  infoRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 5 },
   infoLabel: { ...FONTS.fontSm, color: COLORS.textLight },
   infoValue: { ...FONTS.fontSm, ...FONTS.fontMedium, color: COLORS.title, maxWidth: '60%', textAlign: 'right' },
+  totalRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    borderTopWidth: 1, borderTopColor: COLORS.borderColor, marginTop: 6, paddingTop: 10,
+  },
   totalLabel: { ...FONTS.font, ...FONTS.fontSemiBold, color: COLORS.title },
   totalValue: { ...FONTS.h5, ...FONTS.fontBold, color: COLORS.title },
 
   // Address
-  addrRow: { flexDirection: 'row', gap: 12 },
+  addrRow:  { flexDirection: 'row', gap: 12 },
   addrIcon: {
     width: 36, height: 36, borderRadius: 18,
     backgroundColor: COLORS.primary + '12', alignItems: 'center', justifyContent: 'center',
   },
-  addrName: { ...FONTS.font, ...FONTS.fontSemiBold, color: COLORS.title, marginBottom: 4 },
-  addrLine: { ...FONTS.fontSm, color: COLORS.text, lineHeight: 20 },
+  addrName:  { ...FONTS.font, ...FONTS.fontSemiBold, color: COLORS.title, marginBottom: 4 },
+  addrLine:  { ...FONTS.fontSm, color: COLORS.text, lineHeight: 20 },
   addrPhone: { ...FONTS.fontSm, color: COLORS.textLight, marginTop: 6 },
 });
 

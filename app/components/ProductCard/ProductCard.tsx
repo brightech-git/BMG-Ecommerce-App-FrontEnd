@@ -286,7 +286,7 @@ export const ProductList: React.FC<ProductListProps> = ({
       <FlatList
         key={`mode-${mode}`}
         data={products}
-        keyExtractor={item => item.id}
+        keyExtractor={(item, index) => item.id ? `${item.id}-${index}` : String(index)}
         numColumns={numCols}
         contentContainerStyle={{
           paddingHorizontal: mode === 'list' ? 0 : PAD,

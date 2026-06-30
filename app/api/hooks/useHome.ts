@@ -6,6 +6,8 @@ import {
   getBudgetCategories, getNewArrivals, getTrending,
   getRecentlyViewed, recordRecentlyViewed,
 } from '../services/homeService';
+// Re-export useCompany as useCompanyInfo so existing screens (AboutUs, HelpCenter) keep working
+export { useCompany as useCompanyInfo } from './useCompany';
 
 // ── Active hooks ──────────────────────────────────────────────────
 export const useBudgetBanners = () =>

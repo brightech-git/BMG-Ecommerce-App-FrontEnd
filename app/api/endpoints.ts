@@ -129,6 +129,11 @@ export const PROFILE = {
   CHANGE_PASSWORD: '/user/change-password',
 };
 
+// Company info
+export const COMPANY = {
+  ALL: '/company/all',
+};
+
 // Notification / Contact
 export const MISC = {
   CONTACT_SUBMIT:    '/contact/submit',

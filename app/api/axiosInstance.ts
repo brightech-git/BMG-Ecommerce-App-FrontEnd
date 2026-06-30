@@ -32,6 +32,9 @@ axiosInstance.interceptors.request.use(async (config) => {
   }
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
+    console.log('[axiosInstance] Authorization header:', config.headers['Authorization']);
+  } else {
+    console.log('[axiosInstance] No token found — Authorization header not set.');
   }
   return config;
 });

@@ -36,9 +36,21 @@ export const useSearch = () => {
         try {
             const res: SearchResponse = await searchProducts(search, pageNum, PAGE_SIZE);
             if (isLoadMore) {
-                setProducts(prev => [...prev, ...res.data]);
+                setProducts(prev => {
+                    const existingIds = new Set(prev.map(p => p.TAGKEY ?? p.id));
+                    const fresh = res.data.filter(p => !existingIds.has(p.TAGKEY ?? p.id));
+                    return [...prev, ...fresh];
+                });
             } else {
-                setProducts(res.data);
+                // Deduplicate by TAGKEY within the page itself
+                const seen = new Set<string>();
+                const unique = res.data.filter(p => {
+                    const key = String(p.TAGKEY ?? p.id ?? '');
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                });
+                setProducts(unique);
             }
             setHasMore(res.hasMore);
             setPage(res.currentPage);
