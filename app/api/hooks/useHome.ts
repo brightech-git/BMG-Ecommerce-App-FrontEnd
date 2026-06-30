@@ -5,6 +5,7 @@ import { filterProducts } from '../services/productService';
 import {
   getBudgetCategories, getNewArrivals, getTrending,
   getRecentlyViewed, recordRecentlyViewed,
+  getOfferBanners, getInstantOffers,
 } from '../services/homeService';
 // Re-export useCompany as useCompanyInfo so existing screens (AboutUs, HelpCenter) keep working
 export { useCompany as useCompanyInfo } from './useCompany';
@@ -23,11 +24,12 @@ export const useTrending = () => {
   return useQuery({ queryKey: ['trending'], queryFn: getTrending, enabled: !!token });
 };
 
+export const useOfferBanners  = () => useQuery({ queryKey: ['offerBanners'],  queryFn: getOfferBanners });
+export const useInstantOffers = () => useQuery({ queryKey: ['instantOffers'], queryFn: getInstantOffers, staleTime: 1000 * 60 * 5 });
+
 // ── Unused hooks — commented out for later use ────────────────────
 // export const useHeroBanners    = () => useQuery({ queryKey: ['heroBanners'],    queryFn: getHeroBanners });
 // export const useHomeCategories = () => useQuery({ queryKey: ['homeCategories'], queryFn: getCategoryImages });
-// export const useOfferBanners   = () => useQuery({ queryKey: ['offerBanners'],   queryFn: getOfferBanners });
-// export const useInstantOffers  = () => useQuery({ queryKey: ['instantOffers'],  queryFn: getInstantOffers, staleTime: 1000 * 60 * 5 });
 // export const useCompanyInfo    = () => useQuery({ queryKey: ['companyInfo'],    queryFn: getCompanyInfo,   staleTime: 1000 * 60 * 30 });
 // export const useFooterContent  = () => useQuery({ queryKey: ['footerContent'],  queryFn: getFooterContent, staleTime: 1000 * 60 * 30 });
 

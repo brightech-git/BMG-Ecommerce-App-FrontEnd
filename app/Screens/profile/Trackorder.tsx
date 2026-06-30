@@ -8,7 +8,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  StatusBar, Alert, RefreshControl, Linking, ActivityIndicator,
+  StatusBar, Alert, RefreshControl, ActivityIndicator,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -22,6 +22,8 @@ import { absUrl } from '../../utils/image';
 import { SmartImage } from '../../components/common/SmartImage';
 import { Loader, ErrorState } from '../../components/common/StateViews';
 import { toastSuccess, toastError } from '../../utils/toast';
+import { useCompany } from '../../api/hooks/useCompany';
+import { useDownloadInvoice } from '../../utils/downloadInvoice';
 
 type Props = StackScreenProps<RootStackParamList, 'Trackorder'>;
 
@@ -100,7 +102,7 @@ const SecTitle = ({ title }: { title: string }) => (
 const InfoRow = ({
   label, value, valueStyle,
 }: {
-  label: string; value?: string | null; valueStyle?: any;
+  label: string; value?: string | null | undefined; valueStyle?: any;
 }) =>
   value ? (
     <View style={styles.infoRow}>
@@ -114,6 +116,7 @@ const Trackorder = ({ route, navigation }: Props) => {
   const { orderId, seedOrder } = route.params;
   const [refreshing, setRefreshing]       = useState(false);
   const [timelineExpanded, setTimelineExp] = useState(false);
+  const { data: company } = useCompany();
 
   // PRIMARY: /order/track/user?orderId= — real API used by the app
   // Returns: current_status, timeline[], order_id, items[], canCancel
@@ -128,8 +131,9 @@ const Trackorder = ({ route, navigation }: Props) => {
   // STATUS MASTER: /order/status-master — dynamic flow steps + terminal statuses
   const { data: masterRaw } = useOrderStatusMaster();
 
-  // Invoice (on demand)
+  // Invoice — fetch from API, then generate PDF locally
   const { refetch: fetchInvoice, isFetching: invoiceLoading } = useOrderInvoice(orderId);
+  const { download: downloadInvoice } = useDownloadInvoice();
 
   // Cancel / Reorder mutations
   const { mutate: cancelOrder, isPending: cancelling } = useCancelOrder();
@@ -259,14 +263,80 @@ const Trackorder = ({ route, navigation }: Props) => {
 
   const handleInvoice = async () => {
     try {
+      // Fetch invoice data from /order/invoice/:orderId
       const result: any = await fetchInvoice();
-      const raw = result?.data ?? result;
-      const url = raw?.invoiceUrl ?? raw?.url ?? raw?.pdfUrl ?? orderFallback?.invoiceUrl;
-      if (url) { Linking.openURL(url); return; }
-    } catch { /* fall through */ }
-    const url = orderFallback?.invoiceUrl ?? orderFallback?.invoice_url;
-    if (url) Linking.openURL(url);
-    else toastError('Invoice not available yet');
+      const inv = result?.data?.data ?? result?.data ?? result;
+
+      if (!inv?.orderId) {
+        toastError('Invoice data not available');
+        return;
+      }
+
+      // origin_address → Shipped From lines
+      const origin = inv.origin_address ?? {};
+      const originLines: string[] = [
+        origin.addressLine1,
+        origin.addressLine2,
+        [origin.city, origin.state, origin.pincode].filter(Boolean).join(', '),
+        origin.country,
+      ].filter(Boolean) as string[];
+
+      // address → delivery address lines
+      const delivery = inv.address ?? {};
+      const deliveryLines: string[] = [
+        delivery.addressLine,
+        delivery.locality,
+        [delivery.city, delivery.state, delivery.pincode].filter(Boolean).join(', '),
+        delivery.landmark ? `Landmark: ${delivery.landmark}` : null,
+      ].filter(Boolean) as string[];
+
+      downloadInvoice({
+        orderId:      inv.orderId,
+        invoiceNo:    inv.invoiceNo,
+        orderDate:    inv.orderTime?.timestamp ?? inv.orderTime,
+        invoiceDate:  inv.invoiceDate?.timestamp ?? inv.invoiceDate,
+        // Origin (Shipped From)
+        originName:    origin.name ?? company?.COMPANYNAME,
+        originAddress: originLines,
+        originPhone:   origin.phone,
+        // Company extras
+        companyName:  company?.COMPANYNAME ?? origin.name,
+        companyGst:   company?.GSTNO,
+        companyEmail: company?.EMAIL ?? null,          // inv.email is the customer's email — never use it here
+        // Customer (Bill To)
+        customerName:    inv.customerName ?? delivery.name,
+        customerPhone:   inv.contact ?? delivery.phone,
+        customerEmail:   inv.email,
+        customerAddress: deliveryLines,
+        // Payment
+        paymentMode:   inv.paymentMode,
+        paymentStatus: inv.paymentStatus,
+        transactionId: inv.transactionId ?? null,
+        paidOn:        null,
+        // Items — invoice API uses snake_case
+        items: (inv.items ?? []).map((it: any) => ({
+          id:          it.id,
+          name:        it.product_name ?? it.productName ?? 'Item',
+          itemId:      it.sno ?? it.tagno,
+          sno:         it.sno,
+          tagno:       it.tagno,
+          qty:         it.quantity ?? 1,
+          netWt:       it.net_wt  ?? it.netWt  ?? null,
+          grsWt:       it.grs_wt  ?? it.grsWt  ?? null,
+          grsAmt:      it.gross_amount ?? it.grossAmount ?? null,
+          taxType:     it.gst_type ?? it.gtstype ?? 'GST',
+          gstPer:      it.gst_per  ?? it.gstPer  ?? null,
+          gstAmount:   it.gst_amount ?? it.gstAmount ?? null,
+          price:       it.price,
+          totalAmount: it.price,
+          imageUrl:    it.image_path ?? it.imagePath ?? null,
+        })),
+        shippingFee:  inv.shippingFee ?? 0,
+        totalAmount:  inv.totalAmount,
+      });
+    } catch (err: any) {
+      toastError('Could not load invoice', err?.message ?? '');
+    }
   };
 
   /* ── Loading / Error guards ─── */
@@ -405,17 +475,39 @@ const Trackorder = ({ route, navigation }: Props) => {
         <SecTitle title="Order Timeline" />
         <Card>
           {(() => {
-            const doneKeys = new Set(timeline.map((t: any) => t.status?.toUpperCase()));
+            // Sort by sequence field (API returns events in insertion order, not sequence order)
+            const sortedTimeline = [...timeline].sort(
+              (a: any, b: any) => (a.sequence ?? 0) - (b.sequence ?? 0),
+            );
 
-            // Completed events — chronological (oldest first), keyed by index to avoid dups
-            const completedItems: any[] = timeline.map((ev: any, idx: number) => ({
-              uid:     `done-${idx}`,          // unique render key
-              key:     ev.status?.toUpperCase() ?? '',
-              label:   ev.label ?? ev.status ?? '',
-              remarks: ev.remarks,
-              time:    ev.updated_at,
+            // Always inject "Order Created" as first green step if not already present
+            const hasOrderCreated = sortedTimeline.some(
+              (t: any) => ['PENDING', 'ORDER_CREATED'].includes(t.status?.toUpperCase() ?? ''),
+            );
+            const syntheticFirst = hasOrderCreated ? [] : [{
+              uid:     'done-synthetic-0',
+              key:     'ORDER_CREATED',
+              label:   'Order Created',
+              remarks: 'Your order has been placed.',
+              time:    sortedTimeline[0]?.updated_at ?? null,
               done:    true,
-            }));
+              isSynthetic: true,
+            }];
+
+            const doneKeys = new Set(sortedTimeline.map((t: any) => t.status?.toUpperCase()));
+
+            // Completed events — sorted by sequence (oldest/lowest first), keyed by index to avoid dups
+            const completedItems: any[] = [
+              ...syntheticFirst,
+              ...sortedTimeline.map((ev: any, idx: number) => ({
+                uid:     `done-${idx}`,          // unique render key
+                key:     ev.status?.toUpperCase() ?? '',
+                label:   ev.label ?? ev.status ?? '',
+                remarks: ev.remarks,
+                time:    ev.updated_at,
+                done:    true,
+              })),
+            ];
 
             // Upcoming flow steps not yet in timeline
             const upcomingItems: any[] = isTerminal ? [] : flowSteps
@@ -600,31 +692,21 @@ const Trackorder = ({ route, navigation }: Props) => {
             label="Shipping"
             value={shippingFee === 0 ? 'FREE' : `₹${shippingFee.toLocaleString('en-IN')}`}
           />
+          {(paymentMode || paymentStatus) && (
+            <InfoRow
+              label="Payment"
+              value={
+                paymentMode === 'CASH' || paymentMode === 'COD'
+                  ? 'Cash on Delivery'
+                  : (paymentMode ?? undefined)
+              }
+            />
+          )}
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total Paid</Text>
             <Text style={styles.totalValue}>₹{totalAmt.toLocaleString('en-IN')}</Text>
           </View>
         </Card>
-
-        {/* ── Payment ── */}
-        {(paymentMode || paymentStatus || transactionId) && (
-          <>
-            <SecTitle title="Payment" />
-            <Card>
-              <InfoRow
-                label="Method"
-                value={
-                  paymentMode === 'CASH' || paymentMode === 'COD'
-                    ? 'Cash on Delivery'
-                    : paymentMode ?? undefined
-                }
-              />
-              <InfoRow label="Status"         value={paymentStatus} />
-              <InfoRow label="Transaction ID" value={transactionId} />
-              <InfoRow label="Paid On"        value={fmtDate(paidOn)} />
-            </Card>
-          </>
-        )}
 
         {/* ── Delivery Address ── */}
         {!!(addrName || addr?.addressLine || addr?.addressLine1 || addr?.address_line) && (

@@ -12,8 +12,8 @@ export const getRecentlyViewed   = () => callApi<null, any>({ method: 'get', url
 // export const getHeroBanners      = () => callApi<null, any>({ method: 'get', url: HOME.BANNER_LIST });
 // export const getCategoryImages   = () => callApi<null, any>({ method: 'get', url: HOME.CATEGORY_IMAGES });
 // export const getGenderImages     = () => callApi<null, any>({ method: 'get', url: HOME.GENDER_IMAGES });
-// export const getOfferBanners     = () => callApi<null, any>({ method: 'get', url: HOME.OFFER_BANNERS });
-// export const getInstantOffers    = () => callApi<null, any>({ method: 'get', url: HOME.INSTANT_OFFERS });
+export const getOfferBanners     = () => callApi<null, any>({ method: 'get', url: HOME.OFFER_BANNERS });
+export const getInstantOffers    = () => callApi<null, any>({ method: 'get', url: HOME.INSTANT_OFFERS });
 // export const getFeaturedProducts = () => callApi<null, any>({ method: 'get', url: HOME.FEATURED_PRODUCTS });
 // export const getBestDesign       = () => callApi<null, any>({ method: 'get', url: HOME.BEST_DESIGN });
 // export const getLatestCollection = () => callApi<null, any>({ method: 'get', url: HOME.LATEST_COLLECTION });
