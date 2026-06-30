@@ -14,6 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 import {
   useOrderById, useOrderTrackByUser, useOrderStatusMaster,
   useCancelOrder, useReorder, useOrderInvoice,
@@ -91,28 +92,29 @@ const statusColor = (key = '') => {
 };
 
 /* ── Small UI pieces ─────────────────────────────────────────── */
-const Card = ({ children, style }: any) => (
-  <View style={[styles.card, style]}>{children}</View>
+const Card = ({ children, style, C }: any) => (
+  <View style={[styles.card, C ? { backgroundColor: C.card } : undefined, style]}>{children}</View>
 );
 
-const SecTitle = ({ title }: { title: string }) => (
-  <Text style={styles.secTitle}>{title}</Text>
+const SecTitle = ({ title, C }: { title: string; C?: any }) => (
+  <Text style={[styles.secTitle, C ? { color: C.title } : undefined]}>{title}</Text>
 );
 
 const InfoRow = ({
-  label, value, valueStyle,
+  label, value, valueStyle, C,
 }: {
-  label: string; value?: string | null | undefined; valueStyle?: any;
+  label: string; value?: string | null | undefined; valueStyle?: any; C?: any;
 }) =>
   value ? (
     <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={[styles.infoValue, valueStyle]}>{value}</Text>
+      <Text style={[styles.infoLabel, C ? { color: C.textLight } : undefined]}>{label}</Text>
+      <Text style={[styles.infoValue, C ? { color: C.title } : undefined, valueStyle]}>{value}</Text>
     </View>
   ) : null;
 
 /* ── Screen ─────────────────────────────────────────────────── */
 const Trackorder = ({ route, navigation }: Props) => {
+  const { isDark, colors: C } = useTheme();
   const { orderId, seedOrder } = route.params;
   const [refreshing, setRefreshing]       = useState(false);
   const [timelineExpanded, setTimelineExp] = useState(false);
@@ -341,24 +343,24 @@ const Trackorder = ({ route, navigation }: Props) => {
 
   /* ── Loading / Error guards ─── */
   if (isLoading && !seedOrder) {
-    return <View style={styles.safe}><Loader message="Loading order…" /></View>;
+    return <View style={[styles.safe, { backgroundColor: C.background }]}><Loader message="Loading order…" /></View>;
   }
   if (isError && !track && !seedOrder) {
-    return <View style={styles.safe}><ErrorState onRetry={refetchTrack} /></View>;
+    return <View style={[styles.safe, { backgroundColor: C.background }]}><ErrorState onRetry={refetchTrack} /></View>;
   }
 
   const sColor = statusColor(currentStatus);
 
   return (
-    <View style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
+    <View style={[styles.safe, { backgroundColor: C.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
         <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={22} color={COLORS.title} />
+          <Feather name="arrow-left" size={22} color={C.title} />
         </TouchableOpacity>
-        <Text style={styles.hTitle} numberOfLines={1}>Order #{orderId}</Text>
+        <Text style={[styles.hTitle, { color: C.title }]} numberOfLines={1}>Order #{orderId}</Text>
         <TouchableOpacity style={styles.hBtn} onPress={onRefresh}>
           {isFetching
             ? <ActivityIndicator size="small" color={COLORS.primary} />
@@ -374,7 +376,7 @@ const Trackorder = ({ route, navigation }: Props) => {
         }
       >
         {/* ── Status Card ── */}
-        <Card>
+        <Card C={C}>
           <View style={styles.statusRow}>
             <View style={[styles.statusIcon, { backgroundColor: sColor + '18' }]}>
               <Feather name={safeIcon(currentStatusInfo.icon) as any} size={22} color={sColor} />
@@ -382,11 +384,11 @@ const Trackorder = ({ route, navigation }: Props) => {
             <View style={{ flex: 1 }}>
               <Text style={[styles.statusText, { color: sColor }]}>{currentStatusInfo.label}</Text>
               {!!orderDate && (
-                <Text style={styles.statusSub}>Placed on {fmtDate(orderDate)}</Text>
+                <Text style={[styles.statusSub, { color: C.textLight }]}>Placed on {fmtDate(orderDate)}</Text>
               )}
             </View>
             {totalAmt > 0 && (
-              <Text style={styles.statusAmt}>₹{totalAmt.toLocaleString('en-IN')}</Text>
+              <Text style={[styles.statusAmt, { color: C.title }]}>₹{totalAmt.toLocaleString('en-IN')}</Text>
             )}
           </View>
 
@@ -472,8 +474,8 @@ const Trackorder = ({ route, navigation }: Props) => {
         )}
 
         {/* ── Order Tracking Timeline ── */}
-        <SecTitle title="Order Timeline" />
-        <Card>
+        <SecTitle title="Order Timeline" C={C} />
+        <Card C={C}>
           {(() => {
             // Sort by sequence field (API returns events in insertion order, not sequence order)
             const sortedTimeline = [...timeline].sort(
@@ -525,8 +527,8 @@ const Trackorder = ({ route, navigation }: Props) => {
             if (allSteps.length === 0) {
               return (
                 <View style={styles.centerRow}>
-                  <Feather name="map-pin" size={18} color={COLORS.borderColor} />
-                  <Text style={styles.emptyTxt}>No tracking events yet</Text>
+                  <Feather name="map-pin" size={18} color={C.borderColor} />
+                  <Text style={[styles.emptyTxt, { color: C.textLight }]}>No tracking events yet</Text>
                 </View>
               );
             }
@@ -588,18 +590,18 @@ const Trackorder = ({ route, navigation }: Props) => {
                           step.done
                             ? (isLatest
                                 ? { color: '#16a34a', ...FONTS.fontSemiBold }
-                                : { color: COLORS.title })
-                            : { color: COLORS.textLight },
+                                : { color: C.title })
+                            : { color: C.textLight },
                         ]}>
                           {step.label}
                           {!!step.time && (
-                            <Text style={styles.tlDateInline}>
+                            <Text style={[styles.tlDateInline, { color: C.textLight }]}>
                               {',  ' + fmtDate(step.time)}
                             </Text>
                           )}
                         </Text>
                         {!!step.remarks && (
-                          <Text style={styles.tlMeta}>{step.remarks}</Text>
+                          <Text style={[styles.tlMeta, { color: C.textLight }]}>{step.remarks}</Text>
                         )}
                         {!step.done && (
                           <Text style={[styles.tlTime, { color: '#C0C0C0' }]}>Upcoming</Text>
@@ -612,7 +614,7 @@ const Trackorder = ({ route, navigation }: Props) => {
                 {/* Toggle button */}
                 {needsToggle && (
                   <TouchableOpacity
-                    style={styles.seeAllBtn}
+                    style={[styles.seeAllBtn, { borderTopColor: C.borderColor }]}
                     onPress={() => setTimelineExp(e => !e)}
                     activeOpacity={0.7}
                   >
@@ -634,11 +636,11 @@ const Trackorder = ({ route, navigation }: Props) => {
         </Card>
 
         {/* ── Order Items ── */}
-        <SecTitle title={`Items (${items.length})`} />
-        <Card style={{ padding: 0, overflow: 'hidden' }}>
+        <SecTitle title={`Items (${items.length})`} C={C} />
+        <Card C={C} style={{ padding: 0, overflow: 'hidden' }}>
           {items.length === 0 ? (
             <View style={[styles.centerRow, { padding: 16 }]}>
-              <Text style={styles.emptyTxt}>No item details available</Text>
+              <Text style={[styles.emptyTxt, { color: C.textLight }]}>No item details available</Text>
             </View>
           ) : items.map((it: any, i: number) => {
             // Tracking API uses: productName (camelCase), tagno, sno, image_path
@@ -652,23 +654,23 @@ const Trackorder = ({ route, navigation }: Props) => {
             const img    = imgRaw ? absUrl(imgRaw) : undefined;
 
             return (
-              <View key={it.id ?? i} style={[styles.itemRow, i > 0 && styles.itemRowBorder]}>
+              <View key={it.id ?? i} style={[styles.itemRow, i > 0 && [styles.itemRowBorder, { borderTopColor: C.borderColor }]]}>
                 {img ? (
                   <SmartImage uri={img} style={styles.itemImg} />
                 ) : (
-                  <View style={[styles.itemImg, styles.itemImgFallback]}>
-                    <Feather name="image" size={22} color={COLORS.borderColor} />
+                  <View style={[styles.itemImg, styles.itemImgFallback, { backgroundColor: C.input }]}>
+                    <Feather name="image" size={22} color={C.borderColor} />
                   </View>
                 )}
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.itemName} numberOfLines={2}>{name}</Text>
-                  {!!tagNo && <Text style={styles.itemMeta}>Tag No: {tagNo}</Text>}
-                  {!!sno   && <Text style={styles.itemMeta}>SKU: {sno}</Text>}
-                  {!!weight && <Text style={styles.itemMeta}>Wt: {weight}g</Text>}
-                  <Text style={styles.itemMeta}>Qty: {qty}</Text>
+                  <Text style={[styles.itemName, { color: C.title }]} numberOfLines={2}>{name}</Text>
+                  {!!tagNo && <Text style={[styles.itemMeta, { color: C.textLight }]}>Tag No: {tagNo}</Text>}
+                  {!!sno   && <Text style={[styles.itemMeta, { color: C.textLight }]}>SKU: {sno}</Text>}
+                  {!!weight && <Text style={[styles.itemMeta, { color: C.textLight }]}>Wt: {weight}g</Text>}
+                  <Text style={[styles.itemMeta, { color: C.textLight }]}>Qty: {qty}</Text>
                 </View>
                 {price > 0 && (
-                  <Text style={styles.itemPrice}>₹{price.toLocaleString('en-IN')}</Text>
+                  <Text style={[styles.itemPrice, { color: C.title }]}>₹{price.toLocaleString('en-IN')}</Text>
                 )}
               </View>
             );
@@ -676,21 +678,23 @@ const Trackorder = ({ route, navigation }: Props) => {
         </Card>
 
         {/* ── Price Details ── */}
-        <SecTitle title="Price Details" />
-        <Card>
+        <SecTitle title="Price Details" C={C} />
+        <Card C={C}>
           {itemSubtotal > 0 && (
-            <InfoRow label="Item Total" value={`₹${itemSubtotal.toLocaleString('en-IN')}`} />
+            <InfoRow label="Item Total" value={`₹${itemSubtotal.toLocaleString('en-IN')}`} C={C} />
           )}
           {discountAmt > 0 && (
             <InfoRow
               label="Discount"
               value={`− ₹${discountAmt.toLocaleString('en-IN')}`}
               valueStyle={{ color: '#16a34a' }}
+              C={C}
             />
           )}
           <InfoRow
             label="Shipping"
             value={shippingFee === 0 ? 'FREE' : `₹${shippingFee.toLocaleString('en-IN')}`}
+            C={C}
           />
           {(paymentMode || paymentStatus) && (
             <InfoRow
@@ -700,35 +704,36 @@ const Trackorder = ({ route, navigation }: Props) => {
                   ? 'Cash on Delivery'
                   : (paymentMode ?? undefined)
               }
+              C={C}
             />
           )}
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total Paid</Text>
-            <Text style={styles.totalValue}>₹{totalAmt.toLocaleString('en-IN')}</Text>
+          <View style={[styles.totalRow, { borderTopColor: C.borderColor }]}>
+            <Text style={[styles.totalLabel, { color: C.title }]}>Total Paid</Text>
+            <Text style={[styles.totalValue, { color: C.title }]}>₹{totalAmt.toLocaleString('en-IN')}</Text>
           </View>
         </Card>
 
         {/* ── Delivery Address ── */}
         {!!(addrName || addr?.addressLine || addr?.addressLine1 || addr?.address_line) && (
           <>
-            <SecTitle title="Delivery Address" />
-            <Card>
+            <SecTitle title="Delivery Address" C={C} />
+            <Card C={C}>
               <View style={styles.addrRow}>
                 <View style={styles.addrIcon}>
                   <Feather name="map-pin" size={16} color={COLORS.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  {!!addrName && <Text style={styles.addrName}>{addrName}</Text>}
-                  <Text style={styles.addrLine}>
+                  {!!addrName && <Text style={[styles.addrName, { color: C.title }]}>{addrName}</Text>}
+                  <Text style={[styles.addrLine, { color: C.text }]}>
                     {[
                       addr.addressLine ?? addr.addressLine1 ?? addr.address_line,
                       addr.locality,
                     ].filter(Boolean).join(', ')}
                   </Text>
-                  <Text style={styles.addrLine}>
+                  <Text style={[styles.addrLine, { color: C.text }]}>
                     {[addr.city, addr.state, addr.pincode].filter(Boolean).join(', ')}
                   </Text>
-                  {!!addrPhone && <Text style={styles.addrPhone}>📞 {addrPhone}</Text>}
+                  {!!addrPhone && <Text style={[styles.addrPhone, { color: C.textLight }]}>📞 {addrPhone}</Text>}
                 </View>
               </View>
             </Card>
@@ -741,17 +746,17 @@ const Trackorder = ({ route, navigation }: Props) => {
 
 /* ── Styles ─────────────────────────────────────────────────── */
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F9F6F1' },
+  safe: { flex: 1 },
 
   header: {
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12,
-    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor,
+    borderBottomWidth: 1,
   },
   hBtn:   { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  hTitle: { flex: 1, textAlign: 'center', ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
+  hTitle: { flex: 1, textAlign: 'center', ...FONTS.h5, ...FONTS.fontSemiBold },
 
   card: {
-    backgroundColor: COLORS.white, borderRadius: 16, padding: 16, marginBottom: 10,
+    borderRadius: 16, padding: 16, marginBottom: 10,
     elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
   },
@@ -760,8 +765,8 @@ const styles = StyleSheet.create({
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
   statusIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   statusText: { ...FONTS.h6, ...FONTS.fontSemiBold },
-  statusSub:  { ...FONTS.fontXs, color: COLORS.textLight, marginTop: 2 },
-  statusAmt:  { ...FONTS.h5, ...FONTS.fontBold, color: COLORS.title },
+  statusSub:  { ...FONTS.fontXs, marginTop: 2 },
+  statusAmt:  { ...FONTS.h5, ...FONTS.fontBold },
 
   // 8-step Stepper
   stepper:      { flexDirection: 'row', alignItems: 'flex-start', marginTop: 8 },
@@ -776,7 +781,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4, shadowRadius: 4, shadowOffset: { width: 0, height: 0 },
   },
   stepLabel: {
-    ...FONTS.fontXs, color: COLORS.textLight, marginTop: 5,
+    ...FONTS.fontXs, marginTop: 5,
     textAlign: 'center', maxWidth: 40, fontSize: 8,
   },
   stepLine: { flex: 1, height: 2, backgroundColor: '#E5E7EB', marginTop: 10 },
@@ -803,11 +808,11 @@ const styles = StyleSheet.create({
   returnTxt: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.danger, flex: 1, textAlign: 'center' },
 
   // Section title
-  secTitle: { ...FONTS.h6, ...FONTS.fontSemiBold, color: COLORS.title, marginTop: 14, marginBottom: 8 },
+  secTitle: { ...FONTS.h6, ...FONTS.fontSemiBold, marginTop: 14, marginBottom: 8 },
 
   // Helper rows
   centerRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6 },
-  emptyTxt:  { ...FONTS.fontSm, color: COLORS.textLight },
+  emptyTxt:  { ...FONTS.fontSm },
 
   // Timeline
   tlRow:  { flexDirection: 'row', gap: 12 },
@@ -825,36 +830,36 @@ const styles = StyleSheet.create({
   tlLine:       { flex: 1, width: 2, backgroundColor: '#E5E7EB', marginVertical: 3 },
   tlLineDashed: { opacity: 0.35 },  // faded line between collapsed rows to suggest hidden steps
   tlBody:       { flex: 1, paddingBottom: 4 },
-  tlLabel:      { ...FONTS.fontSm, ...FONTS.fontMedium, color: COLORS.title },
-  tlDateInline: { ...FONTS.fontXs, color: COLORS.textLight, fontWeight: '400' },
-  tlMeta:       { ...FONTS.fontXs, color: COLORS.textLight, marginTop: 2 },
-  tlTime:       { ...FONTS.fontXs, color: COLORS.textLight, marginTop: 2, fontStyle: 'italic' },
+  tlLabel:      { ...FONTS.fontSm, ...FONTS.fontMedium },
+  tlDateInline: { ...FONTS.fontXs, fontWeight: '400' },
+  tlMeta:       { ...FONTS.fontXs, marginTop: 2 },
+  tlTime:       { ...FONTS.fontXs, marginTop: 2, fontStyle: 'italic' },
   seeAllBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     marginTop: 14, paddingTop: 12,
-    borderTopWidth: 1, borderTopColor: COLORS.borderColor,
+    borderTopWidth: 1,
   },
   seeAllTxt: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.primary },
 
   // Items
   itemRow:        { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
-  itemRowBorder:  { borderTopWidth: 1, borderTopColor: COLORS.borderColor },
+  itemRowBorder:  { borderTopWidth: 1 },
   itemImg:        { width: 72, height: 72, borderRadius: 10 },
-  itemImgFallback:{ backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
-  itemName:       { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title, lineHeight: 18 },
-  itemMeta:       { ...FONTS.fontXs, color: COLORS.textLight, marginTop: 3 },
-  itemPrice:      { ...FONTS.font, ...FONTS.fontBold, color: COLORS.title },
+  itemImgFallback:{ alignItems: 'center', justifyContent: 'center' },
+  itemName:       { ...FONTS.fontSm, ...FONTS.fontSemiBold, lineHeight: 18 },
+  itemMeta:       { ...FONTS.fontXs, marginTop: 3 },
+  itemPrice:      { ...FONTS.font, ...FONTS.fontBold },
 
   // Price / Payment
   infoRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 5 },
-  infoLabel: { ...FONTS.fontSm, color: COLORS.textLight },
-  infoValue: { ...FONTS.fontSm, ...FONTS.fontMedium, color: COLORS.title, maxWidth: '60%', textAlign: 'right' },
+  infoLabel: { ...FONTS.fontSm },
+  infoValue: { ...FONTS.fontSm, ...FONTS.fontMedium, maxWidth: '60%', textAlign: 'right' },
   totalRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    borderTopWidth: 1, borderTopColor: COLORS.borderColor, marginTop: 6, paddingTop: 10,
+    borderTopWidth: 1, marginTop: 6, paddingTop: 10,
   },
-  totalLabel: { ...FONTS.font, ...FONTS.fontSemiBold, color: COLORS.title },
-  totalValue: { ...FONTS.h5, ...FONTS.fontBold, color: COLORS.title },
+  totalLabel: { ...FONTS.font, ...FONTS.fontSemiBold },
+  totalValue: { ...FONTS.h5, ...FONTS.fontBold },
 
   // Address
   addrRow:  { flexDirection: 'row', gap: 12 },
@@ -862,9 +867,9 @@ const styles = StyleSheet.create({
     width: 36, height: 36, borderRadius: 18,
     backgroundColor: COLORS.primary + '12', alignItems: 'center', justifyContent: 'center',
   },
-  addrName:  { ...FONTS.font, ...FONTS.fontSemiBold, color: COLORS.title, marginBottom: 4 },
-  addrLine:  { ...FONTS.fontSm, color: COLORS.text, lineHeight: 20 },
-  addrPhone: { ...FONTS.fontSm, color: COLORS.textLight, marginTop: 6 },
+  addrName:  { ...FONTS.font, ...FONTS.fontSemiBold, marginBottom: 4 },
+  addrLine:  { ...FONTS.fontSm, lineHeight: 20 },
+  addrPhone: { ...FONTS.fontSm, marginTop: 6 },
 });
 
 export default Trackorder;

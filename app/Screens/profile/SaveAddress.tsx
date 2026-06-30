@@ -11,6 +11,7 @@ import { Feather } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 import { useAddresses } from '../../api/hooks/useAddresses';
 import { getAddressById } from '../../api/services/addressService';
 import { toastError } from '../../utils/toast';
@@ -47,22 +48,23 @@ const isServiceable = (d: any): boolean => {
   return msg.includes('serviceable') && !msg.includes('not serviceable');
 };
 
-const Field = ({ label, value, onChange, keyboardType, required, onBlur }: any) => (
+const Field = ({ label, value, onChange, keyboardType, required, onBlur, C }: any) => (
   <View style={{ marginBottom: 14 }}>
-    <Text style={styles.label}>{label}{required ? ' *' : ''}</Text>
+    <Text style={[styles.label, { color: C.title }]}>{label}{required ? ' *' : ''}</Text>
     <TextInput
-      style={styles.input}
+      style={[styles.input, { backgroundColor: C.input, borderColor: C.borderColor, color: C.title }]}
       value={value}
       onChangeText={onChange}
       onBlur={onBlur}
       keyboardType={keyboardType}
       placeholder={label}
-      placeholderTextColor={COLORS.placeholder}
+      placeholderTextColor={C.placeholder}
     />
   </View>
 );
 
 const SaveAddress = ({ route, navigation }: Props) => {
+  const { isDark, colors: C } = useTheme();
   const editId = route.params?.id;
   const { createAddress, updateAddress, isCreating, isUpdating } = useAddresses();
   const [form, setForm] = useState<Form>(EMPTY);
@@ -199,28 +201,29 @@ const SaveAddress = ({ route, navigation }: Props) => {
   const isSaveDisabled = isCreating || isUpdating || pincodeStatus === 'checking' || pincodeStatus === 'unavailable';
 
   return (
-    <KeyboardAvoidingView style={styles.safe} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.header}>
+    <KeyboardAvoidingView style={[styles.safe, { backgroundColor: C.background }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
         <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={22} color={COLORS.title} />
+          <Feather name="arrow-left" size={22} color={C.title} />
         </TouchableOpacity>
-        <Text style={styles.hTitle}>{editId ? 'Edit Address' : 'Add Address'}</Text>
+        <Text style={[styles.hTitle, { color: C.title }]}>{editId ? 'Edit Address' : 'Add Address'}</Text>
         <View style={styles.hBtn} />
       </View>
 
       <ScrollView contentContainerStyle={{ padding: SIZES.padding, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-        <Field label="Full Name" value={form.name} onChange={set('name')} required />
-        <Field label="Phone" value={form.phone} onChange={set('phone')} keyboardType="phone-pad" required />
-        <Field label="Address" value={form.addressLine} onChange={set('addressLine')} required />
-        <Field label="Locality / Area" value={form.locality} onChange={set('locality')} />
+        <Field label="Full Name" value={form.name} onChange={set('name')} required C={C} />
+        <Field label="Phone" value={form.phone} onChange={set('phone')} keyboardType="phone-pad" required C={C} />
+        <Field label="Address" value={form.addressLine} onChange={set('addressLine')} required C={C} />
+        <Field label="Locality / Area" value={form.locality} onChange={set('locality')} C={C} />
 
         {/* Pincode with serviceability check */}
         <View style={{ marginBottom: 14 }}>
-          <Text style={styles.label}>Pincode *</Text>
+          <Text style={[styles.label, { color: C.title }]}>Pincode *</Text>
           <View style={styles.pincodeRow}>
             <TextInput
               style={[styles.input, styles.pincodeInput,
+                { backgroundColor: C.input, borderColor: C.borderColor, color: C.title },
                 pincodeStatus === 'ok' && styles.inputSuccess,
                 pincodeStatus === 'unavailable' && styles.inputError,
               ]}
@@ -229,7 +232,7 @@ const SaveAddress = ({ route, navigation }: Props) => {
               onBlur={() => form.pincode.trim().length === 6 && checkPincode(form.pincode)}
               keyboardType="number-pad"
               placeholder="6-digit pincode"
-              placeholderTextColor={COLORS.placeholder}
+              placeholderTextColor={C.placeholder}
               maxLength={6}
             />
             {pincodeStatus === 'checking' && (
@@ -255,21 +258,21 @@ const SaveAddress = ({ route, navigation }: Props) => {
             </Text>
           )}
           {pincodeStatus === 'idle' && form.pincode.length > 0 && form.pincode.length < 6 && (
-            <Text style={styles.pincodeHint}>Enter 6-digit pincode to check delivery availability</Text>
+            <Text style={[styles.pincodeHint, { color: C.textLight }]}>Enter 6-digit pincode to check delivery availability</Text>
           )}
         </View>
 
-        <Field label="City" value={form.city} onChange={set('city')} required />
-        <Field label="State" value={form.state} onChange={set('state')} required />
-        <Field label="Landmark" value={form.landmark} onChange={set('landmark')} />
-        <Field label="Alternate Phone" value={form.alternatePhone} onChange={set('alternatePhone')} keyboardType="phone-pad" />
+        <Field label="City" value={form.city} onChange={set('city')} required C={C} />
+        <Field label="State" value={form.state} onChange={set('state')} required C={C} />
+        <Field label="Landmark" value={form.landmark} onChange={set('landmark')} C={C} />
+        <Field label="Alternate Phone" value={form.alternatePhone} onChange={set('alternatePhone')} keyboardType="phone-pad" C={C} />
 
-        <Text style={styles.label}>Address Type</Text>
+        <Text style={[styles.label, { color: C.title }]}>Address Type</Text>
         <View style={styles.typeRow}>
           {['Home', 'Work', 'Other'].map((t) => (
-            <TouchableOpacity key={t} style={[styles.typeChip, form.addressType === t && styles.typeChipActive]}
+            <TouchableOpacity key={t} style={[styles.typeChip, { borderColor: C.borderColor, backgroundColor: C.input }, form.addressType === t && styles.typeChipActive]}
               onPress={() => set('addressType')(t)}>
-              <Text style={[styles.typeTxt, form.addressType === t && styles.typeTxtActive]}>{t}</Text>
+              <Text style={[styles.typeTxt, { color: C.text }, form.addressType === t && styles.typeTxtActive]}>{t}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -294,14 +297,14 @@ const SaveAddress = ({ route, navigation }: Props) => {
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F9F6F1' },
+  safe: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12,
-    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor },
+    borderBottomWidth: 1 },
   hBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
-  label: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title, marginBottom: 6 },
-  input: { backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.borderColor,
-    borderRadius: SIZES.radius, paddingHorizontal: 14, paddingVertical: 12, ...FONTS.font, color: COLORS.title },
+  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold },
+  label: { ...FONTS.fontSm, ...FONTS.fontSemiBold, marginBottom: 6 },
+  input: { borderWidth: 1,
+    borderRadius: SIZES.radius, paddingHorizontal: 14, paddingVertical: 12, ...FONTS.font },
   pincodeRow: { flexDirection: 'row', alignItems: 'center', position: 'relative' },
   pincodeInput: { flex: 1, paddingRight: 40 },
   inputSuccess: { borderColor: '#22c55e' },
@@ -310,11 +313,11 @@ const styles = StyleSheet.create({
   pincodeMsg: { marginTop: 5, ...FONTS.fontXs },
   pincodeMsgOk: { color: '#16a34a' },
   pincodeMsgErr: { color: COLORS.danger },
-  pincodeHint: { marginTop: 5, ...FONTS.fontXs, color: COLORS.textLight },
+  pincodeHint: { marginTop: 5, ...FONTS.fontXs },
   typeRow: { flexDirection: 'row', gap: 10, marginTop: 6, marginBottom: 20 },
-  typeChip: { paddingHorizontal: 18, paddingVertical: 9, borderRadius: SIZES.radius, borderWidth: 1, borderColor: COLORS.borderColor, backgroundColor: COLORS.white },
+  typeChip: { paddingHorizontal: 18, paddingVertical: 9, borderRadius: SIZES.radius, borderWidth: 1 },
   typeChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  typeTxt: { ...FONTS.fontSm, color: COLORS.text },
+  typeTxt: { ...FONTS.fontSm },
   typeTxtActive: { color: COLORS.white },
   saveBtn: { backgroundColor: COLORS.primary, borderRadius: SIZES.radius_lg, paddingVertical: 15, alignItems: 'center' },
   saveTxt: { ...FONTS.fontLg, ...FONTS.fontSemiBold, color: COLORS.white },

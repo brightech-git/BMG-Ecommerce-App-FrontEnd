@@ -139,6 +139,14 @@ const Profile = () => {
         <View style={[styles.group, { backgroundColor: C.card }]}>
           <Row icon="log-out" label="Log Out" danger onPress={doLogout} />
         </View>
+
+        {/* Powered by */}
+        <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+          <Text style={{ fontSize: 12, color: C.textLight }}>Powered by</Text>
+          <Text style={{ fontSize: 14, color: C.textLight, fontWeight: '700', marginTop: 2 }}>
+            Brightech Software Services Pvt Ltd
+          </Text>
+        </View>
       </ScrollView>
     </View>
   );

@@ -1,5 +1,6 @@
 export const IMAGES = {
 
+	poweredBy: require('../assets/images/poweredby.png'),
 	user: require('../assets/images/user.png'),
 	logo: require('../assets/images/icon.png'),
 	card: require('../assets/images/card.png'),

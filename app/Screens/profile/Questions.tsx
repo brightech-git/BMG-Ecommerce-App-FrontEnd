@@ -14,6 +14,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -107,8 +108,8 @@ const grouped = FAQS.reduce<Record<string, FAQ[]>>((acc, faq) => {
 }, {});
 const CATEGORIES = Object.keys(grouped);
 
-const AccordionItem = ({ faq, isOpen, onToggle }: {
-  faq: FAQ; isOpen: boolean; onToggle: () => void;
+const AccordionItem = ({ faq, isOpen, onToggle, C }: {
+  faq: FAQ; isOpen: boolean; onToggle: () => void; C: any;
 }) => (
   <View style={styles.item}>
     <TouchableOpacity
@@ -116,16 +117,16 @@ const AccordionItem = ({ faq, isOpen, onToggle }: {
       onPress={onToggle}
       activeOpacity={0.7}
     >
-      <Text style={styles.questionTxt}>{faq.q}</Text>
+      <Text style={[styles.questionTxt, { color: C.title }]}>{faq.q}</Text>
       <Feather
         name={isOpen ? 'chevron-up' : 'chevron-down'}
         size={18}
-        color={isOpen ? COLORS.primary : COLORS.textLight}
+        color={isOpen ? COLORS.primary : C.textLight}
       />
     </TouchableOpacity>
     {isOpen && (
-      <View style={styles.answer}>
-        <Text style={styles.answerTxt}>{faq.a}</Text>
+      <View style={[styles.answer, { backgroundColor: C.input }]}>
+        <Text style={[styles.answerTxt, { color: C.text }]}>{faq.a}</Text>
       </View>
     )}
   </View>
@@ -133,6 +134,7 @@ const AccordionItem = ({ faq, isOpen, onToggle }: {
 
 const Questions = () => {
   const navigation = useNavigation<any>();
+  const { isDark, colors: C } = useTheme();
   const [openIdx, setOpenIdx] = useState<string | null>(null);
 
   const toggle = useCallback((key: string) => {
@@ -141,18 +143,18 @@ const Questions = () => {
   }, []);
 
   return (
-    <View style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.header}>
+    <View style={[styles.safe, { backgroundColor: C.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
         <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={22} color={COLORS.title} />
+          <Feather name="arrow-left" size={22} color={C.title} />
         </TouchableOpacity>
-        <Text style={styles.hTitle}>FAQ</Text>
+        <Text style={[styles.hTitle, { color: C.title }]}>FAQ</Text>
         <View style={styles.hBtn} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        <Text style={styles.intro}>
+        <Text style={[styles.intro, { color: C.text }]}>
           Have a question? Find quick answers below. Can't find what you're looking for?{' '}
           <Text
             style={styles.introLink}
@@ -169,7 +171,7 @@ const Questions = () => {
               <Feather name="folder" size={15} color={COLORS.primary} />
               <Text style={styles.catTitle}>{cat}</Text>
             </View>
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: C.card }]}>
               {grouped[cat].map((faq, i) => {
                 const key = `${cat}-${i}`;
                 return (
@@ -178,8 +180,9 @@ const Questions = () => {
                       faq={faq}
                       isOpen={openIdx === key}
                       onToggle={() => toggle(key)}
+                      C={C}
                     />
-                    {i < grouped[cat].length - 1 && <View style={styles.divider} />}
+                    {i < grouped[cat].length - 1 && <View style={[styles.divider, { backgroundColor: C.borderColor }]} />}
                   </React.Fragment>
                 );
               })}
@@ -192,40 +195,23 @@ const Questions = () => {
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F9F6F1' },
-  header: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 12, paddingVertical: 12,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1, borderBottomColor: COLORS.borderColor,
-  },
-  hBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
-  scroll: { padding: SIZES.padding, paddingBottom: 40 },
-  intro: { ...FONTS.fontSm, color: COLORS.text, lineHeight: 20, marginBottom: 20 },
+  safe:      { flex: 1 },
+  header:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1 },
+  hBtn:      { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  hTitle:    { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold },
+  scroll:    { padding: SIZES.padding, paddingBottom: 40 },
+  intro:     { ...FONTS.fontSm, lineHeight: 20, marginBottom: 20 },
   introLink: { color: COLORS.primary, ...FONTS.fontSemiBold },
-  catBlock: { marginBottom: 20 },
-  catHeader: {
-    flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8,
-  },
-  catTitle: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.primary },
-  card: {
-    backgroundColor: COLORS.white, borderRadius: 14, overflow: 'hidden',
-    elevation: 1, shadowColor: '#000', shadowOpacity: 0.05,
-    shadowRadius: 4, shadowOffset: { width: 0, height: 2 },
-  },
-  item: {},
-  question: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    paddingHorizontal: 16, paddingVertical: 14,
-  },
-  questionTxt: { flex: 1, ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title, lineHeight: 18 },
-  answer: {
-    paddingHorizontal: 16, paddingBottom: 14,
-    backgroundColor: COLORS.primaryLight,
-  },
-  answerTxt: { ...FONTS.fontSm, color: COLORS.text, lineHeight: 20 },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: COLORS.borderColor, marginHorizontal: 16 },
+  catBlock:  { marginBottom: 20 },
+  catHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  catTitle:  { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.primary },
+  card:      { borderRadius: 14, overflow: 'hidden', elevation: 1, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
+  item:      {},
+  question:  { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
+  questionTxt: { flex: 1, ...FONTS.fontSm, ...FONTS.fontSemiBold, lineHeight: 18 },
+  answer:    { paddingHorizontal: 16, paddingBottom: 14 },
+  answerTxt: { ...FONTS.fontSm, lineHeight: 20 },
+  divider:   { height: StyleSheet.hairlineWidth, marginHorizontal: 16 },
 });
 
 export default Questions;

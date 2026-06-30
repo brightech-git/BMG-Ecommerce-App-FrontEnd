@@ -15,19 +15,21 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 import { useCompanyInfo } from '../../api/hooks/useHome';
 import { SmartImage } from '../../components/common/SmartImage';
 import { Loader, ErrorState } from '../../components/common/StateViews';
 import { absUrl } from '../../utils/image';
 
-const Section = ({ title, children }: { title?: string; children: React.ReactNode }) => (
+const Section = ({ title, children, titleColor }: { title?: string; children: React.ReactNode; titleColor?: string }) => (
   <View style={styles.section}>
-    {!!title && <Text style={styles.secTitle}>{title}</Text>}
+    {!!title && <Text style={[styles.secTitle, titleColor ? { color: titleColor } : undefined]}>{title}</Text>}
     {children}
   </View>
 );
 
 const AboutUs = () => {
+  const { isDark, colors: C } = useTheme();
   const navigation = useNavigation<any>();
   const { data, isLoading, isError, refetch, isRefetching } = useCompanyInfo();
 
@@ -48,13 +50,13 @@ const AboutUs = () => {
   const phone       = company.phone ?? company.contactNumber ?? company.mobile ?? '';
 
   return (
-    <View style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.header}>
+    <View style={[styles.safe, { backgroundColor: C.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
         <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={22} color={COLORS.title} />
+          <Feather name="arrow-left" size={22} color={C.title} />
         </TouchableOpacity>
-        <Text style={styles.hTitle}>About Us</Text>
+        <Text style={[styles.hTitle, { color: C.title }]}>About Us</Text>
         <View style={styles.hBtn} />
       </View>
 
@@ -71,7 +73,7 @@ const AboutUs = () => {
           }
         >
           {/* Hero / logo */}
-          <View style={styles.hero}>
+          <View style={[styles.hero, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
             {!!logoUrl ? (
               <SmartImage uri={absUrl(logoUrl)} style={styles.logo} resizeMode="contain" />
             ) : (
@@ -79,8 +81,8 @@ const AboutUs = () => {
                 <Feather name="award" size={48} color={COLORS.primary} />
               </View>
             )}
-            <Text style={styles.brandName}>{name}</Text>
-            {!!tagline && <Text style={styles.tagline}>{tagline}</Text>}
+            <Text style={[styles.brandName, { color: C.title }]}>{name}</Text>
+            {!!tagline && <Text style={[styles.tagline, { color: C.textLight }]}>{tagline}</Text>}
             {!!established && (
               <View style={styles.estBadge}>
                 <Text style={styles.estTxt}>Est. {established}</Text>
@@ -90,21 +92,21 @@ const AboutUs = () => {
 
           {/* About / description */}
           {!!description && (
-            <Section title="Our Story">
-              <Text style={styles.bodyText}>{description}</Text>
+            <Section title="Our Story" titleColor={C.title}>
+              <Text style={[styles.bodyText, { color: C.text }]}>{description}</Text>
             </Section>
           )}
 
           {/* Vision */}
           {!!vision && (
             <Section>
-              <View style={styles.visionCard}>
+              <View style={[styles.visionCard, { backgroundColor: C.card }]}>
                 <View style={styles.visionIcon}>
                   <Feather name="eye" size={20} color={COLORS.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.visionLabel}>Our Vision</Text>
-                  <Text style={styles.visionText}>{vision}</Text>
+                  <Text style={[styles.visionText, { color: C.text }]}>{vision}</Text>
                 </View>
               </View>
             </Section>
@@ -113,13 +115,13 @@ const AboutUs = () => {
           {/* Mission */}
           {!!mission && (
             <Section>
-              <View style={[styles.visionCard, { borderLeftColor: COLORS.secondary }]}>
+              <View style={[styles.visionCard, { backgroundColor: C.card, borderLeftColor: COLORS.secondary }]}>
                 <View style={[styles.visionIcon, { backgroundColor: COLORS.secondary + '18' }]}>
                   <Feather name="target" size={20} color={COLORS.secondary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.visionLabel, { color: COLORS.secondary }]}>Our Mission</Text>
-                  <Text style={styles.visionText}>{mission}</Text>
+                  <Text style={[styles.visionText, { color: C.text }]}>{mission}</Text>
                 </View>
               </View>
             </Section>
@@ -127,23 +129,23 @@ const AboutUs = () => {
 
           {/* Contact details from company record */}
           {(!!address || !!email || !!phone) && (
-            <Section title="Contact">
+            <Section title="Contact" titleColor={C.title}>
               {!!address && (
-                <View style={styles.contactRow}>
+                <View style={[styles.contactRow, { backgroundColor: C.card }]}>
                   <Feather name="map-pin" size={16} color={COLORS.primary} />
-                  <Text style={styles.contactTxt}>{address}</Text>
+                  <Text style={[styles.contactTxt, { color: C.text }]}>{address}</Text>
                 </View>
               )}
               {!!phone && (
-                <View style={styles.contactRow}>
+                <View style={[styles.contactRow, { backgroundColor: C.card }]}>
                   <Feather name="phone" size={16} color={COLORS.primary} />
-                  <Text style={styles.contactTxt}>{phone}</Text>
+                  <Text style={[styles.contactTxt, { color: C.text }]}>{phone}</Text>
                 </View>
               )}
               {!!email && (
-                <View style={styles.contactRow}>
+                <View style={[styles.contactRow, { backgroundColor: C.card }]}>
                   <Feather name="mail" size={16} color={COLORS.primary} />
-                  <Text style={styles.contactTxt}>{email}</Text>
+                  <Text style={[styles.contactTxt, { color: C.text }]}>{email}</Text>
                 </View>
               )}
             </Section>
@@ -152,7 +154,7 @@ const AboutUs = () => {
           {/* Fallback if API returned nothing useful */}
           {!description && !vision && !mission && (
             <Section>
-              <Text style={styles.bodyText}>
+              <Text style={[styles.bodyText, { color: C.text }]}>
                 BMG Jewellers is a trusted name in fine jewellery, offering an exquisite collection of
                 gold, diamond, and precious stone ornaments crafted with unmatched artistry. We are
                 committed to quality, purity, and creating jewellery that tells your story.
@@ -166,21 +168,19 @@ const AboutUs = () => {
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F9F6F1' },
+  safe: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 12, paddingVertical: 12,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1, borderBottomColor: COLORS.borderColor,
+    borderBottomWidth: 1,
   },
   hBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
+  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold },
   scroll: { paddingBottom: 40 },
   // Hero
   hero: {
     alignItems: 'center', paddingVertical: 32, paddingHorizontal: SIZES.padding,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1, borderBottomColor: COLORS.borderColor,
+    borderBottomWidth: 1,
   },
   logo: { width: 120, height: 80, marginBottom: 16 },
   logoPlaceholder: {
@@ -188,8 +188,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primaryLight,
     alignItems: 'center', justifyContent: 'center', marginBottom: 16,
   },
-  brandName: { fontFamily: 'MarcellusRegular', fontSize: 26, color: COLORS.title, textAlign: 'center' },
-  tagline: { ...FONTS.fontSm, color: COLORS.textLight, textAlign: 'center', marginTop: 6, fontStyle: 'italic' },
+  brandName: { fontFamily: 'MarcellusRegular', fontSize: 26, textAlign: 'center' },
+  tagline: { ...FONTS.fontSm, textAlign: 'center', marginTop: 6, fontStyle: 'italic' },
   estBadge: {
     marginTop: 12, backgroundColor: COLORS.primaryLight,
     paddingHorizontal: 16, paddingVertical: 5, borderRadius: 20,
@@ -197,11 +197,11 @@ const styles = StyleSheet.create({
   estTxt: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.primary },
   // Sections
   section: { marginTop: 20, paddingHorizontal: SIZES.padding },
-  secTitle: { fontFamily: 'MarcellusRegular', fontSize: 18, color: COLORS.title, marginBottom: 10 },
-  bodyText: { ...FONTS.font, color: COLORS.text, lineHeight: 24 },
+  secTitle: { fontFamily: 'MarcellusRegular', fontSize: 18, marginBottom: 10 },
+  bodyText: { ...FONTS.font, lineHeight: 24 },
   // Vision / Mission
   visionCard: {
-    flexDirection: 'row', gap: 12, backgroundColor: COLORS.white,
+    flexDirection: 'row', gap: 12,
     borderRadius: 14, padding: 16,
     borderLeftWidth: 4, borderLeftColor: COLORS.primary,
     elevation: 1, shadowColor: '#000', shadowOpacity: 0.05,
@@ -213,13 +213,13 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
   visionLabel: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.primary, marginBottom: 4 },
-  visionText: { ...FONTS.fontSm, color: COLORS.text, lineHeight: 20 },
+  visionText: { ...FONTS.fontSm, lineHeight: 20 },
   // Contact
   contactRow: {
     flexDirection: 'row', gap: 10, alignItems: 'flex-start',
-    backgroundColor: COLORS.white, borderRadius: 12, padding: 12, marginBottom: 8,
+    borderRadius: 12, padding: 12, marginBottom: 8,
   },
-  contactTxt: { flex: 1, ...FONTS.fontSm, color: COLORS.text, lineHeight: 20 },
+  contactTxt: { flex: 1, ...FONTS.fontSm, lineHeight: 20 },
 });
 
 export default AboutUs;

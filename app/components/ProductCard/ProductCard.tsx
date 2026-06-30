@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { IMAGE_BASE_URL } from '@env';
 import { SmartImage, FALLBACK_IMAGE } from '../common/SmartImage';
+import { useTheme } from '../../context/ThemeContext';
 import {
   View,
   Text,
@@ -173,12 +174,14 @@ const LIST_IMG_H = 130;
 const ListCard = ({
   item,
   onPress,
+  C,
 }: {
   item: ProductCardItem;
   onPress?: (item: ProductCardItem) => void;
+  C: any;
 }) => (
   <TouchableOpacity
-    style={s.listCard}
+    style={[s.listCard, { backgroundColor: C.card }]}
     activeOpacity={0.82}
     onPress={() => onPress?.(item)}
   >
@@ -197,12 +200,12 @@ const ListCard = ({
 
     {/* Info */}
     <View style={s.listBody}>
-      <Text style={s.name} numberOfLines={2}>{item.name}</Text>
+      <Text style={[s.name, { color: C.title }]} numberOfLines={2}>{item.name}</Text>
       <Text style={s.subName} numberOfLines={1}>{item.subName}</Text>
       <View style={s.priceRow}>
-        <Text style={s.price}>₹{item.price}</Text>
+        <Text style={[s.price, { color: C.title }]}>₹{item.price}</Text>
         {item.originalPrice && (
-          <Text style={s.origPrice}>₹{item.originalPrice}</Text>
+          <Text style={[s.origPrice, { color: C.textLight }]}>₹{item.originalPrice}</Text>
         )}
       </View>
     </View>
@@ -215,16 +218,18 @@ const GridCard = ({
   item,
   cardWidth,
   onPress,
+  C,
 }: {
   item: ProductCardItem;
   cardWidth: number;
   onPress?: (item: ProductCardItem) => void;
+  C: any;
 }) => {
   const imgH = cardWidth * 1.1;
 
   return (
     <TouchableOpacity
-      style={[s.gridCard, { width: cardWidth }]}
+      style={[s.gridCard, { width: cardWidth, backgroundColor: C.card }]}
       activeOpacity={0.82}
       onPress={() => onPress?.(item)}
     >
@@ -243,11 +248,11 @@ const GridCard = ({
 
       {/* Info below */}
       <View style={s.gridBody}>
-        <Text style={s.name} numberOfLines={2}>{item.name}</Text>
+        <Text style={[s.name, { color: C.title }]} numberOfLines={2}>{item.name}</Text>
         <Text style={s.subName} numberOfLines={1}>{item.subName}</Text>
-        <Text style={s.price}>₹{item.price}</Text>
+        <Text style={[s.price, { color: C.title }]}>₹{item.price}</Text>
         {item.originalPrice && (
-          <Text style={s.origPrice}>₹{item.originalPrice}</Text>
+          <Text style={[s.origPrice, { color: C.textLight }]}>₹{item.originalPrice}</Text>
         )}
       </View>
     </TouchableOpacity>
@@ -273,6 +278,7 @@ export const ProductList: React.FC<ProductListProps> = ({
   loadingMore = false,
   contentContainerStyle,
 }) => {
+  const { colors: C } = useTheme();
   const PAD = 12;
   const GAP = 10;
   const col2W = (SCREEN_WIDTH - PAD * 2 - GAP) / 2;
@@ -281,8 +287,7 @@ export const ProductList: React.FC<ProductListProps> = ({
   const cardW   = col2W;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F9F6F1' }}>
-
+    <View style={{ flex: 1, backgroundColor: C.background }}>
       <FlatList
         key={`mode-${mode}`}
         data={products}
@@ -304,9 +309,9 @@ export const ProductList: React.FC<ProductListProps> = ({
         }
         renderItem={({ item }) =>
           mode === 'list' ? (
-            <ListCard item={item} onPress={onPress} />
+            <ListCard item={item} onPress={onPress} C={C} />
           ) : (
-            <GridCard item={item} cardWidth={cardW} onPress={onPress} />
+            <GridCard item={item} cardWidth={cardW} onPress={onPress} C={C} />
           )
         }
       />

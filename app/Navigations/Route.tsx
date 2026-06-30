@@ -8,7 +8,6 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { View } from "react-native";
 import StackNavigator from "./StackNavigator";
 import themeContext from "../constants/themeContext";
-import { COLORS } from "../constants/theme";
 import PersistentBottomTab from "../layout/PersistentBottomTab";
 import { navigationRef } from "./navigationRef";
 import { useTheme } from "../context/ThemeContext";
@@ -30,43 +29,30 @@ function getActiveRoute(state: any): string {
 
 /* ─── Routes component ──────────────────────────────────────────── */
 const Routes = () => {
-  const [isDarkTheme, setIsDarkTheme] = useState(false);
   const { colors: C, isDark } = useTheme();
 
   const authContext = React.useMemo(() => ({
-    setDarkTheme: () => setIsDarkTheme(true),
-    setLightTheme: () => setIsDarkTheme(false),
+    setDarkTheme: () => {},
+    setLightTheme: () => {},
   }), []);
 
-  const CustomDefaultTheme = {
-    ...NavigationDefaultTheme,
+  // Keep NavigationContainer theme in sync with the app's ThemeContext
+  // so BottomTab (which reads useTheme from @react-navigation/native) gets correct colors
+  const theme = {
+    ...(isDark ? NavigationDarkTheme : NavigationDefaultTheme),
+    dark: isDark,
     colors: {
-      ...NavigationDefaultTheme.colors,
-      background: COLORS.background,
-      title: COLORS.title,
-      card: COLORS.card,
-      text: COLORS.text,
-      textLight: COLORS.textLight,
-      input: COLORS.input,
-      border: COLORS.borderColor,
+      ...(isDark ? NavigationDarkTheme.colors : NavigationDefaultTheme.colors),
+      background: C.background,
+      card:       C.card,
+      text:       C.text,
+      border:     C.borderColor,
+      // custom extras consumed by BottomTab
+      title:      C.title,
+      textLight:  C.textLight,
+      input:      C.input,
     },
   };
-
-  const CustomDarkTheme = {
-    ...NavigationDarkTheme,
-    colors: {
-      ...NavigationDarkTheme.colors,
-      background: COLORS.darkBackground,
-      title: COLORS.darkTitle,
-      card: COLORS.darkCard,
-      text: COLORS.darkText,
-      textLight: COLORS.darkTextLight,
-      input: COLORS.darkInput,
-      border: COLORS.darkBorder,
-    },
-  };
-
-  const theme = isDarkTheme ? CustomDarkTheme : CustomDefaultTheme;
 
   // Track navigation state for PersistentBottomTab (no navigator hooks needed)
   const [rootRoute, setRootRoute]   = useState('');

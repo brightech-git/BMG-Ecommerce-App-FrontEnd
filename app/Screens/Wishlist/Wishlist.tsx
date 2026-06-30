@@ -10,6 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 import { useWishlist } from '../../api/hooks/useWishlist';
 import { useCart } from '../../api/hooks/useCart';
 import { firstImage } from '../../utils/image';
@@ -23,6 +24,7 @@ const CARD_W = (width - SIZES.padding * 2 - GAP) / 2;
 type Nav = StackNavigationProp<RootStackParamList>;
 
 const Wishlist = () => {
+  const { isDark, colors: C } = useTheme();
   const navigation = useNavigation<Nav>();
   const { favorites, isLoading, isError, error, refetch, isAuthenticated, removeFavorite } = useWishlist();
   const { addItem } = useCart();
@@ -30,20 +32,20 @@ const Wishlist = () => {
   const items = useMemo(() => favorites, [favorites]);
 
   const Header = (
-    <View style={styles.header}>
+    <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
       {navigation.canGoBack() && (
         <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={22} color={COLORS.title} />
+          <Feather name="arrow-left" size={22} color={C.title} />
         </TouchableOpacity>
       )}
-      <Text style={styles.hTitle}>Wishlist</Text>
+      <Text style={[styles.hTitle, { color: C.title }]}>Wishlist</Text>
       <CartWishlistBadge />
     </View>
   );
 
   if (!isAuthenticated) {
     return (
-      <View style={styles.safe}>{Header}
+      <View style={[styles.safe, { backgroundColor: C.background }]}>{Header}
         <EmptyState icon="heart" title="Your wishlist is waiting"
           subtitle="Sign in to save your favourite pieces."
           ctaLabel="Sign In" onCta={() => navigation.navigate('SignIn')} />
@@ -52,8 +54,8 @@ const Wishlist = () => {
   }
 
   return (
-    <View style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
+    <View style={[styles.safe, { backgroundColor: C.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       {Header}
       {isLoading ? (
         <Loader message="Loading wishlist..." />
@@ -71,17 +73,17 @@ const Wishlist = () => {
           contentContainerStyle={{ padding: SIZES.padding, paddingBottom: SIZES.TAB_BAR_HEIGHT }}
           columnWrapperStyle={{ gap: GAP, marginBottom: GAP }}
           renderItem={({ item }: any) => (
-            <View style={[styles.card, { width: CARD_W }]}>
+            <View style={[styles.card, { width: CARD_W, backgroundColor: C.card }]}>
               <TouchableOpacity activeOpacity={0.85}
                 onPress={() => navigation.navigate('ProductDetails', { tagKey: item.TAGKEY })}>
                 <SmartImage uri={firstImage(item.ImagePath)} style={styles.img} />
-                <TouchableOpacity style={styles.remove} onPress={() => removeFavorite(item.TAGKEY)}>
-                  <Feather name="x" size={15} color={COLORS.title} />
+                <TouchableOpacity style={[styles.remove, { backgroundColor: C.card }]} onPress={() => removeFavorite(item.TAGKEY)}>
+                  <Feather name="x" size={15} color={C.title} />
                 </TouchableOpacity>
               </TouchableOpacity>
               <View style={styles.body}>
-                <Text style={styles.name} numberOfLines={2}>{item.ITEMNAME}</Text>
-                <Text style={styles.price}>{'₹'}{item.FinalAmount}</Text>
+                <Text style={[styles.name, { color: C.title }]} numberOfLines={2}>{item.ITEMNAME}</Text>
+                <Text style={[styles.price, { color: C.title }]}>{'₹'}{item.FinalAmount}</Text>
                 <TouchableOpacity style={styles.cartBtn} onPress={() => addItem(item.TAGKEY)}>
                   <Feather name="shopping-bag" size={14} color={COLORS.white} />
                   <Text style={styles.cartTxt}>Add to Cart</Text>
@@ -96,22 +98,22 @@ const Wishlist = () => {
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F9F6F1' },
+  safe: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 12, paddingVertical: 12, backgroundColor: COLORS.white,
-    borderBottomWidth: 1, borderBottomColor: COLORS.borderColor,
+    paddingHorizontal: 12, paddingVertical: 12,
+    borderBottomWidth: 1,
   },
   hBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
-  card: { backgroundColor: COLORS.white, borderRadius: 14, overflow: 'hidden', elevation: 2,
+  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold },
+  card: { borderRadius: 14, overflow: 'hidden', elevation: 2,
     shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
   img: { width: '100%', height: CARD_W },
   remove: { position: 'absolute', top: 8, right: 8, width: 28, height: 28, borderRadius: 14,
-    backgroundColor: COLORS.white, alignItems: 'center', justifyContent: 'center', elevation: 2 },
+    alignItems: 'center', justifyContent: 'center', elevation: 2 },
   body: { padding: 10, gap: 5 },
-  name: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title, lineHeight: 17 },
-  price: { ...FONTS.font, ...FONTS.fontBold, color: COLORS.title },
+  name: { ...FONTS.fontSm, ...FONTS.fontSemiBold, lineHeight: 17 },
+  price: { ...FONTS.font, ...FONTS.fontBold },
   cartBtn: { flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center',
     backgroundColor: COLORS.primary, borderRadius: SIZES.radius, paddingVertical: 8, marginTop: 4 },
   cartTxt: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.white },

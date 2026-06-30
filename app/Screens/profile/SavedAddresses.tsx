@@ -6,23 +6,25 @@ import { Feather } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 import { useAddresses } from '../../api/hooks/useAddresses';
 import { Loader, EmptyState, ErrorState } from '../../components/common/StateViews';
 
 type Props = StackScreenProps<RootStackParamList, 'SavedAddresses'>;
 
 const SavedAddresses = ({ route, navigation }: Props) => {
+  const { isDark, colors: C } = useTheme();
   const selectMode = route.params?.select;
   const { addresses, isLoading, isError, refetch, deleteAddress } = useAddresses();
 
   return (
-    <View style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.header}>
+    <View style={[styles.safe, { backgroundColor: C.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
         <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={22} color={COLORS.title} />
+          <Feather name="arrow-left" size={22} color={C.title} />
         </TouchableOpacity>
-        <Text style={styles.hTitle}>{selectMode ? 'Select Address' : 'My Addresses'}</Text>
+        <Text style={[styles.hTitle, { color: C.title }]}>{selectMode ? 'Select Address' : 'My Addresses'}</Text>
         <TouchableOpacity style={styles.hBtn} onPress={() => navigation.navigate('SaveAddress', {})}>
           <Feather name="plus" size={22} color={COLORS.primary} />
         </TouchableOpacity>
@@ -45,15 +47,15 @@ const SavedAddresses = ({ route, navigation }: Props) => {
             <TouchableOpacity
               activeOpacity={selectMode ? 0.85 : 1}
               onPress={() => { if (selectMode) navigation.navigate({ name: 'Checkout', params: { addressId: item.id } as any, merge: true }); }}
-              style={styles.card}
+              style={[styles.card, { backgroundColor: C.card }]}
             >
               <View style={styles.cardTop}>
-                <Text style={styles.name}>{item.name}</Text>
+                <Text style={[styles.name, { color: C.title }]}>{item.name}</Text>
                 {!!item.addressType && <View style={styles.tag}><Text style={styles.tagTxt}>{item.addressType}</Text></View>}
               </View>
-              <Text style={styles.line}>{[item.addressLine, item.locality, item.city, item.state, item.pincode].filter(Boolean).join(', ')}</Text>
-              {!!item.phone && <Text style={styles.phone}>Phone: {item.phone}</Text>}
-              <View style={styles.actions}>
+              <Text style={[styles.line, { color: C.text }]}>{[item.addressLine, item.locality, item.city, item.state, item.pincode].filter(Boolean).join(', ')}</Text>
+              {!!item.phone && <Text style={[styles.phone, { color: C.textLight }]}>Phone: {item.phone}</Text>}
+              <View style={[styles.actions, { borderTopColor: C.borderColor }]}>
                 <TouchableOpacity style={styles.actBtn} onPress={() => navigation.navigate('SaveAddress', { id: item.id })}>
                   <Feather name="edit-2" size={14} color={COLORS.primary} />
                   <Text style={styles.actTxt}>Edit</Text>
@@ -76,20 +78,20 @@ const SavedAddresses = ({ route, navigation }: Props) => {
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F9F6F1' },
+  safe: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12,
-    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor },
+    borderBottomWidth: 1 },
   hBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
-  card: { backgroundColor: COLORS.white, borderRadius: 14, padding: 14, marginBottom: 12, elevation: 1,
+  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold },
+  card: { borderRadius: 14, padding: 14, marginBottom: 12, elevation: 1,
     shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
   cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  name: { ...FONTS.font, ...FONTS.fontSemiBold, color: COLORS.title },
+  name: { ...FONTS.font, ...FONTS.fontSemiBold },
   tag: { backgroundColor: COLORS.primaryLight, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
   tagTxt: { ...FONTS.fontXs, color: COLORS.primary },
-  line: { ...FONTS.fontSm, color: COLORS.text, lineHeight: 19 },
-  phone: { ...FONTS.fontSm, color: COLORS.textLight, marginTop: 4 },
-  actions: { flexDirection: 'row', gap: 18, marginTop: 12, borderTopWidth: 1, borderTopColor: COLORS.borderColor, paddingTop: 10 },
+  line: { ...FONTS.fontSm, lineHeight: 19 },
+  phone: { ...FONTS.fontSm, marginTop: 4 },
+  actions: { flexDirection: 'row', gap: 18, marginTop: 12, borderTopWidth: 1, paddingTop: 10 },
   actBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   actTxt: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.primary },
 });

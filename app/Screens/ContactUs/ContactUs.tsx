@@ -9,6 +9,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 import { callApi } from '../../api/apiClient';
 import { MISC } from '../../api/endpoints';
 import { toastError, toastSuccess } from '../../utils/toast';
@@ -41,16 +42,16 @@ const openMail = (email?: string | null) => {
 };
 
 const Field = ({
-  label, value, onChangeText, placeholder, multiline, keyboardType, maxLength,
+  label, value, onChangeText, placeholder, multiline, keyboardType, maxLength, C,
 }: any) => (
   <View style={styles.fieldWrap}>
-    <Text style={styles.label}>{label}</Text>
+    <Text style={[styles.label, C && { color: C.title }]}>{label}</Text>
     <TextInput
-      style={[styles.input, multiline && styles.textarea]}
+      style={[styles.input, multiline && styles.textarea, C && { backgroundColor: C.input, borderColor: C.borderColor, color: C.title }]}
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}
-      placeholderTextColor={COLORS.placeholder}
+      placeholderTextColor={C ? C.placeholder : COLORS.placeholder}
       multiline={multiline}
       numberOfLines={multiline ? 4 : 1}
       textAlignVertical={multiline ? 'top' : 'center'}
@@ -63,6 +64,7 @@ const Field = ({
 
 const ContactUs = () => {
   const navigation = useNavigation<any>();
+  const { isDark, colors: C } = useTheme();
   const { profile } = useProfile();
   const { data: company, isLoading: companyLoading } = useCompany();
   const u: any = profile ?? {};
@@ -124,21 +126,21 @@ const ContactUs = () => {
   /* ── Success view ── */
   if (submitted) {
     return (
-      <View style={styles.safe}>
-        <StatusBar barStyle="dark-content" />
-        <View style={styles.header}>
+      <View style={[styles.safe, { backgroundColor: C.background }]}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+        <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
           <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
-            <Feather name="arrow-left" size={22} color={COLORS.title} />
+            <Feather name="arrow-left" size={22} color={C.title} />
           </TouchableOpacity>
-          <Text style={styles.hTitle}>Contact Us</Text>
+          <Text style={[styles.hTitle, { color: C.title }]}>Contact Us</Text>
           <View style={styles.hBtn} />
         </View>
         <View style={styles.successCenter}>
           <View style={styles.successCircle}>
             <Feather name="check-circle" size={56} color={COLORS.success} />
           </View>
-          <Text style={styles.successTitle}>Message Sent!</Text>
-          <Text style={styles.successSub}>
+          <Text style={[styles.successTitle, { color: C.title }]}>Message Sent!</Text>
+          <Text style={[styles.successSub, { color: C.textLight }]}>
             Thank you for reaching out.{'\n'}Our team will get back to you within 24–48 hours.
           </Text>
           <TouchableOpacity style={styles.primaryBtn} onPress={() => navigation.goBack()}>
@@ -152,15 +154,15 @@ const ContactUs = () => {
   /* ── Form view ── */
   return (
     <KeyboardAvoidingView
-      style={styles.safe}
+      style={[styles.safe, { backgroundColor: C.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.header}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
         <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={22} color={COLORS.title} />
+          <Feather name="arrow-left" size={22} color={C.title} />
         </TouchableOpacity>
-        <Text style={styles.hTitle}>Contact Us</Text>
+        <Text style={[styles.hTitle, { color: C.title }]}>Contact Us</Text>
         <View style={styles.hBtn} />
       </View>
 
@@ -175,9 +177,9 @@ const ContactUs = () => {
             <ActivityIndicator color={COLORS.primary} />
           </View>
         ) : (
-          <View style={styles.infoCard}>
+          <View style={[styles.infoCard, { backgroundColor: C.card }]}>
             {/* Company name */}
-            <Text style={styles.companyName}>{companyName}</Text>
+            <Text style={[styles.companyName, { color: C.title }]}>{companyName}</Text>
 
             {/* Address */}
             {!!companyAddr && (
@@ -185,7 +187,7 @@ const ContactUs = () => {
                 <View style={styles.infoIconBox}>
                   <Feather name="map-pin" size={15} color={COLORS.primary} />
                 </View>
-                <Text style={styles.infoText}>{companyAddr}</Text>
+                <Text style={[styles.infoText, { color: C.text }]}>{companyAddr}</Text>
               </View>
             )}
 
@@ -207,7 +209,7 @@ const ContactUs = () => {
 
             {/* Social media row */}
             {socials.length > 0 && (
-              <View style={styles.socialsRow}>
+              <View style={[styles.socialsRow, { borderTopColor: C.borderColor }]}>
                 {socials.map((s) => (
                   <TouchableOpacity
                     key={s.label}
@@ -224,35 +226,35 @@ const ContactUs = () => {
         )}
 
         {/* ── Contact Form ── */}
-        <Text style={styles.formHeading}>Send us a message</Text>
+        <Text style={[styles.formHeading, { color: C.title }]}>Send us a message</Text>
 
-        <Field label="Full Name *" value={name} onChangeText={setName} placeholder="Your name" />
+        <Field label="Full Name *" value={name} onChangeText={setName} placeholder="Your name" C={C} />
         <Field label="Email Address *" value={email} onChangeText={setEmail}
-          placeholder="your@email.com" keyboardType="email-address" />
+          placeholder="your@email.com" keyboardType="email-address" C={C} />
         <Field label="Phone Number" value={phone} onChangeText={setPhone}
-          placeholder="Optional" keyboardType="phone-pad" />
+          placeholder="Optional" keyboardType="phone-pad" C={C} />
 
         {/* Subject chips */}
-        <Text style={[styles.label, { marginTop: 14, marginBottom: 8 }]}>Subject *</Text>
+        <Text style={[styles.label, { marginTop: 14, marginBottom: 8, color: C.title }]}>Subject *</Text>
         <View style={styles.chipGrid}>
           {SUBJECTS.map((s) => (
             <TouchableOpacity
               key={s}
-              style={[styles.chip, subject === s && styles.chipActive]}
+              style={[styles.chip, { backgroundColor: C.card, borderColor: C.borderColor }, subject === s && styles.chipActive]}
               onPress={() => setSubject(s)}
             >
               {subject === s && (
                 <Feather name="check" size={11} color={COLORS.white} style={{ marginRight: 4 }} />
               )}
-              <Text style={[styles.chipTxt, subject === s && styles.chipTxtActive]}>{s}</Text>
+              <Text style={[styles.chipTxt, { color: C.text }, subject === s && styles.chipTxtActive]}>{s}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Message */}
         <Field label="Message *" value={message} onChangeText={setMessage}
-          placeholder="Tell us how we can help you…" multiline maxLength={1000} />
-        <Text style={styles.charCount}>{message.length}/1000</Text>
+          placeholder="Tell us how we can help you…" multiline maxLength={1000} C={C} />
+        <Text style={[styles.charCount, { color: C.textLight }]}>{message.length}/1000</Text>
 
         <TouchableOpacity
           style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
@@ -270,105 +272,52 @@ const ContactUs = () => {
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F9F6F1' },
-  header: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 12, paddingVertical: 12,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1, borderBottomColor: COLORS.borderColor,
-  },
+  safe:   { flex: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1 },
   hBtn:   { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  hTitle: { flex: 1, textAlign: 'center', ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
+  hTitle: { flex: 1, textAlign: 'center', ...FONTS.h5, ...FONTS.fontSemiBold },
   scroll: { padding: SIZES.padding, paddingBottom: 40 },
 
   // Company info card
-  infoCard: {
-    backgroundColor: COLORS.white, borderRadius: 16, padding: 16, marginBottom: 20,
-    elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  companyName: {
-    ...FONTS.h6, ...FONTS.fontSemiBold, color: COLORS.title,
-    marginBottom: 14, textAlign: 'center',
-  },
-  infoRow: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 12,
-  },
-  infoIconBox: {
-    width: 30, height: 30, borderRadius: 15,
-    backgroundColor: COLORS.primary + '12',
-    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-  },
-  infoText: { flex: 1, ...FONTS.fontSm, color: COLORS.text, lineHeight: 20, paddingTop: 5 },
-  infoLink: { color: COLORS.primary, textDecorationLine: 'underline' },
+  infoCard: { borderRadius: 16, padding: 16, marginBottom: 20, elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
+  companyName: { ...FONTS.h6, ...FONTS.fontSemiBold, marginBottom: 14, textAlign: 'center' },
+  infoRow:    { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 12 },
+  infoIconBox:{ width: 30, height: 30, borderRadius: 15, backgroundColor: COLORS.primary + '12', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  infoText:   { flex: 1, ...FONTS.fontSm, lineHeight: 20, paddingTop: 5 },
+  infoLink:   { color: COLORS.primary, textDecorationLine: 'underline' },
 
   // Social buttons
-  socialsRow: {
-    flexDirection: 'row', gap: 10, justifyContent: 'center',
-    paddingTop: 4, marginTop: 4,
-    borderTopWidth: 1, borderTopColor: COLORS.borderColor,
-    paddingBottom: 2,
-  },
-  socialBtn: {
-    width: 42, height: 42, borderRadius: 21,
-    backgroundColor: COLORS.primary + '10',
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: COLORS.primary + '30',
-  },
+  socialsRow: { flexDirection: 'row', gap: 10, justifyContent: 'center', paddingTop: 4, marginTop: 4, borderTopWidth: 1, paddingBottom: 2 },
+  socialBtn:  { width: 42, height: 42, borderRadius: 21, backgroundColor: COLORS.primary + '10', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: COLORS.primary + '30' },
 
   // Form heading
-  formHeading: {
-    ...FONTS.h6, ...FONTS.fontSemiBold, color: COLORS.title, marginBottom: 16,
-  },
+  formHeading: { ...FONTS.h6, ...FONTS.fontSemiBold, marginBottom: 16 },
 
   // Form fields
   fieldWrap: { marginBottom: 14 },
-  label: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title, marginBottom: 6 },
-  input: {
-    backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.borderColor,
-    borderRadius: SIZES.radius, paddingHorizontal: 14, paddingVertical: 12,
-    ...FONTS.font, color: COLORS.title,
-  },
-  textarea: { minHeight: 110, lineHeight: 20 },
+  label:     { ...FONTS.fontSm, ...FONTS.fontSemiBold, marginBottom: 6 },
+  input:     { borderWidth: 1, borderRadius: SIZES.radius, paddingHorizontal: 14, paddingVertical: 12, ...FONTS.font },
+  textarea:  { minHeight: 110, lineHeight: 20 },
 
   // Chips
-  chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
-  chip: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 12, paddingVertical: 7,
-    borderRadius: SIZES.radius, borderWidth: 1.5,
-    borderColor: COLORS.borderColor, backgroundColor: COLORS.white,
-  },
+  chipGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
+  chip:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 7, borderRadius: SIZES.radius, borderWidth: 1.5 },
   chipActive:    { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  chipTxt:       { ...FONTS.fontSm, color: COLORS.text },
+  chipTxt:       { ...FONTS.fontSm },
   chipTxtActive: { color: COLORS.white },
-  charCount:     { ...FONTS.fontXs, color: COLORS.textLight, textAlign: 'right', marginTop: -8, marginBottom: 4 },
+  charCount:     { ...FONTS.fontXs, textAlign: 'right', marginTop: -8, marginBottom: 4 },
 
   // Submit
-  submitBtn: {
-    backgroundColor: COLORS.primary, borderRadius: SIZES.radius_lg,
-    paddingVertical: 15, alignItems: 'center', marginTop: 22,
-    flexDirection: 'row', justifyContent: 'center',
-  },
+  submitBtn:         { backgroundColor: COLORS.primary, borderRadius: SIZES.radius_lg, paddingVertical: 15, alignItems: 'center', marginTop: 22, flexDirection: 'row', justifyContent: 'center' },
   submitBtnDisabled: { opacity: 0.6 },
-  submitTxt: { ...FONTS.fontLg, ...FONTS.fontSemiBold, color: COLORS.white },
+  submitTxt:         { ...FONTS.fontLg, ...FONTS.fontSemiBold, color: COLORS.white },
 
   // Success
   successCenter: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
-  successCircle: {
-    width: 110, height: 110, borderRadius: 55,
-    backgroundColor: COLORS.success + '18',
-    alignItems: 'center', justifyContent: 'center', marginBottom: 24,
-  },
-  successTitle: { ...FONTS.h3, ...FONTS.fontSemiBold, color: COLORS.title, textAlign: 'center' },
-  successSub: {
-    ...FONTS.font, color: COLORS.textLight, textAlign: 'center',
-    marginTop: 10, lineHeight: 22, maxWidth: 300,
-  },
-  primaryBtn: {
-    backgroundColor: COLORS.primary, borderRadius: SIZES.radius_lg,
-    paddingVertical: 14, paddingHorizontal: 48, marginTop: 28,
-  },
+  successCircle: { width: 110, height: 110, borderRadius: 55, backgroundColor: COLORS.success + '18', alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
+  successTitle:  { ...FONTS.h3, ...FONTS.fontSemiBold, textAlign: 'center' },
+  successSub:    { ...FONTS.font, textAlign: 'center', marginTop: 10, lineHeight: 22, maxWidth: 300 },
+  primaryBtn:    { backgroundColor: COLORS.primary, borderRadius: SIZES.radius_lg, paddingVertical: 14, paddingHorizontal: 48, marginTop: 28 },
   primaryTxt: { ...FONTS.fontLg, ...FONTS.fontSemiBold, color: COLORS.white },
 });
 

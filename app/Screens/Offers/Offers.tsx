@@ -20,6 +20,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 import { useOfferBanners, useInstantOffers } from '../../api/hooks/useHome';
 import { absUrl } from '../../utils/image';
 import { SmartImage } from '../../components/common/SmartImage';
@@ -65,8 +66,8 @@ const pickBadge = (item: any): string =>
 
 // Full-width offer banner card
 const BannerCard = ({
-  item, onPress,
-}: { item: any; onPress: () => void }) => {
+  item, onPress, C,
+}: { item: any; onPress: () => void; C: any }) => {
   const url = absUrl(pickUrl(item));
   const badge = pickBadge(item);
   const title = pickTitle(item);
@@ -76,7 +77,7 @@ const BannerCard = ({
       activeOpacity={0.88}
       onPress={onPress}
     >
-      <SmartImage uri={url} style={styles.bannerImg} />
+      <SmartImage uri={url} style={[styles.bannerImg, { backgroundColor: C.input }]} />
       {(!!badge || !!title) && (
         <View style={styles.bannerOverlay}>
           {!!badge && (
@@ -95,25 +96,25 @@ const BannerCard = ({
 
 // Half-width instant offer card
 const OfferCard = ({
-  item, cardW, onPress,
-}: { item: any; cardW: number; onPress: () => void }) => {
+  item, cardW, onPress, C,
+}: { item: any; cardW: number; onPress: () => void; C: any }) => {
   const url = absUrl(pickUrl(item));
   const badge = pickBadge(item);
   const title = pickTitle(item);
   return (
     <TouchableOpacity
-      style={[styles.offerCard, { width: cardW }]}
+      style={[styles.offerCard, { width: cardW, backgroundColor: C.card }]}
       activeOpacity={0.88}
       onPress={onPress}
     >
-      <SmartImage uri={url} style={[styles.offerImg, { width: cardW, height: cardW * 0.75 }]} />
+      <SmartImage uri={url} style={[styles.offerImg, { width: cardW, height: cardW * 0.75, backgroundColor: C.input }]} />
       {!!badge && (
         <View style={styles.offerBadge}>
           <Text style={styles.offerBadgeTxt}>{badge}</Text>
         </View>
       )}
       {!!title && (
-        <Text style={styles.offerTitle} numberOfLines={2}>{title}</Text>
+        <Text style={[styles.offerTitle, { color: C.title }]} numberOfLines={2}>{title}</Text>
       )}
       <View style={styles.shopRow}>
         <Text style={styles.shopTxt}>Shop Now</Text>
@@ -124,6 +125,7 @@ const OfferCard = ({
 };
 
 const Offers = () => {
+  const { isDark, colors: C } = useTheme();
   const navigation = useNavigation<Nav>();
   const offerBanners = useOfferBanners();
   const instantOffers = useInstantOffers();
@@ -151,17 +153,17 @@ const Offers = () => {
   const cardW = (width - PAD * 2 - GAP) / 2;
 
   return (
-    <View style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.header}>
+    <View style={[styles.safe, { backgroundColor: C.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
         {navigation.canGoBack() && (
           <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
-            <Feather name="arrow-left" size={22} color={COLORS.title} />
+            <Feather name="arrow-left" size={22} color={C.title} />
           </TouchableOpacity>
         )}
-        <Text style={styles.hTitle}>Offers & Deals</Text>
+        <Text style={[styles.hTitle, { color: C.title }]}>Offers & Deals</Text>
         <TouchableOpacity style={styles.hBtn} onPress={() => navigation.navigate('Search')}>
-          <Feather name="search" size={20} color={COLORS.title} />
+          <Feather name="search" size={20} color={C.title} />
         </TouchableOpacity>
       </View>
 
@@ -195,12 +197,13 @@ const Offers = () => {
           {/* ── Offer Banners ── */}
           {banners.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.secTitle}>Exclusive Offers</Text>
+              <Text style={[styles.secTitle, { color: C.title }]}>Exclusive Offers</Text>
               {banners.map((b, i) => (
                 <BannerCard
                   key={b.id ?? b._id ?? i}
                   item={b}
                   onPress={() => openItem(b, 'Offer')}
+                  C={C}
                 />
               ))}
             </View>
@@ -209,7 +212,7 @@ const Offers = () => {
           {/* ── Instant Offers Grid ── */}
           {offers.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.secTitle}>Instant Deals</Text>
+              <Text style={[styles.secTitle, { color: C.title }]}>Instant Deals</Text>
               <View style={styles.grid}>
                 {offers.map((o, i) => (
                   <OfferCard
@@ -217,6 +220,7 @@ const Offers = () => {
                     item={o}
                     cardW={cardW}
                     onPress={() => openItem(o, 'Instant Offer')}
+                    C={C}
                   />
                 ))}
               </View>
@@ -229,19 +233,18 @@ const Offers = () => {
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F9F6F1' },
+  safe: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 12, paddingVertical: 12,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1, borderBottomColor: COLORS.borderColor,
+    borderBottomWidth: 1,
   },
   hBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
+  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold },
   scroll: { paddingBottom: 30 },
   section: { marginTop: 20, paddingHorizontal: PAD },
   secTitle: {
-    ...FONTS.h5, fontFamily: 'MarcellusRegular', color: COLORS.title, marginBottom: 12,
+    ...FONTS.h5, fontFamily: 'MarcellusRegular', marginBottom: 12,
   },
   // Full-width banner
   bannerCard: {
@@ -251,7 +254,6 @@ const styles = StyleSheet.create({
   },
   bannerImg: {
     width: '100%', height: (width - PAD * 2) * 0.5,
-    backgroundColor: COLORS.input,
   },
   bannerOverlay: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
@@ -269,12 +271,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row', flexWrap: 'wrap', gap: GAP,
   },
   offerCard: {
-    backgroundColor: COLORS.white, borderRadius: 14, overflow: 'hidden',
+    borderRadius: 14, overflow: 'hidden',
     elevation: 2, shadowColor: '#000', shadowOpacity: 0.06,
     shadowRadius: 4, shadowOffset: { width: 0, height: 2 },
     marginBottom: 4,
   },
-  offerImg: { backgroundColor: COLORS.input },
+  offerImg: {},
   offerBadge: {
     position: 'absolute', top: 8, right: 8,
     backgroundColor: COLORS.danger, borderRadius: 4,
@@ -282,7 +284,7 @@ const styles = StyleSheet.create({
   },
   offerBadgeTxt: { ...FONTS.fontXs, color: COLORS.white, fontWeight: '700' },
   offerTitle: {
-    ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title,
+    ...FONTS.fontSm, ...FONTS.fontSemiBold,
     paddingHorizontal: 10, paddingTop: 8, lineHeight: 17,
   },
   shopRow: {

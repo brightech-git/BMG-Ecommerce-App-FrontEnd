@@ -10,6 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 import { useCart } from '../../api/hooks/useCart';
 import { firstImage } from '../../utils/image';
 import { SmartImage } from '../../components/common/SmartImage';
@@ -21,6 +22,7 @@ const num = (v: any) => { const n = parseFloat(String(v ?? '0').replace(/[^0-9.]
 
 const MyCart = () => {
   const navigation = useNavigation<Nav>();
+  const { isDark, colors: C } = useTheme();
   const {
     cart, cartProducts, cartCount, isLoading, isError, refetch,
     isAuthenticated, removeItem, isRemoving, clearCart,
@@ -76,13 +78,13 @@ const MyCart = () => {
   };
 
   const Header = (
-    <View style={styles.header}>
+    <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
       {navigation.canGoBack() && (
         <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={22} color={COLORS.title} />
+          <Feather name="arrow-left" size={22} color={C.title} />
         </TouchableOpacity>
       )}
-      <Text style={styles.hTitle}>My Cart{cartCount ? ` (${cartCount})` : ''}</Text>
+      <Text style={[styles.hTitle, { color: C.title }]}>My Cart{cartCount ? ` (${cartCount})` : ''}</Text>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         {cartCount > 0 && (
           <TouchableOpacity style={styles.hBtn}
@@ -100,7 +102,7 @@ const MyCart = () => {
 
   if (!isAuthenticated) {
     return (
-      <View style={styles.safe}>{Header}
+      <View style={[styles.safe, { backgroundColor: C.background }]}>{Header}
         <EmptyState icon="shopping-bag" title="Your cart is empty"
           subtitle="Sign in to start shopping." ctaLabel="Sign In"
           onCta={() => navigation.navigate('SignIn')} />
@@ -109,8 +111,8 @@ const MyCart = () => {
   }
 
   return (
-    <View style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
+    <View style={[styles.safe, { backgroundColor: C.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       {Header}
       {isLoading ? (
         <Loader message="Loading cart..." />
@@ -123,12 +125,12 @@ const MyCart = () => {
       ) : (
         <>
           {/* Select all row */}
-          <View style={styles.selectAllRow}>
+          <View style={[styles.selectAllRow, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
             <TouchableOpacity style={styles.checkRow} onPress={toggleAll}>
-              <View style={[styles.checkbox, allSelected && styles.checkboxActive]}>
+              <View style={[styles.checkbox, { borderColor: C.borderColor, backgroundColor: C.card }, allSelected && styles.checkboxActive]}>
                 {allSelected && <Feather name="check" size={11} color="#fff" />}
               </View>
-              <Text style={styles.selectAllTxt}>
+              <Text style={[styles.selectAllTxt, { color: C.title }]}>
                 {allSelected ? 'Deselect All' : `Select All (${cartProducts.length})`}
               </Text>
             </TouchableOpacity>
@@ -145,10 +147,10 @@ const MyCart = () => {
               const key = String(item.TAGKEY);
               const checked = selectedKeys.has(key);
               return (
-                <View style={[styles.row, !checked && styles.rowDimmed]}>
+                <View style={[styles.row, { backgroundColor: C.card }, !checked && styles.rowDimmed]}>
                   {/* Checkbox */}
                   <TouchableOpacity style={styles.checkTap} onPress={() => toggleItem(key)}>
-                    <View style={[styles.checkbox, checked && styles.checkboxActive]}>
+                    <View style={[styles.checkbox, { borderColor: C.borderColor, backgroundColor: C.card }, checked && styles.checkboxActive]}>
                       {checked && <Feather name="check" size={11} color="#fff" />}
                     </View>
                   </TouchableOpacity>
@@ -159,10 +161,10 @@ const MyCart = () => {
                   </TouchableOpacity>
 
                   <View style={styles.info}>
-                    <Text style={styles.name} numberOfLines={2}>{item.ITEMNAME}</Text>
+                    <Text style={[styles.name, { color: C.title }]} numberOfLines={2}>{item.ITEMNAME}</Text>
                     {!!item.SUBITEMNAME && <Text style={styles.sub} numberOfLines={1}>{item.SUBITEMNAME}</Text>}
-                    <Text style={styles.price}>₹{item.FinalAmount}</Text>
-                    <Text style={styles.qty}>Qty: {item.quantity ?? 1}</Text>
+                    <Text style={[styles.price, { color: C.title }]}>₹{item.FinalAmount}</Text>
+                    <Text style={[styles.qty, { color: C.textLight }]}>Qty: {item.quantity ?? 1}</Text>
                   </View>
                   <TouchableOpacity style={styles.del} disabled={isRemoving}
                     onPress={() => removeItem(item.TAGKEY)}>
@@ -172,12 +174,12 @@ const MyCart = () => {
               );
             }}
           />
-          <View style={styles.summary}>
+          <View style={[styles.summary, { backgroundColor: C.card, borderTopColor: C.borderColor }]}>
             <View style={styles.sumRow}>
-              <Text style={styles.sumLabel}>
+              <Text style={[styles.sumLabel, { color: C.text }]}>
                 Subtotal ({selectedKeys.size} of {cartProducts.length} items)
               </Text>
-              <Text style={styles.sumValue}>₹{subtotal.toLocaleString('en-IN')}</Text>
+              <Text style={[styles.sumValue, { color: C.title }]}>₹{subtotal.toLocaleString('en-IN')}</Text>
             </View>
             <TouchableOpacity
               style={[styles.checkout, selectedKeys.size === 0 && styles.checkoutDisabled]}
@@ -197,60 +199,36 @@ const MyCart = () => {
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F9F6F1' },
-  header: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 12, paddingVertical: 12, backgroundColor: COLORS.white,
-    borderBottomWidth: 1, borderBottomColor: COLORS.borderColor,
-  },
-  hBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
+  safe: { flex: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1 },
+  hBtn:   { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold },
 
-  selectAllRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 10,
-    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor,
-  },
-  checkRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  checkbox: {
-    width: 20, height: 20, borderRadius: 5,
-    borderWidth: 1.5, borderColor: COLORS.borderColor,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#fff',
-  },
+  selectAllRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1 },
+  checkRow:       { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  checkbox:       { width: 20, height: 20, borderRadius: 5, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   checkboxActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  selectAllTxt: { ...FONTS.fontSm, ...FONTS.fontMedium, color: COLORS.title },
-  selectedInfo: { ...FONTS.fontXs, color: COLORS.primary, ...FONTS.fontSemiBold },
+  selectAllTxt:   { ...FONTS.fontSm, ...FONTS.fontMedium },
+  selectedInfo:   { ...FONTS.fontXs, color: COLORS.primary, ...FONTS.fontSemiBold },
 
-  row: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.white,
-    borderRadius: 14, padding: 10, marginBottom: 12,
-    elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 },
-  },
-  rowDimmed: { opacity: 0.45 },
+  row:      { flexDirection: 'row', alignItems: 'center', borderRadius: 14, padding: 10, marginBottom: 12, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
+  rowDimmed:{ opacity: 0.45 },
   checkTap: { paddingRight: 8, alignSelf: 'center' },
-  thumb: { width: 80, height: 80, borderRadius: 10 },
-  info: { flex: 1, paddingHorizontal: 10, justifyContent: 'center', gap: 3 },
-  name: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title, lineHeight: 17 },
-  sub: { ...FONTS.fontXs, color: COLORS.secondary },
-  price: { ...FONTS.font, ...FONTS.fontBold, color: COLORS.title, marginTop: 2 },
-  qty: { ...FONTS.fontXs, color: COLORS.textLight },
-  del: { padding: 6, alignSelf: 'flex-start' },
+  thumb:    { width: 80, height: 80, borderRadius: 10 },
+  info:     { flex: 1, paddingHorizontal: 10, justifyContent: 'center', gap: 3 },
+  name:     { ...FONTS.fontSm, ...FONTS.fontSemiBold, lineHeight: 17 },
+  sub:      { ...FONTS.fontXs, color: COLORS.secondary },
+  price:    { ...FONTS.font, ...FONTS.fontBold, marginTop: 2 },
+  qty:      { ...FONTS.fontXs },
+  del:      { padding: 6, alignSelf: 'flex-start' },
 
-  summary: {
-    backgroundColor: COLORS.white, padding: SIZES.padding,
-    paddingBottom: SIZES.TAB_BAR_HEIGHT,
-    borderTopWidth: 1, borderTopColor: COLORS.borderColor, gap: 12,
-  },
-  sumRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sumLabel: { ...FONTS.fontSm, color: COLORS.text },
-  sumValue: { ...FONTS.h5, ...FONTS.fontBold, color: COLORS.title },
-  checkout: {
-    flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: COLORS.primary, borderRadius: SIZES.radius_lg, paddingVertical: 15,
-  },
-  checkoutDisabled: { backgroundColor: COLORS.textLight },
-  checkoutTxt: { ...FONTS.fontLg, ...FONTS.fontSemiBold, color: COLORS.white },
+  summary:         { padding: SIZES.padding, paddingBottom: SIZES.TAB_BAR_HEIGHT, borderTopWidth: 1, gap: 12 },
+  sumRow:          { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  sumLabel:        { ...FONTS.fontSm },
+  sumValue:        { ...FONTS.h5, ...FONTS.fontBold },
+  checkout:        { flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primary, borderRadius: SIZES.radius_lg, paddingVertical: 15 },
+  checkoutDisabled:{ backgroundColor: COLORS.textLight },
+  checkoutTxt:     { ...FONTS.fontLg, ...FONTS.fontSemiBold, color: COLORS.white },
 });
 
 export default MyCart;

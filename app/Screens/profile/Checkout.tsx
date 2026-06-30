@@ -10,6 +10,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 import { useCart } from '../../api/hooks/useCart';
 import { useAddresses } from '../../api/hooks/useAddresses';
 import { useProfile } from '../../api/hooks/useProfile';
@@ -35,6 +36,7 @@ const originalPrice = (p: any): number => num(p.OriginalAmount ?? p.GrandTotal ?
 const Checkout = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<CheckoutRoute>();
+  const { isDark, colors: C } = useTheme();
   const { buyNowProduct, selectedTagKeys } = route.params ?? {};
   const { cart, cartProducts, isLoading } = useCart();
   const { addresses, isLoading: addrLoading, refetch: refetchAddresses } = useAddresses();
@@ -240,17 +242,17 @@ const Checkout = () => {
   };
 
   if ((isLoading && !isBuyNow) || addrLoading) {
-    return <View style={styles.safe}><Loader message="Loading checkout..." /></View>;
+    return <View style={[styles.safe, { backgroundColor: C.background }]}><Loader message="Loading checkout..." /></View>;
   }
 
   if (checkoutProducts.length === 0) {
     return (
-      <View style={styles.safe}>
-        <View style={styles.header}>
+      <View style={[styles.safe, { backgroundColor: C.background }]}>
+        <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
           <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
-            <Feather name="arrow-left" size={22} color={COLORS.title} />
+            <Feather name="arrow-left" size={22} color={C.title} />
           </TouchableOpacity>
-          <Text style={styles.hTitle}>Checkout</Text>
+          <Text style={[styles.hTitle, { color: C.title }]}>Checkout</Text>
           <View style={styles.hBtn} />
         </View>
         <EmptyState
@@ -264,13 +266,13 @@ const Checkout = () => {
   }
 
   return (
-    <View style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.header}>
+    <View style={[styles.safe, { backgroundColor: C.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
         <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={22} color={COLORS.title} />
+          <Feather name="arrow-left" size={22} color={C.title} />
         </TouchableOpacity>
-        <Text style={styles.hTitle}>Checkout</Text>
+        <Text style={[styles.hTitle, { color: C.title }]}>Checkout</Text>
         <View style={styles.hBtn} />
       </View>
 
@@ -278,14 +280,14 @@ const Checkout = () => {
 
         {/* ── Delivery address ── */}
         <View style={styles.secRow}>
-          <Text style={styles.secTitle}>Delivery Address</Text>
+          <Text style={[styles.secTitle, { color: C.title }]}>Delivery Address</Text>
           <TouchableOpacity onPress={() => navigation.navigate('SaveAddress', {})}>
             <Text style={styles.link}>+ Add</Text>
           </TouchableOpacity>
         </View>
         {addresses.length === 0 ? (
           <TouchableOpacity
-            style={styles.addAddr}
+            style={[styles.addAddr, { backgroundColor: C.card, borderColor: C.borderColor }]}
             onPress={() => navigation.navigate('SaveAddress', {})}
           >
             <Feather name="plus" size={18} color={COLORS.primary} />
@@ -294,28 +296,28 @@ const Checkout = () => {
         ) : addresses.map((a: any) => (
           <TouchableOpacity
             key={a.id}
-            style={[styles.addrCard, selectedId === a.id && styles.addrCardActive]}
+            style={[styles.addrCard, { backgroundColor: C.card, borderColor: C.borderColor }, selectedId === a.id && styles.addrCardActive]}
             onPress={() => setSelectedId(a.id)}
           >
             <Feather
               name={selectedId === a.id ? 'check-circle' : 'circle'}
               size={18}
-              color={selectedId === a.id ? COLORS.primary : COLORS.textLight}
+              color={selectedId === a.id ? COLORS.primary : C.textLight}
             />
             <View style={{ flex: 1 }}>
-              <Text style={styles.addrName}>
+              <Text style={[styles.addrName, { color: C.title }]}>
                 {a.name}{a.addressType ? ` · ${a.addressType}` : ''}
               </Text>
-              <Text style={styles.addrLine}>
+              <Text style={[styles.addrLine, { color: C.text }]}>
                 {[a.addressLine, a.locality, a.city, a.state, a.pincode].filter(Boolean).join(', ')}
               </Text>
-              {!!a.phone && <Text style={styles.addrPhone}>{a.phone}</Text>}
+              {!!a.phone && <Text style={[styles.addrPhone, { color: C.textLight }]}>{a.phone}</Text>}
             </View>
           </TouchableOpacity>
         ))}
 
         {/* ── Items ── */}
-        <Text style={[styles.secTitle, { marginTop: 20 }]}>
+        <Text style={[styles.secTitle, { marginTop: 20, color: C.title }]}>
           Items ({checkoutProducts.length}){isBuyNow ? ' · Buy Now' : ''}
         </Text>
         {checkoutProducts.map((p: any, i: number) => {
@@ -323,15 +325,15 @@ const Checkout = () => {
           const original = originalPrice(p);
           const hasDiscount = original > 0 && original > discounted;
           return (
-            <View key={i} style={styles.itemRow}>
-              <Text style={styles.itemName} numberOfLines={1}>
+            <View key={i} style={[styles.itemRow, { backgroundColor: C.card }]}>
+              <Text style={[styles.itemName, { color: C.title }]} numberOfLines={1}>
                 {p.ITEMNAME ?? p.SUBITEMNAME}
               </Text>
-              <Text style={styles.itemQty}>x{p.quantity ?? 1}</Text>
+              <Text style={[styles.itemQty, { color: C.textLight }]}>x{p.quantity ?? 1}</Text>
               <View style={{ alignItems: 'flex-end' }}>
-                <Text style={styles.itemPrice}>₹{discounted.toLocaleString('en-IN')}</Text>
+                <Text style={[styles.itemPrice, { color: C.title }]}>₹{discounted.toLocaleString('en-IN')}</Text>
                 {hasDiscount && (
-                  <Text style={styles.itemOriginal}>₹{original.toLocaleString('en-IN')}</Text>
+                  <Text style={[styles.itemOriginal, { color: C.textLight }]}>₹{original.toLocaleString('en-IN')}</Text>
                 )}
               </View>
             </View>
@@ -339,19 +341,19 @@ const Checkout = () => {
         })}
 
         {/* ── Payment method ── */}
-        <Text style={[styles.secTitle, { marginTop: 20 }]}>Payment Method</Text>
+        <Text style={[styles.secTitle, { marginTop: 20, color: C.title }]}>Payment Method</Text>
         {(['ONLINE', 'COD'] as const).map((m) => (
           <TouchableOpacity
             key={m}
-            style={[styles.payRow, paymentMode === m && styles.payRowActive]}
+            style={[styles.payRow, { backgroundColor: C.card, borderColor: C.borderColor }, paymentMode === m && styles.payRowActive]}
             onPress={() => setPaymentMode(m)}
           >
             <Feather
               name={paymentMode === m ? 'check-circle' : 'circle'}
               size={18}
-              color={paymentMode === m ? COLORS.primary : COLORS.textLight}
+              color={paymentMode === m ? COLORS.primary : C.textLight}
             />
-            <Text style={styles.payLabel}>
+            <Text style={[styles.payLabel, { color: C.title }]}>
               {m === 'ONLINE' ? 'Online Payment' : 'Cash on Delivery'}
             </Text>
           </TouchableOpacity>
@@ -361,10 +363,10 @@ const Checkout = () => {
             {(['CARD', 'UPI', 'NETBANKING'] as const).map((t) => (
               <TouchableOpacity
                 key={t}
-                style={[styles.typeChip, paymentType === t && styles.typeChipActive]}
+                style={[styles.typeChip, { backgroundColor: C.card, borderColor: C.borderColor }, paymentType === t && styles.typeChipActive]}
                 onPress={() => setPaymentType(t)}
               >
-                <Text style={[styles.typeTxt, paymentType === t && styles.typeTxtActive]}>
+                <Text style={[styles.typeTxt, { color: C.text }, paymentType === t && styles.typeTxtActive]}>
                   {t === 'NETBANKING' ? 'Net Banking' : t}
                 </Text>
               </TouchableOpacity>
@@ -374,35 +376,35 @@ const Checkout = () => {
       </ScrollView>
 
       {/* ── Summary + Place Order ── */}
-      <View style={styles.summary}>
+      <View style={[styles.summary, { backgroundColor: C.card, borderTopColor: C.borderColor }]}>
         {fullAmount > 0 && (
           <View style={styles.sumRow}>
-            <Text style={styles.sumLabel}>Full Amount</Text>
-            <Text style={styles.sumAmt}>₹{fullAmount.toLocaleString('en-IN')}</Text>
+            <Text style={[styles.sumLabel, { color: C.text }]}>Full Amount</Text>
+            <Text style={[styles.sumAmt, { color: C.title }]}>₹{fullAmount.toLocaleString('en-IN')}</Text>
           </View>
         )}
         {discountAmount > 0 && (
           <View style={styles.sumRow}>
-            <Text style={styles.sumLabel}>Discount</Text>
+            <Text style={[styles.sumLabel, { color: C.text }]}>Discount</Text>
             <Text style={styles.sumDiscount}>− ₹{discountAmount.toLocaleString('en-IN')}</Text>
           </View>
         )}
         <View style={styles.sumRow}>
-          <Text style={styles.sumLabel}>Sub Total</Text>
-          <Text style={styles.sumAmt}>₹{subtotal.toLocaleString('en-IN')}</Text>
+          <Text style={[styles.sumLabel, { color: C.text }]}>Sub Total</Text>
+          <Text style={[styles.sumAmt, { color: C.title }]}>₹{subtotal.toLocaleString('en-IN')}</Text>
         </View>
         <View style={styles.sumRow}>
-          <Text style={styles.sumLabel}>Shipping</Text>
+          <Text style={[styles.sumLabel, { color: C.text }]}>Shipping</Text>
           {shippingLoading
             ? <ActivityIndicator size="small" color={COLORS.primary} />
-            : <Text style={styles.sumAmt}>
+            : <Text style={[styles.sumAmt, { color: C.title }]}>
                 {shippingFee > 0 ? `₹${shippingFee.toLocaleString('en-IN')}` : 'FREE'}
               </Text>
           }
         </View>
-        <View style={[styles.sumRow, styles.totalRow]}>
-          <Text style={styles.totalLabel}>Total</Text>
-          <Text style={styles.sumValue}>₹{grandTotal.toLocaleString('en-IN')}</Text>
+        <View style={[styles.sumRow, styles.totalRow, { borderTopColor: C.borderColor }]}>
+          <Text style={[styles.totalLabel, { color: C.title }]}>Total</Text>
+          <Text style={[styles.sumValue, { color: C.title }]}>₹{grandTotal.toLocaleString('en-IN')}</Text>
         </View>
         <TouchableOpacity
           style={[styles.placeBtn, (placing || shippingLoading) && styles.placeBtnDisabled]}
@@ -425,73 +427,43 @@ const Checkout = () => {
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F9F6F1' },
-  header: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12,
-    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor,
-  },
-  hBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
-  secRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  secTitle: { ...FONTS.h6, ...FONTS.fontSemiBold, color: COLORS.title, marginBottom: 8 },
-  link: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.primary },
-  addAddr: {
-    flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: COLORS.white,
-    padding: 16, borderRadius: 12, borderWidth: 1,
-    borderColor: COLORS.borderColor, borderStyle: 'dashed',
-  },
-  addrCard: {
-    flexDirection: 'row', gap: 10, backgroundColor: COLORS.white, padding: 12,
-    borderRadius: 12, marginBottom: 10, borderWidth: 1.5, borderColor: COLORS.borderColor,
-  },
-  addrCardActive: { borderColor: COLORS.primary },
-  addrName: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title },
-  addrLine: { ...FONTS.fontSm, color: COLORS.text, marginTop: 2 },
-  addrPhone: { ...FONTS.fontXs, color: COLORS.textLight, marginTop: 2 },
-  itemRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: COLORS.white, padding: 12, borderRadius: 10, marginBottom: 8,
-  },
-  itemName: { flex: 1, ...FONTS.fontSm, color: COLORS.title },
-  itemQty: { ...FONTS.fontSm, color: COLORS.textLight },
-  itemPrice: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.title },
-  itemOriginal: { ...FONTS.fontXs, color: COLORS.textLight, textDecorationLine: 'line-through' },
-  payRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: COLORS.white,
-    padding: 14, borderRadius: 12, marginBottom: 8, borderWidth: 1.5, borderColor: COLORS.borderColor,
-  },
-  payRowActive: { borderColor: COLORS.primary },
-  payLabel: { ...FONTS.font, ...FONTS.fontMedium, color: COLORS.title },
-  typeRow: { flexDirection: 'row', gap: 8, marginTop: 2 },
-  typeChip: {
-    flex: 1, alignItems: 'center', paddingVertical: 10,
-    borderRadius: SIZES.radius, borderWidth: 1,
-    borderColor: COLORS.borderColor, backgroundColor: COLORS.white,
-  },
-  typeChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  typeTxt: { ...FONTS.fontSm, color: COLORS.text },
+  safe:          { flex: 1 },
+  header:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1 },
+  hBtn:          { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  hTitle:        { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold },
+  secRow:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  secTitle:      { ...FONTS.h6, ...FONTS.fontSemiBold, marginBottom: 8 },
+  link:          { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.primary },
+  addAddr:       { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 16, borderRadius: 12, borderWidth: 1, borderStyle: 'dashed' },
+  addrCard:      { flexDirection: 'row', gap: 10, padding: 12, borderRadius: 12, marginBottom: 10, borderWidth: 1.5 },
+  addrCardActive:{ borderColor: COLORS.primary },
+  addrName:      { ...FONTS.fontSm, ...FONTS.fontSemiBold },
+  addrLine:      { ...FONTS.fontSm, marginTop: 2 },
+  addrPhone:     { ...FONTS.fontXs, marginTop: 2 },
+  itemRow:       { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 10, marginBottom: 8 },
+  itemName:      { flex: 1, ...FONTS.fontSm },
+  itemQty:       { ...FONTS.fontSm },
+  itemPrice:     { ...FONTS.fontSm, ...FONTS.fontSemiBold },
+  itemOriginal:  { ...FONTS.fontXs, textDecorationLine: 'line-through' },
+  payRow:        { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 12, marginBottom: 8, borderWidth: 1.5 },
+  payRowActive:  { borderColor: COLORS.primary },
+  payLabel:      { ...FONTS.font, ...FONTS.fontMedium },
+  typeRow:       { flexDirection: 'row', gap: 8, marginTop: 2 },
+  typeChip:      { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: SIZES.radius, borderWidth: 1 },
+  typeChipActive:{ backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  typeTxt:       { ...FONTS.fontSm },
   typeTxtActive: { color: COLORS.white },
-  summary: {
-    backgroundColor: COLORS.white, padding: SIZES.padding,
-    borderTopWidth: 1, borderTopColor: COLORS.borderColor, gap: 6,
-  },
-  sumRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  totalRow: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: COLORS.borderColor,
-    paddingTop: 8, marginTop: 2,
-  },
-  sumLabel: { ...FONTS.fontSm, color: COLORS.text },
-  sumAmt: { ...FONTS.fontSm, color: COLORS.title },
-  sumDiscount: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: '#16a34a' },
-  totalLabel: { ...FONTS.fontLg, ...FONTS.fontSemiBold, color: COLORS.title },
-  sumValue: { ...FONTS.h5, ...FONTS.fontBold, color: COLORS.title },
-  placeBtn: {
-    backgroundColor: COLORS.primary, borderRadius: SIZES.radius_lg,
-    paddingVertical: 15, alignItems: 'center', marginTop: 4,
-  },
+  summary:       { padding: SIZES.padding, borderTopWidth: 1, gap: 6 },
+  sumRow:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  totalRow:      { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8, marginTop: 2 },
+  sumLabel:      { ...FONTS.fontSm },
+  sumAmt:        { ...FONTS.fontSm },
+  sumDiscount:   { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: '#16a34a' },
+  totalLabel:    { ...FONTS.fontLg, ...FONTS.fontSemiBold },
+  sumValue:      { ...FONTS.h5, ...FONTS.fontBold },
+  placeBtn:      { backgroundColor: COLORS.primary, borderRadius: SIZES.radius_lg, paddingVertical: 15, alignItems: 'center', marginTop: 4 },
   placeBtnDisabled: { opacity: 0.6 },
-  placeTxt: { ...FONTS.fontLg, ...FONTS.fontSemiBold, color: COLORS.white },
+  placeTxt:      { ...FONTS.fontLg, ...FONTS.fontSemiBold, color: COLORS.white },
 });
 
 export default Checkout;

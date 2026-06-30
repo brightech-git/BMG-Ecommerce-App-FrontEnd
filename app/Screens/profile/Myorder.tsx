@@ -12,6 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 import { useOrderHistory, useOrderStatusMaster } from '../../api/hooks/useOrders';
 import { firstImage, absUrl } from '../../utils/image';
 import { SmartImage } from '../../components/common/SmartImage';
@@ -103,6 +104,7 @@ const matchSearch = (o: any, q: string): boolean => {
 // ── Screen ───────────────────────────────────────────────────────────
 const Myorder = () => {
   const navigation = useNavigation<Nav>();
+  const { isDark, colors: C } = useTheme();
 
   // Filter state
   const [statusIdx,  setStatusIdx]  = useState(0);
@@ -184,15 +186,15 @@ const Myorder = () => {
   const loadMore    = () => { if (canLoadMore && !isFetching) setPage(p => p + 1); };
 
   return (
-    <View style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
+    <View style={[styles.safe, { backgroundColor: C.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
       {/* ── Header ── */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
         <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={22} color={COLORS.title} />
+          <Feather name="arrow-left" size={22} color={C.title} />
         </TouchableOpacity>
-        <Text style={styles.hTitle}>My Orders</Text>
+        <Text style={[styles.hTitle, { color: C.title }]}>My Orders</Text>
         <TouchableOpacity
           style={styles.hBtn}
           onPress={() => {
@@ -203,57 +205,57 @@ const Myorder = () => {
             });
           }}
         >
-          <Feather name={showSearch ? 'x' : 'search'} size={20} color={COLORS.title} />
+          <Feather name={showSearch ? 'x' : 'search'} size={20} color={C.title} />
         </TouchableOpacity>
       </View>
 
       {/* ── Search bar (toggled) ── */}
       {showSearch && (
-        <View style={styles.searchWrap}>
-          <Feather name="search" size={16} color={COLORS.textLight} style={{ marginLeft: 12 }} />
+        <View style={[styles.searchWrap, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
+          <Feather name="search" size={16} color={C.textLight} style={{ marginLeft: 12 }} />
           <TextInput
             ref={searchRef}
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: C.title }]}
             value={searchQ}
             onChangeText={setSearchQ}
             placeholder="Search by order ID or item name…"
-            placeholderTextColor={COLORS.placeholder}
+            placeholderTextColor={C.placeholder}
             returnKeyType="search"
             clearButtonMode="while-editing"
           />
           {searchQ.length > 0 && (
             <TouchableOpacity style={{ paddingRight: 10 }} onPress={() => setSearchQ('')}>
-              <Feather name="x-circle" size={16} color={COLORS.textLight} />
+              <Feather name="x-circle" size={16} color={C.textLight} />
             </TouchableOpacity>
           )}
         </View>
       )}
 
       {/* ── Status tabs ── */}
-      <View style={styles.tabWrap}>
+      <View style={[styles.tabWrap, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabScroll}>
           {STATUS_OPTIONS.map((opt, i) => (
             <TouchableOpacity
               key={opt.key || 'all'}
-              style={[styles.tab, statusIdx === i && styles.tabActive]}
+              style={[styles.tab, { backgroundColor: isDark ? '#2a2a1a' : '#F3F4F6' }, statusIdx === i && styles.tabActive]}
               onPress={() => applyStatus(i)}
             >
-              <Text style={[styles.tabTxt, statusIdx === i && styles.tabTxtActive]}>{opt.label}</Text>
+              <Text style={[styles.tabTxt, { color: C.textLight }, statusIdx === i && styles.tabTxtActive]}>{opt.label}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
 
       {/* ── Time filter chips ── */}
-      <View style={styles.timeWrap}>
+      <View style={[styles.timeWrap, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.timeScroll}>
           {TIME_OPTIONS.map((opt, i) => (
             <TouchableOpacity
               key={opt.days}
-              style={[styles.timeChip, daysIdx === i && styles.timeChipActive]}
+              style={[styles.timeChip, { backgroundColor: C.background }, daysIdx === i && styles.timeChipActive]}
               onPress={() => applyDays(i)}
             >
-              <Text style={[styles.timeChipTxt, daysIdx === i && styles.timeChipTxtActive]}>
+              <Text style={[styles.timeChipTxt, { color: C.textLight }, daysIdx === i && styles.timeChipTxtActive]}>
                 {opt.label}
               </Text>
             </TouchableOpacity>
@@ -263,29 +265,29 @@ const Myorder = () => {
 
       {/* ── Active filter pills ── */}
       {hasActiveFilter && (
-        <View style={styles.pillsRow}>
+        <View style={[styles.pillsRow, { backgroundColor: isDark ? C.card : '#FFF9F0', borderBottomColor: C.borderColor }]}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillsScroll}>
             {statusIdx !== 0 && (
-              <View style={styles.pill}>
+              <View style={[styles.pill, { backgroundColor: C.card }]}>
                 <Text style={styles.pillTxt}>Status: {selectedStatus.label}</Text>
                 <TouchableOpacity onPress={() => applyStatus(0)}>
-                  <Feather name="x" size={12} color={COLORS.primary} style={{ marginLeft: 4 }} />
+                  <Feather name="x" size={12} color={C.primary} style={{ marginLeft: 4 }} />
                 </TouchableOpacity>
               </View>
             )}
             {daysIdx !== null && (
-              <View style={styles.pill}>
+              <View style={[styles.pill, { backgroundColor: C.card }]}>
                 <Text style={styles.pillTxt}>{selectedDays!.label}</Text>
                 <TouchableOpacity onPress={() => { setDaysIdx(null); setPage(0); }}>
-                  <Feather name="x" size={12} color={COLORS.primary} style={{ marginLeft: 4 }} />
+                  <Feather name="x" size={12} color={C.primary} style={{ marginLeft: 4 }} />
                 </TouchableOpacity>
               </View>
             )}
             {searchQ.trim() !== '' && (
-              <View style={styles.pill}>
+              <View style={[styles.pill, { backgroundColor: C.card }]}>
                 <Text style={styles.pillTxt} numberOfLines={1}>"{searchQ}"</Text>
                 <TouchableOpacity onPress={() => setSearchQ('')}>
-                  <Feather name="x" size={12} color={COLORS.primary} style={{ marginLeft: 4 }} />
+                  <Feather name="x" size={12} color={C.primary} style={{ marginLeft: 4 }} />
                 </TouchableOpacity>
               </View>
             )}
@@ -358,7 +360,7 @@ const Myorder = () => {
 
             return (
               <TouchableOpacity
-                style={styles.card}
+                style={[styles.card, { backgroundColor: C.card }]}
                 activeOpacity={0.88}
                 onPress={() => {
                   if (!oid) return;
@@ -368,8 +370,8 @@ const Myorder = () => {
                 {/* Card header */}
                 <View style={styles.cardHead}>
                   <View style={{ flex: 1, marginRight: 8 }}>
-                    <Text style={styles.oid} numberOfLines={1}>Order #{oid}</Text>
-                    {!!date && <Text style={styles.date}>{date}</Text>}
+                    <Text style={[styles.oid, { color: C.title }]} numberOfLines={1}>Order #{oid}</Text>
+                    {!!date && <Text style={[styles.date, { color: C.textLight }]}>{date}</Text>}
                   </View>
                   <View style={[styles.badge, { backgroundColor: color + '18' }]}>
                     <Feather name={icon as any} size={12} color={color} />
@@ -384,8 +386,8 @@ const Myorder = () => {
                       <SmartImage key={i} uri={uri} style={styles.thumb} />
                     ))}
                     {count != null && count > 4 && (
-                      <View style={styles.moreThumb}>
-                        <Text style={styles.moreTxt}>+{count - 4}</Text>
+                      <View style={[styles.moreThumb, { backgroundColor: isDark ? '#2a2a1a' : '#F3F4F6' }]}>
+                        <Text style={[styles.moreTxt, { color: C.textLight }]}>+{count - 4}</Text>
                       </View>
                     )}
                   </View>
@@ -399,13 +401,13 @@ const Myorder = () => {
                 )}
 
                 {/* Footer */}
-                <View style={styles.cardFoot}>
+                <View style={[styles.cardFoot, { borderTopColor: C.borderColor }]}>
                   <View>
                     {count != null && images.length > 0 && (
-                      <Text style={styles.itemCountSm}>{count} item{count !== 1 ? 's' : ''}</Text>
+                      <Text style={[styles.itemCountSm, { color: C.textLight }]}>{count} item{count !== 1 ? 's' : ''}</Text>
                     )}
                     {amount != null && (
-                      <Text style={styles.amount}>₹{Number(amount).toLocaleString('en-IN')}</Text>
+                      <Text style={[styles.amount, { color: C.title }]}>₹{Number(amount).toLocaleString('en-IN')}</Text>
                     )}
                   </View>
                   <View style={styles.trackCta}>
@@ -424,101 +426,60 @@ const Myorder = () => {
 
 // ── Styles ───────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F9F6F1' },
+  safe: { flex: 1 },
 
   // Header
-  header: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12,
-    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor,
-  },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1 },
   hBtn:   { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  hTitle: { flex: 1, textAlign: 'center', ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
+  hTitle: { flex: 1, textAlign: 'center', ...FONTS.h5, ...FONTS.fontSemiBold },
 
   // Search
-  searchWrap: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor,
-  },
-  searchInput: {
-    flex: 1, paddingHorizontal: 10, paddingVertical: 11,
-    ...FONTS.font, color: COLORS.title,
-  },
+  searchWrap:  { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1 },
+  searchInput: { flex: 1, paddingHorizontal: 10, paddingVertical: 11, ...FONTS.font },
 
   // Status tabs
-  tabWrap:   { backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor },
-  tabScroll: { paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
-  tab: {
-    paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
-    backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: 'transparent',
-  },
+  tabWrap:      { borderBottomWidth: 1 },
+  tabScroll:    { paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
+  tab:          { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: 'transparent' },
   tabActive:    { backgroundColor: COLORS.primary + '15', borderColor: COLORS.primary },
-  tabTxt:       { ...FONTS.fontSm, color: COLORS.textLight },
+  tabTxt:       { ...FONTS.fontSm },
   tabTxtActive: { ...FONTS.fontSemiBold, color: COLORS.primary },
 
   // Time filter row
-  timeWrap:   { backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: '#F0EDE8' },
-  timeScroll: { paddingHorizontal: 12, paddingVertical: 8, gap: 6 },
-  timeChip: {
-    paddingHorizontal: 12, paddingVertical: 5, borderRadius: 16,
-    backgroundColor: '#F9F6F1', borderWidth: 1, borderColor: 'transparent',
-  },
+  timeWrap:          { borderBottomWidth: 1 },
+  timeScroll:        { paddingHorizontal: 12, paddingVertical: 8, gap: 6 },
+  timeChip:          { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 16, borderWidth: 1, borderColor: 'transparent' },
   timeChipActive:    { backgroundColor: '#FFF3E0', borderColor: COLORS.primary + '80' },
-  timeChipTxt:       { ...FONTS.fontXs, color: COLORS.textLight },
+  timeChipTxt:       { ...FONTS.fontXs },
   timeChipTxtActive: { ...FONTS.fontXs, ...FONTS.fontSemiBold, color: COLORS.primary },
 
   // Active filter pills
-  pillsRow:    { backgroundColor: '#FFF9F0', borderBottomWidth: 1, borderBottomColor: '#F0EDE8' },
+  pillsRow:    { borderBottomWidth: 1 },
   pillsScroll: { paddingHorizontal: 12, paddingVertical: 8, gap: 6, alignItems: 'center' },
-  pill: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: COLORS.white, borderRadius: 16,
-    borderWidth: 1, borderColor: COLORS.primary + '55',
-    paddingHorizontal: 10, paddingVertical: 5,
-  },
+  pill:        { flexDirection: 'row', alignItems: 'center', borderRadius: 16, borderWidth: 1, borderColor: COLORS.primary + '55', paddingHorizontal: 10, paddingVertical: 5 },
   pillTxt:     { ...FONTS.fontXs, ...FONTS.fontSemiBold, color: COLORS.primary, maxWidth: 140 },
-  clearAll: {
-    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16,
-    backgroundColor: COLORS.danger + '0F', borderWidth: 1, borderColor: COLORS.danger + '44',
-  },
+  clearAll:    { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16, backgroundColor: COLORS.danger + '0F', borderWidth: 1, borderColor: COLORS.danger + '44' },
   clearAllTxt: { ...FONTS.fontXs, ...FONTS.fontSemiBold, color: COLORS.danger },
 
   // Order card
-  card: {
-    backgroundColor: COLORS.white, borderRadius: 16, padding: 14, marginBottom: 14,
-    elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
-  },
-  cardHead: {
-    flexDirection: 'row', alignItems: 'flex-start',
-    justifyContent: 'space-between', marginBottom: 12,
-  },
-  oid:  { ...FONTS.font, ...FONTS.fontSemiBold, color: COLORS.title },
-  date: { ...FONTS.fontXs, color: COLORS.textLight, marginTop: 2 },
-  badge: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, maxWidth: 150,
-  },
-  badgeTxt: { ...FONTS.fontXs, ...FONTS.fontSemiBold, flexShrink: 1 },
+  card:    { borderRadius: 16, padding: 14, marginBottom: 14, elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
+  cardHead:{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 },
+  oid:     { ...FONTS.font, ...FONTS.fontSemiBold },
+  date:    { ...FONTS.fontXs, marginTop: 2 },
+  badge:   { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, maxWidth: 150 },
+  badgeTxt:{ ...FONTS.fontXs, ...FONTS.fontSemiBold, flexShrink: 1 },
 
   thumbRow:  { flexDirection: 'row', gap: 8, marginBottom: 12 },
   thumb:     { width: 68, height: 68, borderRadius: 10, backgroundColor: '#F3F4F6' },
-  moreThumb: {
-    width: 68, height: 68, borderRadius: 10, backgroundColor: '#F3F4F6',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  moreTxt: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.textLight },
+  moreThumb: { width: 68, height: 68, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  moreTxt:   { ...FONTS.fontSm, ...FONTS.fontSemiBold },
 
-  noImgRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingVertical: 10, marginBottom: 12,
-  },
-  itemCount: { ...FONTS.fontSm, color: COLORS.textLight },
+  noImgRow:  { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, marginBottom: 12 },
+  itemCount: { ...FONTS.fontSm },
 
-  cardFoot: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    borderTopWidth: 1, borderTopColor: COLORS.borderColor, paddingTop: 10,
-  },
-  itemCountSm: { ...FONTS.fontXs, color: COLORS.textLight },
-  amount:      { ...FONTS.h6, ...FONTS.fontBold, color: COLORS.title, marginTop: 2 },
+  cardFoot:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, paddingTop: 10 },
+  itemCountSm: { ...FONTS.fontXs },
+  amount:      { ...FONTS.h6, ...FONTS.fontBold, marginTop: 2 },
 
   trackCta: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   trackTxt: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.primary },

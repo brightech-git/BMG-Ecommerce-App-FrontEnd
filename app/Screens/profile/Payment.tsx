@@ -12,6 +12,7 @@ import { Feather } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { COLORS, FONTS } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 import { initiatePayment, getPaymentRedirectUrl } from '../../api/services/paymentService';
 import { AsyncStorageHelper } from '../../utils/AsyncStorageHelper';
 import { Loader, ErrorState } from '../../components/common/StateViews';
@@ -23,6 +24,7 @@ const apiPaymentMode = (t?: string) => (t === 'NETBANKING' ? 'NB' : (t ?? 'CARD'
 
 const Payment = ({ route, navigation }: Props) => {
   const { orderId, paymentMode, paymentType, totalAmount } = route.params;
+  const { isDark, colors: C } = useTheme();
   const [gatewayUrl, setGatewayUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [preparing, setPreparing] = useState(true);
@@ -93,13 +95,13 @@ const Payment = ({ route, navigation }: Props) => {
   };
 
   return (
-    <View style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.header}>
+    <View style={[styles.safe, { backgroundColor: C.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
         <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={22} color={COLORS.title} />
+          <Feather name="arrow-left" size={22} color={C.title} />
         </TouchableOpacity>
-        <Text style={styles.hTitle}>Secure Payment</Text>
+        <Text style={[styles.hTitle, { color: C.title }]}>Secure Payment</Text>
         <View style={styles.hBtn} />
       </View>
 
@@ -122,11 +124,10 @@ const Payment = ({ route, navigation }: Props) => {
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.white },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12,
-    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.borderColor },
-  hBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
+  safe:   { flex: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1 },
+  hBtn:   { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold },
 });
 
 export default Payment;

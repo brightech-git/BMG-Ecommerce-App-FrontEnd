@@ -163,6 +163,16 @@ const SignIn = ({ navigation }: SignInScreenProps) => {
                         }}> Create an account</Text>
                     </TouchableOpacity>
                 </View>
+
+                {/* Powered by */}
+                <View style={{ alignItems: 'center', paddingBottom: 18, paddingTop: 4 }}>
+                    <Text style={{ ...FONTS.fontRegular, fontSize: 12, color: colors.text, opacity: 0.5 }}>
+                        Powered by
+                    </Text>
+                    <Text style={{ ...FONTS.fontMedium, fontSize: 14, color: colors.text, opacity: 0.6 }}>
+                        Brightech Software Services Pvt Ltd
+                    </Text>
+                </View>
             </SafeAreaView>
         </ScrollView>
     );

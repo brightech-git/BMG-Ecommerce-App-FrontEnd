@@ -15,6 +15,7 @@ import { Feather } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 
 export type PolicyType =
   | 'privacy'
@@ -251,15 +252,16 @@ const POLICIES: Record<PolicyType, PolicyContent> = {
 const PolicyScreen = ({ route, navigation }: Props) => {
   const { type } = route.params;
   const policy = POLICIES[type];
+  const { isDark, colors: C } = useTheme();
 
   return (
-    <View style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.header}>
+    <View style={[styles.safe, { backgroundColor: C.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
         <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={22} color={COLORS.title} />
+          <Feather name="arrow-left" size={22} color={C.title} />
         </TouchableOpacity>
-        <Text style={styles.hTitle} numberOfLines={1}>{policy?.title ?? 'Policy'}</Text>
+        <Text style={[styles.hTitle, { color: C.title }]} numberOfLines={1}>{policy?.title ?? 'Policy'}</Text>
         <View style={styles.hBtn} />
       </View>
 
@@ -268,20 +270,20 @@ const PolicyScreen = ({ route, navigation }: Props) => {
         contentContainerStyle={styles.scroll}
       >
         {policy?.lastUpdated && (
-          <Text style={styles.lastUpdated}>Last updated: {policy.lastUpdated}</Text>
+          <Text style={[styles.lastUpdated, { color: C.textLight }]}>Last updated: {policy.lastUpdated}</Text>
         )}
 
         {policy?.sections.map((sec, i) => (
           <View key={i} style={styles.section}>
             {!!sec.heading && (
-              <Text style={styles.heading}>{sec.heading}</Text>
+              <Text style={[styles.heading, { color: C.title }]}>{sec.heading}</Text>
             )}
-            <Text style={styles.body}>{sec.body}</Text>
+            <Text style={[styles.body, { color: C.text }]}>{sec.body}</Text>
           </View>
         ))}
 
         {!policy && (
-          <Text style={styles.body}>Content not available.</Text>
+          <Text style={[styles.body, { color: C.text }]}>Content not available.</Text>
         )}
       </ScrollView>
     </View>
@@ -289,22 +291,15 @@ const PolicyScreen = ({ route, navigation }: Props) => {
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F9F6F1' },
-  header: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 12, paddingVertical: 12,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1, borderBottomColor: COLORS.borderColor,
-  },
-  hBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold, color: COLORS.title },
-  scroll: { padding: SIZES.padding, paddingBottom: 48 },
-  lastUpdated: { ...FONTS.fontXs, color: COLORS.textLight, marginBottom: 20, fontStyle: 'italic' },
-  section: { marginBottom: 20 },
-  heading: {
-    fontFamily: 'MarcellusRegular', fontSize: 16, color: COLORS.title, marginBottom: 8,
-  },
-  body: { ...FONTS.fontSm, color: COLORS.text, lineHeight: 22 },
+  safe:        { flex: 1 },
+  header:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1 },
+  hBtn:        { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  hTitle:      { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold },
+  scroll:      { padding: SIZES.padding, paddingBottom: 48 },
+  lastUpdated: { ...FONTS.fontXs, marginBottom: 20, fontStyle: 'italic' },
+  section:     { marginBottom: 20 },
+  heading:     { fontFamily: 'MarcellusRegular', fontSize: 16, marginBottom: 8 },
+  body:        { ...FONTS.fontSm, lineHeight: 22 },
 });
 
 export default PolicyScreen;

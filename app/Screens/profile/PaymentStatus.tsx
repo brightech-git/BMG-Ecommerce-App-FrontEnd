@@ -9,6 +9,7 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { CommonActions } from '@react-navigation/native';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import { useTheme } from '../../context/ThemeContext';
 import { getPaymentStatus } from '../../api/services/paymentService';
 import { Loader } from '../../components/common/StateViews';
 
@@ -21,6 +22,7 @@ const isSuccess = (s: any): boolean => {
 };
 
 const PaymentStatus = ({ route, navigation }: Props) => {
+  const { isDark, colors: C } = useTheme();
   const { orderId, mode } = route.params;
   const isCod = (mode ?? '').toLowerCase() === 'cod';
   const qc = useQueryClient();
@@ -51,7 +53,7 @@ const PaymentStatus = ({ route, navigation }: Props) => {
   const goHome = () => navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'DrawerNavigation' as never }] }));
   const goOrders = () => navigation.navigate('Myorder');
 
-  if (loading) return <View style={styles.safe}><Loader message="Confirming your payment..." /></View>;
+  if (loading) return <View style={[styles.safe, { backgroundColor: C.background }]}><Loader message="Confirming your payment..." /></View>;
 
   const cfg = result === 'success'
     ? { icon: 'check-circle' as const, color: COLORS.success, title: isCod ? 'Order Placed!' : 'Payment Successful!', sub: `Your order #${orderId} has been confirmed.` }
@@ -60,14 +62,14 @@ const PaymentStatus = ({ route, navigation }: Props) => {
     : { icon: 'clock' as const, color: COLORS.warning, title: 'Payment Pending', sub: `We couldn't confirm payment for order #${orderId} yet. Check My Orders shortly.` };
 
   return (
-    <View style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
+    <View style={[styles.safe, { backgroundColor: C.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <View style={styles.center}>
         <View style={[styles.circle, { backgroundColor: cfg.color + '18' }]}>
           <Feather name={cfg.icon} size={56} color={cfg.color} />
         </View>
-        <Text style={styles.title}>{cfg.title}</Text>
-        <Text style={styles.sub}>{cfg.sub}</Text>
+        <Text style={[styles.title, { color: C.title }]}>{cfg.title}</Text>
+        <Text style={[styles.sub, { color: C.textLight }]}>{cfg.sub}</Text>
 
         <TouchableOpacity style={styles.primaryBtn} onPress={goOrders}>
           <Text style={styles.primaryTxt}>View My Orders</Text>
@@ -81,11 +83,11 @@ const PaymentStatus = ({ route, navigation }: Props) => {
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F9F6F1' },
+  safe: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   circle: { width: 110, height: 110, borderRadius: 55, alignItems: 'center', justifyContent: 'center', marginBottom: 22 },
-  title: { ...FONTS.h3, ...FONTS.fontSemiBold, color: COLORS.title, textAlign: 'center' },
-  sub: { ...FONTS.font, color: COLORS.textLight, textAlign: 'center', marginTop: 8, maxWidth: 300 },
+  title: { ...FONTS.h3, ...FONTS.fontSemiBold, textAlign: 'center' },
+  sub: { ...FONTS.font, textAlign: 'center', marginTop: 8, maxWidth: 300 },
   primaryBtn: { backgroundColor: COLORS.primary, borderRadius: SIZES.radius_lg, paddingVertical: 14, paddingHorizontal: 40, marginTop: 30 },
   primaryTxt: { ...FONTS.fontLg, ...FONTS.fontSemiBold, color: COLORS.white },
   secondaryBtn: { paddingVertical: 14, paddingHorizontal: 40, marginTop: 10 },
