@@ -6,11 +6,9 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-
     "assetBundlePatterns": [
       "**/*"
     ],
-
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
@@ -21,50 +19,51 @@
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
-
     "web": {
       "favicon": "./assets/icon.png"
     },
-
     "extra": {
       "eas": {
-        "projectId": "11172f61-1dac-4232-840c-21f1dd887139"
+        "projectId": "062ed53e-33e8-40dd-a27e-49fdb937a0a9"
       }
     },
-
     "plugins": [
-  [
-    "expo-camera",
-    {
-      "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
-      "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
-      "recordAudioAndroid": true
-    }
-  ],
-  [
-    "expo-screen-orientation",
-    {
-      "initialOrientation": "DEFAULT"
-    }
-  ],
-  ["expo-build-properties", {
-    "android": {
-      "kotlinVersion": "2.1.20",
-      "compileSdkVersion": 36,
-      "targetSdkVersion": 35,
-      "buildToolsVersion": "36.0.0",
-      "minSdkVersion": 24
-    }
-  }],
-  "expo-location",
-  "expo-notifications",
-  "expo-image-picker",
-  "expo-document-picker"
-],
-
-    "owner": "brightech"
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
+          "recordAudioAndroid": true
+        }
+      ],
+      [
+        "expo-screen-orientation",
+        {
+          "initialOrientation": "DEFAULT"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "2.1.20",
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 35,
+            "buildToolsVersion": "36.0.0",
+            "minSdkVersion": 24
+          }
+        }
+      ],
+      "expo-location",
+      "expo-notifications",
+      "expo-image-picker",
+      "expo-document-picker"
+    ],
+    "owner": "brightechsoftware"
   }
 }
