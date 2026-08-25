@@ -27,7 +27,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { icon: 'home',   label: 'Home',       route: 'BottomNavigation' },
       { icon: 'grid',   label: 'Categories', route: 'Category' },
-      { icon: 'tag',    label: 'Offers',     route: 'Offers' },
+      // { icon: 'tag',    label: 'Offers',     route: 'Offers' },
       { icon: 'search', label: 'Search',     route: 'Search' },
     ],
   },

@@ -73,6 +73,21 @@ export interface LoginResponse {
   message?: string;
 }
 
+// ── Apple Login ──────────────────────────────────────────────────
+export interface AppleLoginPayload {
+  identityToken: string;
+}
+
+export interface AppleLoginResponse {
+  id?: number;
+  username?: string;
+  email?: string;
+  contactNumber?: string;
+  roles?: string[];
+  token?: string;
+  message?: string;
+}
+
 // ── Google Login ──────────────────────────────────────────────────
 export interface GoogleLoginPayload {
   idToken: string;

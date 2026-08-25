@@ -27,7 +27,6 @@ import { useCart } from '../../api/hooks/useCart';
 import { useWishlist } from '../../api/hooks/useWishlist';
 import { firstImage, absUrl } from '../../utils/image';
 import { SmartImage } from '../../components/common/SmartImage';
-import { toCardItem } from '../../components/ProductCard/ProductCard';
 
 const { width } = Dimensions.get('window');
 const PAD = SIZES.padding;
@@ -163,14 +162,19 @@ const Home = () => {
   const { cartCount } = useCart();
   const { favoritesCount } = useWishlist();
 
-  const { cats, bmgTitle, budgetImgs, occasionImgs, heroImgs } = useMemo(() => {
+  const { cats, bmgTitle, budgetImgs, occasionImgs, heroImgs, offerImgs, offerBg, offerTitle, genderImgs, genderTitle } = useMemo(() => {
     const d = (budget.data as any)?.data ?? {};
     return {
-      cats: (d.bmgWorld?.images ?? []) as any[],
-      bmgTitle: (d.bmgWorld?.title ?? 'BMG World') as string,
-      budgetImgs: (d.budget_banner?.images ?? []) as any[],
+      cats:         (d.bmgWorld?.images ?? []) as any[],
+      bmgTitle:     (d.bmgWorld?.title ?? 'BMG World') as string,
+      budgetImgs:   (d.budget_banner?.images ?? []) as any[],
       occasionImgs: (d.shopByOccasion?.images ?? []) as any[],
-      heroImgs: (d.heroBanner?.images ?? []).slice(0, 2) as any[],
+      heroImgs:     (d.heroBanner?.images ?? []).slice(0, 2) as any[],
+      offerImgs:    (d.offerBanner?.images ?? []) as any[],
+      offerBg:      (d.offerBanner?.backgroundColor ?? '#fef3db') as string,
+      offerTitle:   (d.offerBanner?.title ?? 'Exclusive Offers') as string,
+      genderImgs:   (d.ShopByGender?.images ?? []) as any[],
+      genderTitle:  (d.ShopByGender?.title ?? 'Shop by Gender') as string,
     };
   }, [budget.data]);
 
@@ -442,6 +446,68 @@ const Home = () => {
             />
           </>
         )}
+           {/* ── Recently Viewed ─────────────────────────────────── */}
+        {recent.length > 0 && (
+          <>
+            <SecHeader title="Recently Viewed" C={C} onSeeAll={() => navigation.navigate('RecentlyViewed')} />
+            <FlatList
+              data={recent} horizontal showsHorizontalScrollIndicator={false}
+              keyExtractor={(it: any, i) => String(it.TAGKEY ?? i)}
+              contentContainerStyle={styles.cardList}
+              renderItem={({ item }) => (
+                <ProductCard item={item} C={C} onPress={() => navigation.navigate('ProductDetails', { tagKey: item.TAGKEY })} />
+              )}
+            />
+          </>
+        )}
+
+        {/* ── Offer Banner ───────────────────────────────────── */}
+        {offerImgs.length > 0 && (
+          <View style={[styles.offerSection]}>
+            <SecHeader title={offerTitle} C={C} />
+            <FlatList
+              data={offerImgs} horizontal showsHorizontalScrollIndicator={false}
+              keyExtractor={(_, i) => String(i)}
+              contentContainerStyle={{ paddingHorizontal: PAD, gap: GAP, paddingBottom: 16 }}
+              renderItem={({ item }: any) => {
+                const uri = mobileUrl(item);
+                const W = width - PAD * 2;
+                return (
+                  <TouchableOpacity
+                    activeOpacity={0.9}
+                    style={{ width: W, height: W * 0.45, borderRadius: 16, overflow: 'hidden' }}
+                    onPress={() => navImg(item)}
+                  >
+                    <SmartImage uri={uri} style={{ width: W, height: W * 0.45 }} />
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+        )}
+
+        {/* ── Shop by Gender ─────────────────────────────────── */}
+        {genderImgs.length > 0 && (
+          <>
+            <SecHeader title={genderTitle} C={C} />
+            <View style={styles.genderGrid}>
+              {genderImgs.map((item: any, i: number) => {
+                const uri = mobileUrl(item);
+                const W = (width - PAD * 2 - GAP) / 2;
+                return (
+                  <TouchableOpacity
+                    key={i}
+                    activeOpacity={0.88}
+                    style={{ width: W, height: W, borderRadius: 14, overflow: 'hidden' }}
+                    onPress={() => navImg(item)}
+                  >
+                    <SmartImage uri={uri} style={{ width: W, height: W }} />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        )}
 
         {/* ── New Arrivals ────────────────────────────────────── */}
         {arrivals.length > 0 && (
@@ -478,20 +544,7 @@ const Home = () => {
 
 
 
-        {/* ── Recently Viewed ─────────────────────────────────── */}
-        {recent.length > 0 && (
-          <>
-            <SecHeader title="Recently Viewed" C={C} onSeeAll={() => navigation.navigate('RecentlyViewed')} />
-            <FlatList
-              data={recent} horizontal showsHorizontalScrollIndicator={false}
-              keyExtractor={(it: any, i) => String(it.TAGKEY ?? i)}
-              contentContainerStyle={styles.cardList}
-              renderItem={({ item }) => (
-                <ProductCard item={item} C={C} onPress={() => navigation.navigate('ProductDetails', { tagKey: item.TAGKEY })} />
-              )}
-            />
-          </>
-        )}
+     
       </ScrollView>
     </View>
   );
@@ -579,6 +632,12 @@ const styles = StyleSheet.create({
   suggestCatLabel: { ...FONTS.fontXs, fontWeight: '700', marginTop: 6, letterSpacing: 0.3 },
   suggestItemName: { ...FONTS.fontXs, ...FONTS.fontSemiBold, marginTop: 2, lineHeight: 14, color: '#444' },
   suggestItemPrice: { ...FONTS.fontSm, ...FONTS.fontBold, marginTop: 3 },
+
+  // Offer banner section
+  offerSection: { marginTop: 22, paddingTop: 4, paddingBottom: 4 },
+
+  // Shop by Gender grid
+  genderGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: PAD, gap: GAP, marginBottom: 4 },
 
   // Savings scheme card
   schemeOuter: { marginHorizontal: PAD, marginTop: 22, borderRadius: 20, overflow: 'hidden', elevation: 4, shadowColor: '#C9B15D', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },

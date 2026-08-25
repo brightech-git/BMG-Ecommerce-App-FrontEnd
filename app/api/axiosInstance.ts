@@ -1,6 +1,11 @@
 import axios from 'axios';
+import { CommonActions } from '@react-navigation/native';
 import { API_BASE_URL } from '@env';
 import { AsyncStorageHelper } from '../utils/AsyncStorageHelper';
+import { navigationRef } from '../Navigations/navigationRef';
+import { showGlobalAlert } from '../components/commoncomponents/GlobalAlert';
+import store from '../redux/store';
+import { logout } from '../redux/reducer/authReducer';
 
 export const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -10,10 +15,8 @@ export const axiosInstance = axios.create({
   },
   timeout: 15000,
 });
+console.log('[axiosInstance] Base URL:', API_BASE_URL);
 
-// In-memory token — a fast path set on login/boot. The request interceptor
-// falls back to AsyncStorage so the token is ALWAYS attached when one exists,
-// even if setAuthToken() wasn't called (e.g. after a cold start).
 let _token: string | null = null;
 
 export const setAuthToken = (token: string | null) => {
@@ -22,31 +25,56 @@ export const setAuthToken = (token: string | null) => {
 
 export const getInMemoryToken = () => _token;
 
-// Request interceptor — attach the Bearer token on every request.
-// Uses in-memory token first, then falls back to AsyncStorage (and caches it).
+
 axiosInstance.interceptors.request.use(async (config) => {
   let token = _token;
   if (!token) {
+    // AsyncStorageHelper.removeToken(); // Clear any stale token in storage
     token = await AsyncStorageHelper.getToken();
     if (token) _token = token;
   }
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
-    console.log('[axiosInstance] Authorization header:', config.headers['Authorization']);
+    // console.log('[axiosInstance] Authorization header:', config.headers['Authorization']);
   } else {
     console.log('[axiosInstance] No token found — Authorization header not set.');
   }
+  console.log('[axiosInstance] Request URL:', (config.baseURL ?? '') + (config.url ?? ''));
   return config;
 });
 
-// Response interceptor — on a genuine 401 clear only the in-memory token so the
-// next request re-reads storage. We do NOT auto-wipe the stored session here
-// (that caused a logout cascade on transient 401s); logout() clears storage.
+
+let _sessionExpiredHandled = false;
+
+const handleSessionExpired = () => {
+  if (_sessionExpiredHandled) return;
+  _sessionExpiredHandled = true;
+
+  store.dispatch(logout());
+
+  // Navigate straight away — don't wait for the alert to be dismissed.
+  if (navigationRef.isReady()) {
+    navigationRef.dispatch(
+      CommonActions.reset({ index: 0, routes: [{ name: 'SignIn' }] })
+    );
+  }
+
+  showGlobalAlert({
+    type: 'warning',
+    title: 'Login expired',
+    message: 'Please login and continue shopping.',
+  });
+
+
+  _sessionExpiredHandled = false;
+};
+
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error?.response?.status === 401) {
-      _token = null;
+    if (error?.response?.status === 401 || error?.response?.status === 403) {
+      console.log('[axiosInstance] 401/403 response — session expired, logging out.');
+      handleSessionExpired();
     }
     return Promise.reject(error);
   }

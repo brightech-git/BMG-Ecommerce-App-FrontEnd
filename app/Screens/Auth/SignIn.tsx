@@ -13,6 +13,7 @@ import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { useLogin } from '../../api/hooks/useLogin';
 import { useGoogleLogin } from '../../api/hooks/useGoogleLogin';
+import { useAppleLogin } from '../../api/hooks/useAppleLogin';
 import { useToast } from '../../components/commoncomponents/Toast';
 
 type SignInScreenProps = StackScreenProps<RootStackParamList, 'SignIn'>;
@@ -25,6 +26,7 @@ const SignIn = ({ navigation }: SignInScreenProps) => {
     const [form, setForm] = useState({ contactOrEmailOrUsername: '', password: '' });
     const { login, loginLoading, error, token, clearError } = useLogin();
     const { signInWithGoogle, googleLoading, error: googleError, clearError: clearGoogleError } = useGoogleLogin();
+    const { signInWithApple, appleLoading, error: appleError, clearError: clearAppleError } = useAppleLogin();
     const toast = useToast();
 
     useEffect(() => {
@@ -39,6 +41,10 @@ const SignIn = ({ navigation }: SignInScreenProps) => {
     useEffect(() => {
         if (googleError) { toast.error(googleError, { position: 'top', duration: 4000 }); clearGoogleError(); }
     }, [googleError]);
+
+    useEffect(() => {
+        if (appleError) { toast.error(appleError, { position: 'top', duration: 4000 }); clearAppleError(); }
+    }, [appleError]);
 
     const handleLogin = () => {
         if (!form.contactOrEmailOrUsername || !form.password) {
@@ -147,7 +153,8 @@ const SignIn = ({ navigation }: SignInScreenProps) => {
                                 icon={<FontAwesome name='apple' size={20} color={colors.title} />}
                                 rounded
                                 color={theme.dark ? '#000' : '#FFFFFF'}
-                                text={'Sign in with apple'}
+                                text={appleLoading ? 'Signing in...' : 'Sign in with apple'}
+                                onPress={signInWithApple}
                             />
                         )}
                     </View>

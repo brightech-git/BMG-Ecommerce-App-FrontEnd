@@ -101,8 +101,8 @@ const Profile = () => {
         <View style={[styles.group, { backgroundColor: C.card }]}>
           <Row icon="shopping-bag"  label="My Orders"     onPress={() => navigation.navigate('Myorder')} />
           <Row icon="heart"         label="Wishlist"      onPress={() => navigation.navigate('Wishlist')} />
-          <Row icon="shopping-cart" label="My Cart"       onPress={() => navigation.navigate('MyCart')} />
-          <Row icon="tag"           label="Offers & Deals" onPress={() => navigation.navigate('Offers')} />
+          <Row icon="shopping-cart" label="Cart"       onPress={() => navigation.navigate('MyCart')} />
+          {/* <Row icon="tag"           label="Offers & Deals" onPress={() => navigation.navigate('Offers')} /> */}
         </View>
 
         <SectionLabel title="My Account" />

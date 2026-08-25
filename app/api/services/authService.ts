@@ -5,6 +5,7 @@ import {
   VerifyOtpPayload, ResendOtpPayload, OtpResponse,
   LoginPayload, LoginResponse,
   GoogleLoginPayload, GoogleLoginResponse,
+  AppleLoginPayload, AppleLoginResponse,
   GoogleContactUpdatePayload, GoogleContactUpdateResponse,
   GoogleContactVerifyPayload,
   ForgotPasswordPayload, ForgotPasswordResponse,
@@ -16,6 +17,7 @@ export type {
   VerifyOtpPayload, ResendOtpPayload, OtpResponse,
   LoginPayload, LoginResponse,
   GoogleLoginPayload, GoogleLoginResponse,
+  AppleLoginPayload, AppleLoginResponse,
   GoogleContactUpdatePayload, GoogleContactUpdateResponse,
   GoogleContactVerifyPayload,
   ForgotPasswordPayload, ForgotPasswordResponse,
@@ -36,6 +38,9 @@ export const loginUser = (payload: LoginPayload) =>
 
 export const googleLoginUser = (payload: GoogleLoginPayload) =>
   callApi<GoogleLoginPayload, GoogleLoginResponse>({ method: 'post', url: AUTH.GOOGLE_LOGIN, data: payload });
+
+export const appleLoginUser = (payload: AppleLoginPayload) =>
+  callApi<AppleLoginPayload, AppleLoginResponse>({ method: 'post', url: AUTH.APPLE_LOGIN, data: payload });
 
 
 export const updateGoogleContact = (payload: GoogleContactUpdatePayload) =>

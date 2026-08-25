@@ -4,7 +4,7 @@
 // KEY FIX: shippingFee now calculated live via /shipping/calculate (destPincode + weightInGrams).
 // KEY FIX: totalAmount = subtotal + shippingFee (grandTotal).
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, ActivityIndicator, Modal, Animated } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -43,9 +43,13 @@ const Checkout = () => {
   const { profile } = useProfile();
 
   const [selectedId, setSelectedId] = useState<any>(null);
+  const [showAllAddresses, setShowAllAddresses] = useState(false);
   const [paymentMode, setPaymentMode] = useState<'ONLINE' | 'COD'>('ONLINE');
   const [paymentType, setPaymentType] = useState<'CARD' | 'UPI' | 'NETBANKING'>('CARD');
   const [placing, setPlacing] = useState(false);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [orderStep, setOrderStep] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
   const [shippingFee, setShippingFee] = useState(0);
   const [shippingLoading, setShippingLoading] = useState(false);
   const lastShippingKey = useRef('');
@@ -54,11 +58,9 @@ const Checkout = () => {
 
   useEffect(() => {
     if (selectedId == null && addresses.length) {
-      const complete = [...addresses].reverse().find((a: any) => a.addressLine);
       const def = addresses.find((a: any) => a.isDefault);
-      setSelectedId(
-        (complete ?? def ?? addresses[addresses.length - 1] ?? addresses[0])?.id
-      );
+      const complete = [...addresses].reverse().find((a: any) => a.addressLine);
+      setSelectedId((def ?? complete ?? addresses[0])?.id);
     }
   }, [addresses, selectedId]);
 
@@ -161,76 +163,92 @@ const Checkout = () => {
       } catch { imagePath = p.imagePath ?? ''; }
 
       return {
-        sno:         String(p.SNO ?? p.sno ?? String(i + 1)),
+        sno: String(p.SNO ?? p.sno ?? String(i + 1)),
         itemId,
-        tagNo:       String(p.TAGNO ?? p.tagNo ?? ''),
+        tagNo: String(p.TAGNO ?? p.tagNo ?? ''),
         productName: String(p.ITEMNAME ?? p.productName ?? p.SUBITEMNAME ?? ''),
-        quantity:    Number(p.quantity ?? 1),
-        price:       itemPrice(p),
+        quantity: Number(p.quantity ?? 1),
+        price: itemPrice(p),
         grossAmount: num(p.GrossAmount ?? p.grossAmount ?? 0),
         gstPer,
-        gstAmount:   Number(p.gstAmount ?? p.GSTAmount ?? 0) || 0,
-        netWt:       num(p.NETWT ?? p.NetWt ?? p.netWt ?? 0),
-        grsWt:       num(p.GRSWT ?? p.GrsWt ?? p.grsWt ?? 0),
-        gstType:     String(p.GSTType ?? p.gstType ?? ''),
+        gstAmount: Number(p.gstAmount ?? p.GSTAmount ?? 0) || 0,
+        netWt: num(p.NETWT ?? p.NetWt ?? p.netWt ?? 0),
+        grsWt: num(p.GRSWT ?? p.GrsWt ?? p.grsWt ?? 0),
+        gstType: String(p.GSTType ?? p.gstType ?? ''),
         imagePath,
       };
     });
 
     const addr = selected as any;
     const payload: CreateOrderPayload = {
-      totalAmount:     grandTotal,
-      paymentMode:     paymentMode === 'COD' ? 'CASH' : 'ONLINE',
-      paymentStatus:   'PENDING',
+      totalAmount: grandTotal,
+      paymentMode: paymentMode === 'COD' ? 'CASH' : 'ONLINE',
+      paymentStatus: 'PENDING',
       shippingPincode: String(addr.pincode ?? ''),
       address: {
-        name:           String(addr.name           ?? ''),
-        mobile:          String(addr.phone          ?? ''),
-        addressLine1:    String(addr.addressLine    ?? ''),
-        addressLine:       String(addr.locality       ?? ''),
-        city:           String(addr.city           ?? ''),
-        state:          String(addr.state          ?? ''),
-        country:        String(addr.country        ?? 'India'),
-        pincode:        String(addr.pincode        ?? ''),
-        ...(addr.alternatePhone  && { alternatePhone: String(addr.alternatePhone) }),
-        ...(addr.landmark        && { landmark:       String(addr.landmark) }),
-        ...(addr.isDefault  != null && { isDefault:  Boolean(addr.isDefault) }),
-        ...(addr.gstNumber       && { gstNumber:      String(addr.gstNumber) }),
-        ...(addr.companyName     && { companyName:    String(addr.companyName) }),
-        ...(addr.createdTime     && { createdTime:    String(addr.createdTime) }),
-        ...(addr.latitude        && { latitude:       Number(addr.latitude) }),
-        ...(addr.longitude       && { longitude:      Number(addr.longitude) }),
+        name: String(addr.name ?? ''),
+        mobile: String(addr.phone ?? ''),
+        addressLine1: String(addr.addressLine ?? ''),
+        addressLine: String(addr.locality ?? ''),
+        city: String(addr.city ?? ''),
+        state: String(addr.state ?? ''),
+        country: String(addr.country ?? 'India'),
+        pincode: String(addr.pincode ?? ''),
+        ...(addr.alternatePhone && { alternatePhone: String(addr.alternatePhone) }),
+        ...(addr.landmark && { landmark: String(addr.landmark) }),
+        ...(addr.isDefault != null && { isDefault: Boolean(addr.isDefault) }),
+        ...(addr.gstNumber && { gstNumber: String(addr.gstNumber) }),
+        ...(addr.companyName && { companyName: String(addr.companyName) }),
+        ...(addr.createdTime && { createdTime: String(addr.createdTime) }),
+        ...(addr.latitude && { latitude: Number(addr.latitude) }),
+        ...(addr.longitude && { longitude: Number(addr.longitude) }),
       },
       items,
     };
+    console.log('[Checkout] Placing order with payload:', JSON.stringify(payload, null, 2));
 
 
     try {
       setPlacing(true);
+      setOrderStep(0);
+      setShowOrderModal(true);
+      Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+      const stepInterval = setInterval(() => {
+        setOrderStep(prev => (prev < ORDER_STEPS.length - 1 ? prev + 1 : prev));
+      }, 1200);
       const res: any = await createOrder(payload);
+      clearInterval(stepInterval);
 
       const orderId = res?.orderId ?? res?.data?.orderId ?? res?.id;
       if (!orderId) {
+        setShowOrderModal(false);
+        fadeAnim.setValue(0);
         toastError('Order placed but no order ID returned');
         return;
       }
 
+      setOrderStep(ORDER_STEPS.length - 1);
+      await new Promise(r => setTimeout(r, 800));
+      setShowOrderModal(false);
+      fadeAnim.setValue(0);
+
       if (paymentMode === 'ONLINE') {
         navigation.navigate('Payment', {
           orderId,
-          paymentMode:  'ONLINE',
+          paymentMode: 'ONLINE',
           paymentType,
-          totalAmount:  grandTotal,
+          totalAmount: grandTotal,
         });
       } else {
         navigation.navigate('PaymentStatus', { orderId, mode: 'cod' });
       }
     } catch (e: any) {
-
+      setShowOrderModal(false);
+      fadeAnim.setValue(0);
       const errMsg =
         e?.response?.data?.message ??
-        e?.response?.data?.error   ??
-        e?.message                 ??
+        e?.response?.data?.error ??
+        e?.message ??
         'Could not place order. Please try again.';
       toastError(
         'Order failed',
@@ -240,6 +258,13 @@ const Checkout = () => {
       setPlacing(false);
     }
   };
+
+const ORDER_STEPS = [
+  { icon: '🛒', label: 'Placing your order…' },
+  { icon: '✅', label: 'Order confirmed!' },
+  { icon: '📦', label: 'Preparing your order…' },
+  { icon: '🚀', label: 'Almost done…' },
+];
 
   if ((isLoading && !isBuyNow) || addrLoading) {
     return <View style={[styles.safe, { backgroundColor: C.background }]}><Loader message="Loading checkout..." /></View>;
@@ -268,6 +293,17 @@ const Checkout = () => {
   return (
     <View style={[styles.safe, { backgroundColor: C.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+
+      <Modal transparent visible={showOrderModal} animationType="none">
+        <Animated.View style={[styles.modalOverlay, { opacity: fadeAnim }]}>
+          <View style={[styles.modalCard, { backgroundColor: C.card }]}>
+            <Text style={styles.modalIcon}>{ORDER_STEPS[orderStep]?.icon}</Text>
+            <Text style={[styles.modalLabel, { color: C.title }]}>{ORDER_STEPS[orderStep]?.label}</Text>
+            <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 16 }} />
+          </View>
+        </Animated.View>
+      </Modal>
+
       <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
         <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
           <Feather name="arrow-left" size={22} color={C.title} />
@@ -293,28 +329,51 @@ const Checkout = () => {
             <Feather name="plus" size={18} color={COLORS.primary} />
             <Text style={styles.link}>Add a delivery address</Text>
           </TouchableOpacity>
-        ) : addresses.map((a: any) => (
-          <TouchableOpacity
-            key={a.id}
-            style={[styles.addrCard, { backgroundColor: C.card, borderColor: C.borderColor }, selectedId === a.id && styles.addrCardActive]}
-            onPress={() => setSelectedId(a.id)}
-          >
-            <Feather
-              name={selectedId === a.id ? 'check-circle' : 'circle'}
-              size={18}
-              color={selectedId === a.id ? COLORS.primary : C.textLight}
-            />
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.addrName, { color: C.title }]}>
-                {a.name}{a.addressType ? ` · ${a.addressType}` : ''}
-              </Text>
-              <Text style={[styles.addrLine, { color: C.text }]}>
-                {[a.addressLine, a.locality, a.city, a.state, a.pincode].filter(Boolean).join(', ')}
-              </Text>
-              {!!a.phone && <Text style={[styles.addrPhone, { color: C.textLight }]}>{a.phone}</Text>}
-            </View>
-          </TouchableOpacity>
-        ))}
+        ) : (() => {
+          const defaultAddr = addresses.find((a: any) => a.isDefault) ?? addresses[0];
+          const otherAddresses = addresses.filter((a: any) => a.id !== defaultAddr?.id);
+          const visibleAddresses = showAllAddresses ? addresses : [defaultAddr];
+          return (
+            <>
+              {visibleAddresses.map((a: any) => (
+                <TouchableOpacity
+                  key={a.id}
+                  style={[styles.addrCard, { backgroundColor: C.card, borderColor: C.borderColor }, selectedId === a.id && styles.addrCardActive]}
+                  onPress={() => setSelectedId(a.id)}
+                >
+                  <Feather name={selectedId === a.id ? 'check-circle' : 'circle'} size={18} color={selectedId === a.id ? COLORS.primary : C.textLight} />
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={[styles.addrName, { color: C.title }]}>
+                        {a.name}{a.addressType ? ` · ${a.addressType}` : ''}
+                      </Text>
+                      {a.isDefault && (
+                        <View style={styles.defaultBadge}>
+                          <Text style={styles.defaultBadgeTxt}>Default</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[styles.addrLine, { color: C.text }]}>
+                      {[a.addressLine, a.locality, a.city, a.state, a.pincode].filter(Boolean).join(', ')}
+                    </Text>
+                    {!!a.phone && <Text style={[styles.addrPhone, { color: C.textLight }]}>{a.phone}</Text>}
+                  </View>
+                  <TouchableOpacity onPress={() => navigation.navigate('SaveAddress', { id: a.id })} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Feather name="edit-2" size={16} color={COLORS.primary} />
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              ))}
+              {otherAddresses.length > 0 && (
+                <TouchableOpacity style={styles.viewMoreBtn} onPress={() => setShowAllAddresses(v => !v)}>
+                  <Text style={styles.link}>
+                    {showAllAddresses ? 'Show less' : `View ${otherAddresses.length} more address${otherAddresses.length > 1 ? 'es' : ''}`}
+                  </Text>
+                  <Feather name={showAllAddresses ? 'chevron-up' : 'chevron-down'} size={14} color={COLORS.primary} />
+                </TouchableOpacity>
+              )}
+            </>
+          );
+        })()}
 
         {/* ── Items ── */}
         <Text style={[styles.secTitle, { marginTop: 20, color: C.title }]}>
@@ -342,37 +401,31 @@ const Checkout = () => {
 
         {/* ── Payment method ── */}
         <Text style={[styles.secTitle, { marginTop: 20, color: C.title }]}>Payment Method</Text>
-        {(['ONLINE', 'COD'] as const).map((m) => (
-          <TouchableOpacity
-            key={m}
-            style={[styles.payRow, { backgroundColor: C.card, borderColor: C.borderColor }, paymentMode === m && styles.payRowActive]}
-            onPress={() => setPaymentMode(m)}
-          >
-            <Feather
-              name={paymentMode === m ? 'check-circle' : 'circle'}
-              size={18}
-              color={paymentMode === m ? COLORS.primary : C.textLight}
-            />
-            <Text style={[styles.payLabel, { color: C.title }]}>
-              {m === 'ONLINE' ? 'Online Payment' : 'Cash on Delivery'}
-            </Text>
-          </TouchableOpacity>
-        ))}
-        {paymentMode === 'ONLINE' && (
-          <View style={styles.typeRow}>
-            {(['CARD', 'UPI', 'NETBANKING'] as const).map((t) => (
-              <TouchableOpacity
-                key={t}
-                style={[styles.typeChip, { backgroundColor: C.card, borderColor: C.borderColor }, paymentType === t && styles.typeChipActive]}
-                onPress={() => setPaymentType(t)}
-              >
-                <Text style={[styles.typeTxt, { color: C.text }, paymentType === t && styles.typeTxtActive]}>
-                  {t === 'NETBANKING' ? 'Net Banking' : t}
-                </Text>
-              </TouchableOpacity>
-            ))}
+        {/* Cash on Delivery commented out — Online Payment only */}
+        <View style={[styles.dropdownCard, { backgroundColor: C.card, borderColor: COLORS.primary }]}>
+          {/* Header row */}
+          <View style={styles.dropdownHeader}>
+            <Feather name="check-circle" size={18} color={COLORS.primary} />
+            <Text style={[styles.payLabel, { color: C.title, flex: 1 }]}>Online Payment</Text>
+            <Text style={[styles.dropdownSub, { color: C.textLight }]}>{paymentType === 'NETBANKING' ? 'Net Banking' : paymentType}</Text>
           </View>
-        )}
+          {/* Sub-options */}
+          <View style={[styles.dropdownDivider, { borderTopColor: C.borderColor }]} />
+          {(['CARD', 'UPI', 'NETBANKING'] as const).map((t, idx, arr) => (
+            <TouchableOpacity
+              key={t}
+              style={[styles.dropdownOption, idx < arr.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.borderColor }]}
+              onPress={() => setPaymentType(t)}
+            >
+              <View style={[styles.radioCircle, { borderColor: paymentType === t ? COLORS.primary : C.textLight }]}>
+                {paymentType === t && <View style={styles.radioDot} />}
+              </View>
+              <Text style={[styles.dropdownOptionTxt, { color: C.title }]}>
+                {t === 'CARD' ? '💳  Credit / Debit Card' : t === 'UPI' ? '📲  UPI' : '🏦  Net Banking'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </ScrollView>
 
       {/* ── Summary + Place Order ── */}
@@ -398,8 +451,8 @@ const Checkout = () => {
           {shippingLoading
             ? <ActivityIndicator size="small" color={COLORS.primary} />
             : <Text style={[styles.sumAmt, { color: C.title }]}>
-                {shippingFee > 0 ? `₹${shippingFee.toLocaleString('en-IN')}` : 'FREE'}
-              </Text>
+              {shippingFee > 0 ? `₹${shippingFee.toLocaleString('en-IN')}` : 'FREE'}
+            </Text>
           }
         </View>
         <View style={[styles.sumRow, styles.totalRow, { borderTopColor: C.borderColor }]}>
@@ -416,9 +469,10 @@ const Checkout = () => {
               ? 'Placing order…'
               : shippingLoading
                 ? 'Calculating shipping…'
-                : paymentMode === 'ONLINE'
+                : 'Pay & Place Order'}
+            {/* : paymentMode === 'ONLINE'
                   ? 'Pay & Place Order'
-                  : 'Place Order (COD)'}
+                  : 'Place Order (COD)' */}
           </Text>
         </TouchableOpacity>
       </View>
@@ -427,43 +481,58 @@ const Checkout = () => {
 };
 
 const styles = StyleSheet.create({
-  safe:          { flex: 1 },
-  header:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1 },
-  hBtn:          { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  hTitle:        { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold },
-  secRow:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  secTitle:      { ...FONTS.h6, ...FONTS.fontSemiBold, marginBottom: 8 },
-  link:          { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.primary },
-  addAddr:       { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 16, borderRadius: 12, borderWidth: 1, borderStyle: 'dashed' },
-  addrCard:      { flexDirection: 'row', gap: 10, padding: 12, borderRadius: 12, marginBottom: 10, borderWidth: 1.5 },
-  addrCardActive:{ borderColor: COLORS.primary },
-  addrName:      { ...FONTS.fontSm, ...FONTS.fontSemiBold },
-  addrLine:      { ...FONTS.fontSm, marginTop: 2 },
-  addrPhone:     { ...FONTS.fontXs, marginTop: 2 },
-  itemRow:       { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 10, marginBottom: 8 },
-  itemName:      { flex: 1, ...FONTS.fontSm },
-  itemQty:       { ...FONTS.fontSm },
-  itemPrice:     { ...FONTS.fontSm, ...FONTS.fontSemiBold },
-  itemOriginal:  { ...FONTS.fontXs, textDecorationLine: 'line-through' },
-  payRow:        { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 12, marginBottom: 8, borderWidth: 1.5 },
-  payRowActive:  { borderColor: COLORS.primary },
-  payLabel:      { ...FONTS.font, ...FONTS.fontMedium },
-  typeRow:       { flexDirection: 'row', gap: 8, marginTop: 2 },
-  typeChip:      { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: SIZES.radius, borderWidth: 1 },
-  typeChipActive:{ backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  typeTxt:       { ...FONTS.fontSm },
+  safe: { flex: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1 },
+  hBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold },
+  secRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  secTitle: { ...FONTS.h6, ...FONTS.fontSemiBold, marginBottom: 8 },
+  link: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.primary },
+  addAddr: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 16, borderRadius: 12, borderWidth: 1, borderStyle: 'dashed' },
+  addrCard: { flexDirection: 'row', gap: 10, padding: 12, borderRadius: 12, marginBottom: 10, borderWidth: 1.5 },
+  addrCardActive: { borderColor: COLORS.primary },
+  addrName: { ...FONTS.fontSm, ...FONTS.fontSemiBold },
+  addrLine: { ...FONTS.fontSm, marginTop: 2 },
+  addrPhone: { ...FONTS.fontXs, marginTop: 2 },
+  defaultBadge: { backgroundColor: COLORS.primary + '18', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+  defaultBadgeTxt: { ...FONTS.fontXs, color: COLORS.primary, fontWeight: '600' },
+  viewMoreBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 8, marginBottom: 4 },
+  itemRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 10, marginBottom: 8 },
+  itemName: { flex: 1, ...FONTS.fontSm },
+  itemQty: { ...FONTS.fontSm },
+  itemPrice: { ...FONTS.fontSm, ...FONTS.fontSemiBold },
+  itemOriginal: { ...FONTS.fontXs, textDecorationLine: 'line-through' },
+  payRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 12, marginBottom: 8, borderWidth: 1.5 },
+  payRowActive: { borderColor: COLORS.primary },
+  payLabel: { ...FONTS.font, ...FONTS.fontMedium },
+  typeRow: { flexDirection: 'row', gap: 8, marginTop: 2 },
+  typeChip: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: SIZES.radius, borderWidth: 1 },
+  typeChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  typeTxt: { ...FONTS.fontSm },
   typeTxtActive: { color: COLORS.white },
-  summary:       { padding: SIZES.padding, borderTopWidth: 1, gap: 6 },
-  sumRow:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  totalRow:      { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8, marginTop: 2 },
-  sumLabel:      { ...FONTS.fontSm },
-  sumAmt:        { ...FONTS.fontSm },
-  sumDiscount:   { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: '#16a34a' },
-  totalLabel:    { ...FONTS.fontLg, ...FONTS.fontSemiBold },
-  sumValue:      { ...FONTS.h5, ...FONTS.fontBold },
-  placeBtn:      { backgroundColor: COLORS.primary, borderRadius: SIZES.radius_lg, paddingVertical: 15, alignItems: 'center', marginTop: 4 },
+  dropdownCard: { borderRadius: 12, borderWidth: 1.5, marginBottom: 8, overflow: 'hidden' },
+  dropdownHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
+  dropdownSub: { ...FONTS.fontXs },
+  dropdownDivider: { borderTopWidth: StyleSheet.hairlineWidth },
+  dropdownOption: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 13 },
+  dropdownOptionTxt: { ...FONTS.fontSm, ...FONTS.fontMedium },
+  radioCircle: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  radioDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: COLORS.primary },
+  summary: { padding: SIZES.padding, borderTopWidth: 1, gap: 6 },
+  sumRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  totalRow: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8, marginTop: 2 },
+  sumLabel: { ...FONTS.fontSm },
+  sumAmt: { ...FONTS.fontSm },
+  sumDiscount: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: '#16a34a' },
+  totalLabel: { ...FONTS.fontLg, ...FONTS.fontSemiBold },
+  sumValue: { ...FONTS.h5, ...FONTS.fontBold },
+  placeBtn: { backgroundColor: COLORS.primary, borderRadius: SIZES.radius_lg, paddingVertical: 15, alignItems: 'center', marginTop: 4 },
   placeBtnDisabled: { opacity: 0.6 },
-  placeTxt:      { ...FONTS.fontLg, ...FONTS.fontSemiBold, color: COLORS.white },
+  placeTxt: { ...FONTS.fontLg, ...FONTS.fontSemiBold, color: COLORS.white },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' },
+  modalCard: { width: 240, borderRadius: 20, padding: 32, alignItems: 'center', elevation: 10, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 12 },
+  modalIcon: { fontSize: 48, marginBottom: 12 },
+  modalLabel: { ...FONTS.fontLg, ...FONTS.fontSemiBold, textAlign: 'center' },
 });
 
 export default Checkout;

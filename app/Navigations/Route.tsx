@@ -7,10 +7,10 @@ import {
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { View } from "react-native";
 import StackNavigator from "./StackNavigator";
-import themeContext from "../constants/themeContext";
 import PersistentBottomTab from "../layout/PersistentBottomTab";
 import { navigationRef } from "./navigationRef";
 import { useTheme } from "../context/ThemeContext";
+import GlobalAlertHost from "../components/commoncomponents/GlobalAlert";
 
 /* ─── Helpers to extract route names from navigation state ─────── */
 function getRootRoute(state: any): string {
@@ -30,11 +30,6 @@ function getActiveRoute(state: any): string {
 /* ─── Routes component ──────────────────────────────────────────── */
 const Routes = () => {
   const { colors: C, isDark } = useTheme();
-
-  const authContext = React.useMemo(() => ({
-    setDarkTheme: () => {},
-    setLightTheme: () => {},
-  }), []);
 
   // Keep NavigationContainer theme in sync with the app's ThemeContext
   // so BottomTab (which reads useTheme from @react-navigation/native) gets correct colors
@@ -65,8 +60,7 @@ const Routes = () => {
 
   return (
     <SafeAreaProvider>
-      <themeContext.Provider value={authContext}>
-        <NavigationContainer
+      <NavigationContainer
           ref={navigationRef}
           theme={theme}
           onStateChange={handleStateChange}
@@ -82,8 +76,8 @@ const Routes = () => {
               bgColor={C.background}
             />
           </View>
+          <GlobalAlertHost />
         </NavigationContainer>
-      </themeContext.Provider>
     </SafeAreaProvider>
   );
 };

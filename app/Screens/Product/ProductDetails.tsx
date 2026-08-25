@@ -4,7 +4,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
   Dimensions, StatusBar, Alert, FlatList,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, AntDesign, Ionicons } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { FONTS, SIZES } from '../../constants/theme';
@@ -124,7 +124,7 @@ const ProductDetails = ({ route, navigation }: Props) => {
             style={[styles.heart, { backgroundColor: C.card }]}
             onPress={() => requireAuth(() => toggleFavorite(product.TAGKEY))}
           >
-            <Feather name="heart" size={20} color={faved ? C.danger : C.title} />
+            <Ionicons name={faved ? 'heart' : 'heart-outline'} size={20} color={faved ? C.danger : C.title} />
           </TouchableOpacity>
           {galleryImgs.length > 1 && (
             <View style={styles.dots}>
@@ -170,12 +170,14 @@ const ProductDetails = ({ route, navigation }: Props) => {
             <InfoChip label="Tag No"   value={product.TAGNO}                             chipBg={C.card} labelColor={C.textLight} valueColor={C.title} />
           </View>
 
-          {!!product.Description && (
-            <>
-              <Text style={[styles.secTitle, { color: C.title }]}>Description</Text>
-              <Text style={[styles.desc, { color: C.text }]}>{product.Description}</Text>
-            </>
-          )}
+          <>
+            <Text style={[styles.secTitle, { color: C.title }]}>Description</Text>
+            <Text style={[styles.desc, { color: C.text }]}>
+              {product.Description?.trim()
+                ? product.Description
+                : 'Crafted with precision and elegance, this exquisite jewellery piece is made from the finest quality metal and adorned with carefully selected stones. Each piece reflects timeless craftsmanship, making it a perfect accessory for every occasion — from festive celebrations to everyday wear. A treasured addition to your jewellery collection.'}
+            </Text>
+          </>
 
           {related.length > 0 && (
             <>

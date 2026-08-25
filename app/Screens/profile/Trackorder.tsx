@@ -9,6 +9,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   StatusBar, Alert, RefreshControl, ActivityIndicator,
+  Modal, TextInput, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -17,7 +18,7 @@ import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { useTheme } from '../../context/ThemeContext';
 import {
   useOrderById, useOrderTrackByUser, useOrderStatusMaster,
-  useCancelOrder, useReorder, useOrderInvoice,
+  useCancelOrder, useOrderInvoice,
 } from '../../api/hooks/useOrders';
 import { absUrl } from '../../utils/image';
 import { SmartImage } from '../../components/common/SmartImage';
@@ -118,6 +119,8 @@ const Trackorder = ({ route, navigation }: Props) => {
   const { orderId, seedOrder } = route.params;
   const [refreshing, setRefreshing]       = useState(false);
   const [timelineExpanded, setTimelineExp] = useState(false);
+  const [cancelModal, setCancelModal]      = useState(false);
+  const [cancelRemarks, setCancelRemarks]  = useState('');
   const { data: company } = useCompany();
 
   // PRIMARY: /order/track/user?orderId= — real API used by the app
@@ -139,7 +142,6 @@ const Trackorder = ({ route, navigation }: Props) => {
 
   // Cancel / Reorder mutations
   const { mutate: cancelOrder, isPending: cancelling } = useCancelOrder();
-  const { mutate: reorder,     isPending: reordering  } = useReorder();
 
   /* ── Data resolution ─── */
   // Prefer tracking response; fall back to getOrder; fall back to seedOrder
@@ -238,30 +240,26 @@ const Trackorder = ({ route, navigation }: Props) => {
   }, [refetchTrack, refetchOrder]);
 
   const handleCancel = () => {
-    Alert.alert('Cancel Order', 'Are you sure you want to cancel this order?', [
-      { text: 'No', style: 'cancel' },
-      {
-        text: 'Yes, Cancel', style: 'destructive',
-        onPress: () => cancelOrder(
-          { orderId, newStatus: 'CANCELLED', remarks: 'Cancelled by user' },
-          {
-            onSuccess: () => {
-              toastSuccess('Order cancelled');
-              refetchTrack();
-            },
-          },
-        ),
-      },
-    ]);
+    setCancelRemarks('');
+    setCancelModal(true);
   };
 
-  const handleReorder = () =>
-    reorder(orderId, {
-      onSuccess: () => {
-        toastSuccess('Items added to cart');
-        navigation.navigate('MyCart');
+  const confirmCancel = () => {
+    if (!cancelRemarks.trim()) {
+      Alert.alert('Remarks required', 'Please enter a reason for cancellation.');
+      return;
+    }
+    setCancelModal(false);
+    cancelOrder(
+      { orderId, newStatus: 'CANCELLED', remarks: cancelRemarks.trim() },
+      {
+        onSuccess: () => {
+          toastSuccess('Order cancelled');
+          refetchTrack();
+        },
       },
-    });
+    );
+  };
 
   const handleInvoice = async () => {
     try {
@@ -369,7 +367,7 @@ const Trackorder = ({ route, navigation }: Props) => {
       </View>
 
       <ScrollView
-        contentContainerStyle={{ padding: SIZES.padding, paddingBottom: 56 }}
+        contentContainerStyle={{ padding: SIZES.padding, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
@@ -449,16 +447,7 @@ const Trackorder = ({ route, navigation }: Props) => {
               : <Feather name="file-text" size={14} color={COLORS.primary} />}
             <Text style={[styles.actionTxt, { color: COLORS.primary }]}>Invoice</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionBtn, styles.reorderBtn]}
-            disabled={reordering}
-            onPress={handleReorder}
-          >
-            <Feather name="refresh-cw" size={14} color={COLORS.white} />
-            <Text style={[styles.actionTxt, { color: COLORS.white }]}>
-              {reordering ? 'Adding…' : 'Reorder'}
-            </Text>
-          </TouchableOpacity>
+
         </View>
 
         {/* Return / Refund button */}
@@ -740,6 +729,48 @@ const Trackorder = ({ route, navigation }: Props) => {
           </>
         )}
       </ScrollView>
+
+      {/* ── Cancel Remarks Modal ── */}
+      <Modal visible={cancelModal} transparent animationType="fade" onRequestClose={() => setCancelModal(false)}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={[styles.modalBox, { backgroundColor: C.card }]}>
+            <Text style={[styles.modalTitle, { color: C.title }]}>Cancel Order</Text>
+            <Text style={[styles.modalSub, { color: C.textLight }]}>Please tell us why you want to cancel this order.</Text>
+            <TextInput
+              style={[styles.remarksInput, { backgroundColor: C.input ?? C.background, color: C.title, borderColor: C.borderColor }]}
+              placeholder="Enter reason for cancellation…"
+              placeholderTextColor={C.textLight}
+              value={cancelRemarks}
+              onChangeText={setCancelRemarks}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              maxLength={300}
+            />
+            <Text style={[styles.charCount, { color: C.textLight }]}>{cancelRemarks.length}/300</Text>
+            <View style={styles.modalBtns}>
+              <TouchableOpacity
+                style={[styles.modalBtn, { borderColor: C.borderColor }]}
+                onPress={() => setCancelModal(false)}
+              >
+                <Text style={[styles.modalBtnTxt, { color: C.title }]}>Go Back</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalBtnDanger]}
+                disabled={cancelling}
+                onPress={confirmCancel}
+              >
+                <Text style={[styles.modalBtnTxt, { color: '#fff' }]}>
+                  {cancelling ? 'Cancelling…' : 'Confirm Cancel'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 };
@@ -794,7 +825,6 @@ const styles = StyleSheet.create({
   },
   cancelBtn:  { borderColor: COLORS.danger  + '55', backgroundColor: COLORS.danger  + '0A' },
   invoiceBtn: { borderColor: COLORS.primary + '55', backgroundColor: COLORS.primary + '0A' },
-  reorderBtn: { borderColor: COLORS.primary, backgroundColor: COLORS.primary },
   actionTxt:  { ...FONTS.fontXs, ...FONTS.fontSemiBold },
 
   // Return button
@@ -870,6 +900,18 @@ const styles = StyleSheet.create({
   addrName:  { ...FONTS.font, ...FONTS.fontSemiBold, marginBottom: 4 },
   addrLine:  { ...FONTS.fontSm, lineHeight: 20 },
   addrPhone: { ...FONTS.fontSm, marginTop: 6 },
+
+  // Cancel modal
+  modalOverlay:   { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  modalBox:       { width: '100%', borderRadius: 16, padding: 20, elevation: 8, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
+  modalTitle:     { ...FONTS.h5, ...FONTS.fontSemiBold, marginBottom: 6 },
+  modalSub:       { ...FONTS.fontSm, marginBottom: 14, lineHeight: 20 },
+  remarksInput:   { borderWidth: 1, borderRadius: 10, padding: 12, minHeight: 100, ...FONTS.fontSm },
+  charCount:      { ...FONTS.fontXs, textAlign: 'right', marginTop: 4, marginBottom: 16 },
+  modalBtns:      { flexDirection: 'row', gap: 10 },
+  modalBtn:       { flex: 1, paddingVertical: 13, borderRadius: 10, alignItems: 'center', borderWidth: 1.5 },
+  modalBtnDanger: { backgroundColor: COLORS.danger, borderColor: COLORS.danger },
+  modalBtnTxt:    { ...FONTS.fontSm, ...FONTS.fontSemiBold },
 });
 
 export default Trackorder;

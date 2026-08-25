@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { registerUser, loginUser, googleLoginUser, verifyOtp, resetPassword } from '../../api/services/authService';
-import { RegisterPayload, LoginPayload, GoogleLoginPayload, VerifyOtpPayload, ResetPasswordPayload, UserData } from '../../types/auth';
+import { registerUser, loginUser, googleLoginUser, appleLoginUser, verifyOtp, resetPassword } from '../../api/services/authService';
+import { RegisterPayload, LoginPayload, GoogleLoginPayload, AppleLoginPayload, VerifyOtpPayload, ResetPasswordPayload, UserData } from '../../types/auth';
 import { AsyncStorageHelper } from '../../utils/AsyncStorageHelper';
 import { setAuthToken } from '../../api/axiosInstance';
 import { queryClient } from '../../api/queryClient';
@@ -78,6 +78,30 @@ export const googleLoginThunk = createAsyncThunk(
   }
 );
 
+// ── Apple Login Thunk ───────────────────────────────────────────────
+export const appleLoginThunk = createAsyncThunk(
+  'auth/appleLogin',
+  async (payload: AppleLoginPayload, { rejectWithValue }) => {
+    try {
+      const res = await appleLoginUser(payload);
+      if (!res.token) return rejectWithValue(res.message ?? 'Apple login failed');
+      const user: UserData = {
+        id:            res.id,
+        username:      res.username,
+        email:         res.email,
+        contactNumber: res.contactNumber,
+        roles:         res.roles,
+        token:         res.token,
+      };
+      await saveSession(user, res.token);
+      queryClient.clear();
+      return { user, token: res.token };
+    } catch (err: any) {
+      return rejectWithValue(err.message ?? 'Apple login failed');
+    }
+  }
+);
+
 // ── Verify OTP Thunk (SignUp flow) ────────────────────────────────
 export const verifyOtpThunk = createAsyncThunk(
   'auth/verifyOtp',
@@ -123,11 +147,13 @@ interface AuthState {
   loading: boolean;
   loginLoading: boolean;
   googleLoading: boolean;
+  appleLoading: boolean;
   otpLoading: boolean;
   resetLoading: boolean;
   registerError: string | null;
   loginError: string | null;
   googleError: string | null;
+  appleError: string | null;
   otpError: string | null;
   resetError: string | null;
   user: UserData | null;
@@ -136,8 +162,8 @@ interface AuthState {
 }
 
 const initialState: AuthState = {
-  loading: false, loginLoading: false, googleLoading: false, otpLoading: false, resetLoading: false,
-  registerError: null, loginError: null, googleError: null, otpError: null, resetError: null,
+  loading: false, loginLoading: false, googleLoading: false, appleLoading: false, otpLoading: false, resetLoading: false,
+  registerError: null, loginError: null, googleError: null, appleError: null, otpError: null, resetError: null,
   user: null, token: null, pendingOtpUser: null,
 };
 
@@ -147,7 +173,7 @@ const authSlice = createSlice({
   reducers: {
     clearAuthError: (state) => {
       state.registerError = null; state.loginError = null;
-      state.googleError = null; state.otpError = null; state.resetError = null;
+      state.googleError = null; state.appleError = null; state.otpError = null; state.resetError = null;
     },
     logout: (state) => {
       state.user = null; state.token = null;
@@ -187,6 +213,13 @@ const authSlice = createSlice({
         state.token = action.payload.token;
       })
       .addCase(googleLoginThunk.rejected,  (state, action) => { state.googleLoading = false; state.googleError = action.payload as string; })
+      .addCase(appleLoginThunk.pending,   (state) => { state.appleLoading = true; state.appleError = null; })
+      .addCase(appleLoginThunk.fulfilled, (state, action) => {
+        state.appleLoading = false;
+        state.user  = action.payload.user;
+        state.token = action.payload.token;
+      })
+      .addCase(appleLoginThunk.rejected,  (state, action) => { state.appleLoading = false; state.appleError = action.payload as string; })
       .addCase(verifyOtpThunk.pending,   (state) => { state.otpLoading = true; state.otpError = null; })
       .addCase(verifyOtpThunk.fulfilled, (state, action) => {
         state.otpLoading = false;

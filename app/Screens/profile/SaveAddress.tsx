@@ -23,11 +23,11 @@ type Props = StackScreenProps<RootStackParamList, 'SaveAddress'>;
 type Form = {
   name: string; phone: string; addressLine: string; locality: string;
   city: string; state: string; pincode: string; landmark: string;
-  alternatePhone: string; addressType: string;
+  alternatePhone: string; addressType: string; isDefault: boolean;
 };
 const EMPTY: Form = {
   name: '', phone: '', addressLine: '', locality: '', city: '', state: '',
-  pincode: '', landmark: '', alternatePhone: '', addressType: 'Home',
+  pincode: '', landmark: '', alternatePhone: '', addressType: 'Home', isDefault: false,
 };
 
 type PincodeStatus = 'idle' | 'checking' | 'ok' | 'unavailable' | 'error';
@@ -278,6 +278,17 @@ const SaveAddress = ({ route, navigation }: Props) => {
         </View>
 
         <TouchableOpacity
+          style={styles.defaultRow}
+          onPress={() => setForm(f => ({ ...f, isDefault: !f.isDefault }))}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.checkbox, { borderColor: C.borderColor }, form.isDefault && styles.checkboxActive]}>
+            {form.isDefault && <Feather name="check" size={12} color={COLORS.white} />}
+          </View>
+          <Text style={[styles.defaultTxt, { color: C.title }]}>Set as default address</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           style={[styles.saveBtn, isSaveDisabled && { opacity: 0.6 }]}
           disabled={isSaveDisabled}
           onPress={onSave}>
@@ -319,7 +330,11 @@ const styles = StyleSheet.create({
   typeChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   typeTxt: { ...FONTS.fontSm },
   typeTxtActive: { color: COLORS.white },
-  saveBtn: { backgroundColor: COLORS.primary, borderRadius: SIZES.radius_lg, paddingVertical: 15, alignItems: 'center' },
+  defaultRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 24 },
+  checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  checkboxActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  defaultTxt: { ...FONTS.fontSm },
+  saveBtn: { backgroundColor: COLORS.primary, borderRadius: SIZES.radius_lg, paddingVertical: 15, alignItems: 'center', marginBottom: 40 },
   saveTxt: { ...FONTS.fontLg, ...FONTS.fontSemiBold, color: COLORS.white },
   unavailableNote: { marginTop: 12, textAlign: 'center', ...FONTS.fontSm, color: COLORS.danger, lineHeight: 20 },
 });

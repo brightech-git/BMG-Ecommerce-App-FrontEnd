@@ -3,7 +3,7 @@ import { useTheme } from '@react-navigation/native';
 import { Image, TouchableOpacity, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { COLORS} from '../constants/theme';
-import themeContext from '../constants/themeContext';
+import { useTheme as useAppTheme } from '../context/ThemeContext';
 import { IMAGES } from '../constants/Images';
 
 const ThemeBtn = () => {
@@ -11,7 +11,8 @@ const ThemeBtn = () => {
      const theme = useTheme();
     const { colors }:{colors : any} = theme;
 
-    const { setDarkTheme, setLightTheme } = React.useContext<any>(themeContext);
+    const { toggleTheme } = useAppTheme();
+    const { setDarkTheme, setLightTheme } = { setDarkTheme: toggleTheme, setLightTheme: toggleTheme };
 
     const offset = useSharedValue(0);
     const opacityDark = useSharedValue(0);

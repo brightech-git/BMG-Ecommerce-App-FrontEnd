@@ -1,13 +1,14 @@
 import { Dimensions } from "react-native";
+import { PRIMARY, PRIMARY_LIGHT_LT, SECONDARY, DANGER, SUCCESS, WARNING, INFO } from '../context/ThemeContext';
 const { width, height } = Dimensions.get('screen');
 
 export const COLORS = {
-	primary: "#FF971D",
-	primaryLight: "rgba(255, 151, 29, 0.1)",
-	secondary: "#C9B15D",
-	success: "#159E42",
-	danger: "#FF3131",
-	warning: "#ffb02c",
+	primary: PRIMARY,
+	primaryLight: PRIMARY_LIGHT_LT,
+	secondary: SECONDARY,
+	success: SUCCESS,
+	danger: DANGER,
+	warning: WARNING,
 	dark: "#2f2f2f",
 	light: "#E6E6E6",
 	info: "#2B39B9",

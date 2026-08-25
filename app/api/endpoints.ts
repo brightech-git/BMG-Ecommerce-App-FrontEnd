@@ -9,8 +9,9 @@ export const AUTH = {
   FORGOT_PASSWORD:           '/auth/user/forgot-password',
   RESET_PASSWORD:            '/auth/user/reset-password',
 
-  // Google Auth
+  // Google / Apple Auth
   GOOGLE_LOGIN:              '/auth/google-login',
+  APPLE_LOGIN:               '/auth/apple-login',
   GOOGLE_CONTACT_UPDATE:     '/auth/user/update-contact-number',
 
   // User

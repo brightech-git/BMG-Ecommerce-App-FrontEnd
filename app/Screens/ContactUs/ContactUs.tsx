@@ -1,6 +1,6 @@
 // app/Screens/ContactUs/ContactUs.tsx
 // Shows real company info from /company/all + contact form POST /contact/submit
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, StatusBar, KeyboardAvoidingView, Platform, Linking,
@@ -15,6 +15,7 @@ import { MISC } from '../../api/endpoints';
 import { toastError, toastSuccess } from '../../utils/toast';
 import { useProfile } from '../../api/hooks/useProfile';
 import { useCompany } from '../../api/hooks/useCompany';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const SUBJECTS = [
   'Order Enquiry',
@@ -67,15 +68,22 @@ const ContactUs = () => {
   const { isDark, colors: C } = useTheme();
   const { profile } = useProfile();
   const { data: company, isLoading: companyLoading } = useCompany();
-  const u: any = profile ?? {};
 
-  const [name,    setName]    = useState<string>(u.username ?? u.name ?? u.customerName ?? '');
-  const [email,   setEmail]   = useState<string>(u.email ?? '');
-  const [phone,   setPhone]   = useState<string>(u.contactNumber ?? u.contact ?? u.phone ?? '');
+  const [name,    setName]    = useState<string>('');
+  const [email,   setEmail]   = useState<string>('');
+  const [phone,   setPhone]   = useState<string>('');
   const [subject, setSubject] = useState<string>('');
   const [message, setMessage] = useState<string>('');
   const [submitting, setSub]  = useState(false);
   const [submitted, setDone]  = useState(false);
+
+  useEffect(() => {
+    if (!profile) return;
+    const u: any = profile;
+    setName(u.username ?? u.name ?? u.customerName ?? '');
+    setEmail(u.email ?? '');
+    setPhone(u.contactNumber ?? u.contact ?? u.phone ?? '');
+  }, [profile]);
 
   const validate = () => {
     if (!name.trim())    { toastError('Name is required'); return false; }
@@ -89,13 +97,19 @@ const ContactUs = () => {
     if (!validate()) return;
     try {
       setSub(true);
-      await callApi<any, any>({
+      const params = { name: name.trim(), email: email.trim(), mobileNumber: phone.trim(), comment: `${subject} - ${message.trim()}` };
+      const headers = { 'Content-Type': 'application/json' };
+      console.log('[ContactUs] Params:', params);
+      console.log('[ContactUs] Headers:', headers);
+      const response = await callApi<any, any>({
         method: 'post',
         url: MISC.CONTACT_SUBMIT,
-        data: { name: name.trim(), email: email.trim(), phone: phone.trim(), subject, message: message.trim() },
+        params,
       });
+      console.log('[ContactUs] Response:', response);
       setDone(true);
     } catch (e: any) {
+      console.log('[ContactUs] Error:', e);
       const msg =
         e?.response?.data?.message ?? e?.response?.data?.error ??
         e?.message ?? 'Could not send message. Please try again.';
@@ -308,7 +322,7 @@ const styles = StyleSheet.create({
   charCount:     { ...FONTS.fontXs, textAlign: 'right', marginTop: -8, marginBottom: 4 },
 
   // Submit
-  submitBtn:         { backgroundColor: COLORS.primary, borderRadius: SIZES.radius_lg, paddingVertical: 15, alignItems: 'center', marginTop: 22, flexDirection: 'row', justifyContent: 'center' },
+  submitBtn:         { backgroundColor: COLORS.primary, borderRadius: SIZES.radius_lg, paddingVertical: 15, alignItems: 'center', marginTop: 12, flexDirection: 'row', justifyContent: 'center',marginBottom: 40 },
   submitBtnDisabled: { opacity: 0.6 },
   submitTxt:         { ...FONTS.fontLg, ...FONTS.fontSemiBold, color: COLORS.white },
 

@@ -191,7 +191,7 @@ const Myorder = () => {
 
       {/* ── Header ── */}
       <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
-        <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={styles.hBtn} onPress={() => navigation.navigate('DrawerNavigation', { screen: 'Home' })}>
           <Feather name="arrow-left" size={22} color={C.title} />
         </TouchableOpacity>
         <Text style={[styles.hTitle, { color: C.title }]}>My Orders</Text>
@@ -318,7 +318,7 @@ const Myorder = () => {
             it.orderId ?? it.OrderId ?? it.order_id ?? it.orderID ??
             it.id ?? it.Id ?? it.ID ?? it.orderNo ?? i,
           )}
-          contentContainerStyle={{ padding: SIZES.padding, paddingBottom: 30 }}
+          contentContainerStyle={{ padding: SIZES.padding, paddingBottom: SIZES.TAB_BAR_HEIGHT }}
           refreshControl={
             <RefreshControl
               refreshing={isFetching && page === 0}
@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
   clearAllTxt: { ...FONTS.fontXs, ...FONTS.fontSemiBold, color: COLORS.danger },
 
   // Order card
-  card:    { borderRadius: 16, padding: 14, marginBottom: 14, elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
+  card:    { borderRadius: 16, padding: 14, marginBottom: 24, elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
   cardHead:{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 },
   oid:     { ...FONTS.font, ...FONTS.fontSemiBold },
   date:    { ...FONTS.fontXs, marginTop: 2 },

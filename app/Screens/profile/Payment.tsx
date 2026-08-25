@@ -66,15 +66,19 @@ const Payment = ({ route, navigation }: Props) => {
         else if (paymentType === 'NETBANKING') req.bankCode = 'ALL';
 
         const res: any = await initiatePayment(req);
+        console.log('[Payment] initiatePayment response:', JSON.stringify(res, null, 2));
         if (res?.responseCode && res.responseCode !== 'R1000') {
           throw new Error(`Payment failed (code: ${res.responseCode})`);
         }
         const redirectURI = res?.redirectURI ?? res?.data?.redirectURI;
         const tranCtx = res?.tranCtx ?? res?.data?.tranCtx;
+        console.log('[Payment] redirectURI:', redirectURI, '| tranCtx:', tranCtx);
         if (!redirectURI || !tranCtx) throw new Error('Invalid payment response');
 
         const url: any = await getPaymentRedirectUrl(redirectURI, tranCtx);
+        console.log('[Payment] getPaymentRedirectUrl response:', JSON.stringify(url, null, 2));
         const finalUrl = typeof url === 'string' ? url : (url?.url ?? url?.data ?? '');
+        console.log('[Payment] finalUrl:', finalUrl);
         if (!finalUrl) throw new Error('Could not build payment URL');
         setGatewayUrl(finalUrl);
       } catch (e: any) {
@@ -88,7 +92,10 @@ const Payment = ({ route, navigation }: Props) => {
   const onNav = (nav: WebViewNavigation) => {
     if (settledRef.current) return;
     const url = nav.url || '';
-    if (url.includes(RETURN_HOST) || url.includes('payment-success') || url.includes('/status')) {
+    console.log('[Payment] WebView URL:', url, '| loading:', nav.loading, '| navType:', nav.navigationType);
+    // Only navigate when the gateway redirects back to our return URL (bmgjewellers.com)
+    if (url.includes(RETURN_HOST)) {
+      console.log('[Payment] Return URL detected → navigating to PaymentStatus');
       settledRef.current = true;
       navigation.replace('PaymentStatus', { orderId, mode: 'online' });
     }

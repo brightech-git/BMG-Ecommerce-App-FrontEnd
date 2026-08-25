@@ -16,16 +16,26 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const STORAGE_KEY = 'bmg_theme_mode';
 
+/* ── Single source of truth for brand colors ─────────────────── */
+export const PRIMARY       = '#ea580c';
+export const PRIMARY_LIGHT_LT = 'rgba(234,88,12,0.10)';
+export const PRIMARY_LIGHT_DK = 'rgba(234,88,12,0.15)';
+export const SECONDARY     = '#041f60';
+export const DANGER        = '#FF3131';
+export const SUCCESS       = '#159E42';
+export const WARNING       = '#ffb02c';
+export const INFO          = '#2B39B9';
+
 /* ── Colour tokens ───────────────────────────────────────────── */
 const LIGHT = {
   // Brand
-  primary:      '#FF971D',
-  primaryLight: 'rgba(255,151,29,0.10)',
-  secondary:    '#C9B15D',
-  success:      '#159E42',
-  danger:       '#FF3131',
-  warning:      '#ffb02c',
-  info:         '#2B39B9',
+  primary:      PRIMARY,
+  primaryLight: PRIMARY_LIGHT_LT,
+  secondary:    SECONDARY,
+  success:      SUCCESS,
+  danger:       DANGER,
+  warning:      WARNING,
+  info:         INFO,
   white:        '#ffffff',
   black:        '#000000',
   // Surface
@@ -44,14 +54,14 @@ const LIGHT = {
 };
 
 const DARK = {
-  // Brand (unchanged)
-  primary:      '#FF971D',
-  primaryLight: 'rgba(255,151,29,0.15)',
-  secondary:    '#C9B15D',
-  success:      '#159E42',
-  danger:       '#FF3131',
-  warning:      '#ffb02c',
-  info:         '#2B39B9',
+  // Brand
+  primary:      PRIMARY,
+  primaryLight: PRIMARY_LIGHT_DK,
+  secondary:    SECONDARY,
+  success:      SUCCESS,
+  danger:       DANGER,
+  warning:      WARNING,
+  info:         INFO,
   white:        '#ffffff',
   black:        '#000000',
   // Surface
