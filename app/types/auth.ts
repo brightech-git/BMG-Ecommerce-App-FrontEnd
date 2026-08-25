@@ -75,7 +75,7 @@ export interface LoginResponse {
 
 // ── Apple Login ──────────────────────────────────────────────────
 export interface AppleLoginPayload {
-  identityToken: string;
+  idToken: string;
 }
 
 export interface AppleLoginResponse {

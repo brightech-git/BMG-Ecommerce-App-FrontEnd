@@ -191,7 +191,7 @@ const Myorder = () => {
 
       {/* ── Header ── */}
       <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
-        <TouchableOpacity style={styles.hBtn} onPress={() => navigation.navigate('DrawerNavigation', { screen: 'Home' })}>
+        <TouchableOpacity style={styles.hBtn} onPress={() => navigation.navigate('DrawerNavigation', { screen: 'BottomNavigation', params: { screen: 'Home' } })}>
           <Feather name="arrow-left" size={22} color={C.title} />
         </TouchableOpacity>
         <Text style={[styles.hTitle, { color: C.title }]}>My Orders</Text>

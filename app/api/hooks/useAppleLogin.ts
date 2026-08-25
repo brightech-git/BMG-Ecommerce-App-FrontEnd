@@ -20,13 +20,13 @@ export const useAppleLogin = () => {
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
       });
-      const identityToken = credential.identityToken;
-      if (!identityToken) throw new Error('No identity token received from Apple');
-      const result = await dispatch(appleLoginThunk({ identityToken }));
+      const idToken = credential.identityToken;
+      if (!idToken) throw new Error('No identity token received from Apple');
+      const result = await dispatch(appleLoginThunk({ idToken }));
       if (appleLoginThunk.fulfilled.match(result)) {
         const { user: loggedUser, token: authToken } = result.payload;
         if (loggedUser?.contactNumber && loggedUser.contactNumber.trim() !== '') {
-          navigation.navigate('DrawerNavigation', { screen: 'Home' });
+          navigation.navigate('DrawerNavigation', { screen: 'BottomNavigation', params: { screen: 'Home' } });
         } else {
           navigation.navigate('GoogleContactUpload', { userId: loggedUser.id!, token: authToken });
         }

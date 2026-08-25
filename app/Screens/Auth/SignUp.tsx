@@ -15,7 +15,7 @@ import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { useRegister } from '../../api/hooks/useRegister';
 import { useGoogleLogin } from '../../api/hooks/useGoogleLogin';
 import { useToast } from '../../components/commoncomponents/Toast';
-import { getHash } from 'react-native-otp-verify';
+import { getHash } from '../../utils/otpVerify';
 import MobileInput from '../../components/Input/MobileInput';
 type SignUpScreenProps = StackScreenProps<RootStackParamList, 'SignUp'>;
 

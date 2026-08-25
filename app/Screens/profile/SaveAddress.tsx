@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
+import * as Location from 'expo-location';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { useTheme } from '../../context/ThemeContext';
@@ -74,6 +75,8 @@ const SaveAddress = ({ route, navigation }: Props) => {
   const [pincodeStatus, setPincodeStatus] = useState<PincodeStatus>('idle');
   const [pincodeMessage, setPincodeMessage] = useState('');
   const lastCheckedPin = useRef('');
+
+  const [locating, setLocating] = useState(false);
 
   useEffect(() => {
     if (!editId) return;
@@ -170,6 +173,56 @@ const SaveAddress = ({ route, navigation }: Props) => {
     }
   };
 
+  const useCurrentLocation = async () => {
+    if (locating) return;
+    setLocating(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      console.log('[Location] permission status:', status);
+      if (status !== 'granted') {
+        toastError('Location permission denied. Please enable it in settings to use this feature.');
+        return;
+      }
+
+      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      console.log('[Location] coords:', position.coords);
+
+      const [place] = await Location.reverseGeocodeAsync({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      });
+      console.log('[Location] reverse geocode result:', place);
+
+      if (!place) {
+        toastError('Could not determine address from current location');
+        return;
+      }
+
+      const addressLine = [place.streetNumber, place.street, place.name]
+        .filter((v, i, arr) => v && arr.indexOf(v) === i)
+        .join(', ');
+
+      const filled = {
+        addressLine: addressLine || form.addressLine,
+        locality: place.district ?? place.subregion ?? form.locality,
+        city: place.city ?? place.subregion ?? form.city,
+        state: place.region ?? form.state,
+        pincode: place.postalCode ?? form.pincode,
+      };
+      console.log('[Location] filling form fields:', filled);
+      setForm((f) => ({ ...f, ...filled }));
+
+      if (place.postalCode && /^\d{6}$/.test(place.postalCode)) {
+        checkPincode(place.postalCode);
+      }
+    } catch (err: any) {
+      console.log('[Location] error:', err);
+      toastError(err?.message ?? 'Failed to fetch current location');
+    } finally {
+      setLocating(false);
+    }
+  };
+
   const onSave = () => {
     if (!form.name.trim() || !form.phone.trim() || !form.pincode.trim() || !form.addressLine.trim() || !form.city.trim() || !form.state.trim()) {
       toastError('Please fill name, phone, address, city, state and pincode');
@@ -212,6 +265,17 @@ const SaveAddress = ({ route, navigation }: Props) => {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: SIZES.padding, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+        <TouchableOpacity
+          style={[styles.locBtn, { borderColor: COLORS.primary }, locating && { opacity: 0.6 }]}
+          onPress={useCurrentLocation}
+          disabled={locating}
+        >
+          {locating
+            ? <ActivityIndicator size="small" color={COLORS.primary} />
+            : <Feather name="map-pin" size={16} color={COLORS.primary} />}
+          <Text style={styles.locBtnTxt}>{locating ? 'Fetching location...' : 'Use current location'}</Text>
+        </TouchableOpacity>
+
         <Field label="Full Name" value={form.name} onChange={set('name')} required C={C} />
         <Field label="Phone" value={form.phone} onChange={set('phone')} keyboardType="phone-pad" required C={C} />
         <Field label="Address" value={form.addressLine} onChange={set('addressLine')} required C={C} />
@@ -314,6 +378,9 @@ const styles = StyleSheet.create({
   hBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
   hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold },
   label: { ...FONTS.fontSm, ...FONTS.fontSemiBold, marginBottom: 6 },
+  locBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    borderWidth: 1, borderRadius: SIZES.radius, paddingVertical: 12, marginBottom: 18 },
+  locBtnTxt: { ...FONTS.fontSm, ...FONTS.fontSemiBold, color: COLORS.primary },
   input: { borderWidth: 1,
     borderRadius: SIZES.radius, paddingHorizontal: 14, paddingVertical: 12, ...FONTS.font },
   pincodeRow: { flexDirection: 'row', alignItems: 'center', position: 'relative' },

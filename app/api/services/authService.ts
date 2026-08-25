@@ -39,8 +39,12 @@ export const loginUser = (payload: LoginPayload) =>
 export const googleLoginUser = (payload: GoogleLoginPayload) =>
   callApi<GoogleLoginPayload, GoogleLoginResponse>({ method: 'post', url: AUTH.GOOGLE_LOGIN, data: payload });
 
-export const appleLoginUser = (payload: AppleLoginPayload) =>
-  callApi<AppleLoginPayload, AppleLoginResponse>({ method: 'post', url: AUTH.APPLE_LOGIN, data: payload });
+export const appleLoginUser = async (payload: AppleLoginPayload) => {
+  console.log('[AppleLogin] payload:', payload);
+  const response = await callApi<AppleLoginPayload, AppleLoginResponse>({ method: 'post', url: AUTH.APPLE_LOGIN, data: payload });
+  console.log('[AppleLogin] response:', response);
+  return response;
+};
 
 
 export const updateGoogleContact = (payload: GoogleContactUpdatePayload) =>

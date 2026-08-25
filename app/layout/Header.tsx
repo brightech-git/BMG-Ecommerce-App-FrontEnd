@@ -99,7 +99,7 @@ const Header = (props: { color?: any; transparent?: any; paddingLeft?: any; left
                     }
                     {props.rightIcon3 == "home" &&
                         <IconButton
-                        onPress={() => navigation.navigate('DrawerNavigation',{screen : 'Home'} )}
+                        onPress={() => navigation.navigate('DrawerNavigation', { screen: 'BottomNavigation', params: { screen: 'Home' } })}
                             size={20}
                             iconColor={colors.title}
                             icon={props => <Feather name="home" {...props} />}
