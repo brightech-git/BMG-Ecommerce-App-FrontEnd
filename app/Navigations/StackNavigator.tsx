@@ -64,6 +64,7 @@ function checkForUpdate(cfg: { androidVersion: string; androidStoreUrl: string; 
     const currentVersion = Application.nativeApplicationVersion ?? '0.0.0';
     const latestVersion = Platform.OS === 'ios' ? cfg.iosVersion : cfg.androidVersion;
     const storeUrl       = Platform.OS === 'ios' ? cfg.iosStoreUrl : cfg.androidStoreUrl;
+    console.log('[StackNavigator] Installed version:', currentVersion, '| Latest version:', latestVersion);
     if (!latestVersion || !isVersionOlder(currentVersion, latestVersion)) return null;
     return { version: latestVersion, storeUrl };
   } catch {
@@ -113,15 +114,9 @@ const StackNavigator = () => {
         cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
       }}
     >
-      {initialRoute === 'Onbording' && (
-        <Stack.Screen name="Onbording" component={Onbording} />
-      )}
-      {initialRoute === 'Maintenance' && (
-        <Stack.Screen name="Maintenance" component={Maintenance} initialParams={{ message: maintenanceMsg }} />
-      )}
-      {initialRoute === 'UpdateRequired' && (
-        <Stack.Screen name="UpdateRequired" component={UpdateRequired} initialParams={updateInfo} />
-      )}
+      <Stack.Screen name="Onbording" component={Onbording} />
+      <Stack.Screen name="Maintenance" component={Maintenance} initialParams={{ message: maintenanceMsg }} />
+      <Stack.Screen name="UpdateRequired" component={UpdateRequired} initialParams={updateInfo} />
       <Stack.Screen name={"SignIn"} component={SignIn} />
       <Stack.Screen name={"SignUp"} component={SignUp} />
       <Stack.Screen name={"ForgotPassword"} component={ForgotPassword} />
