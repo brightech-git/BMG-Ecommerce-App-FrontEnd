@@ -2,7 +2,7 @@
   "expo": {
     "name": "BMG Jewels Store",
     "slug": "bmg-jewel-store",
-    "version": "1.0.4",
+    "version": "1.0.9",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",

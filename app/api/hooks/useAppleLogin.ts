@@ -26,7 +26,7 @@ export const useAppleLogin = () => {
       if (appleLoginThunk.fulfilled.match(result)) {
         const { user: loggedUser, token: authToken } = result.payload;
         if (loggedUser?.contactNumber && loggedUser.contactNumber.trim() !== '') {
-          navigation.navigate('DrawerNavigation', { screen: 'BottomNavigation', params: { screen: 'Home' } });
+          navigation.reset({ index: 0, routes: [{ name: 'DrawerNavigation' }] });
         } else {
           navigation.navigate('GoogleContactUpload', { userId: loggedUser.id!, token: authToken });
         }

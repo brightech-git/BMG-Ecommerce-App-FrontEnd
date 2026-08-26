@@ -10,6 +10,8 @@ export interface ApiOptions<T> {
     params?: Record<string, any>;
     headers?: Record<string, string>;
     isFormData?: boolean;
+    /** Overrides axiosInstance's default baseURL for this request (e.g. a service on a different base path). */
+    baseURL?: string;
 }
 
 export interface ApiError {
@@ -26,6 +28,7 @@ export const callApi = async <T, R>({
     params,
     headers = {},
     isFormData = false,
+    baseURL,
 }: ApiOptions<T>): Promise<R> => {
     try {
         const response = await axiosInstance.request<R>({
@@ -33,6 +36,7 @@ export const callApi = async <T, R>({
             url,
             params,
             data,
+            ...(baseURL ? { baseURL } : {}),
             headers: {
                 ...headers,
                 ...(isFormData ? { "Content-Type": "multipart/form-data" } : {}),

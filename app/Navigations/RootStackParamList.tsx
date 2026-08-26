@@ -32,7 +32,7 @@ export type RootStackParamList = {
     Verification: undefined;
     Call: undefined;
     EditProfile: undefined;
-    WriteReview: undefined;
+    WriteReview: { tagNo: string; itemId: string; productName?: string; productImage?: string };
     Trackorder: { orderId: string | number; seedOrder?: any };
     Products: {
         ItemName?: string;

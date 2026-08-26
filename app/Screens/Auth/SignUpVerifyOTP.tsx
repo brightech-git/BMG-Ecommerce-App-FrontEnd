@@ -1,6 +1,6 @@
 import { useTheme } from '@react-navigation/native';
 import React, { useState, useEffect } from 'react';
-import { View, Text, SafeAreaView, Image, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, SafeAreaView, Image, TouchableOpacity, Platform, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
 import { COLORS, FONTS } from '../../constants/theme';
 import { GlobalStyleSheet } from '../../constants/StyleSheet';
 import Button from '../../components/Button/Button';
@@ -72,7 +72,12 @@ const SignUpVerifyOTP = ({ navigation, route }: Props) => {
 
     return (
         <SafeAreaView style={{ backgroundColor: colors.background, flex: 1 }}>
-            <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+            >
+            <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                 <View>
                     <View style={{ width: 600, height: 500, backgroundColor: COLORS.primary, borderRadius: 250, marginLeft: -95, marginTop: -220, overflow: 'hidden' }}>
                         <Image
@@ -152,6 +157,7 @@ const SignUpVerifyOTP = ({ navigation, route }: Props) => {
                     </View>
                 </View>
             </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 };

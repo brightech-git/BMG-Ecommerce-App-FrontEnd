@@ -25,6 +25,7 @@ const HIDDEN_ROUTES = new Set([
   'SignUpVerifyOTP', 'GoogleContactUpload', 'GoogleContactVerify', 'NewPassword',
   'Products', 'ProductDetails',
   'Checkout', 'Payment', 'PaymentStatus',
+  'WriteReview',        // has its own submit button footer
   '',                   // initial empty state
 ]);
 

@@ -1,6 +1,6 @@
 import { useTheme } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, Image, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
 import { FONTS, COLORS } from '../../constants/theme';
 import { GlobalStyleSheet } from '../../constants/StyleSheet';
 import CustomInput from '../../components/Input/CustomInput';
@@ -24,15 +24,10 @@ const SignIn = ({ navigation }: SignInScreenProps) => {
     const { colors }: { colors: any } = theme;
 
     const [form, setForm] = useState({ contactOrEmailOrUsername: '', password: '' });
-    const { login, loginLoading, error, token, clearError } = useLogin();
+    const { login, loginLoading, error, clearError } = useLogin();
     const { signInWithGoogle, googleLoading, error: googleError, clearError: clearGoogleError } = useGoogleLogin();
     const { signInWithApple, appleLoading, error: appleError, clearError: clearAppleError } = useAppleLogin();
     const toast = useToast();
-
-    useEffect(() => {
-        if (token) navigation.reset({ index: 0, routes: [{ name: 'DrawerNavigation' }] });
-        console.log("User Token",token);
-    }, [token]);
 
     useEffect(() => {
         if (error) { toast.error(error, { position: 'top', duration: 4000 }); clearError(); }
@@ -46,17 +41,25 @@ const SignIn = ({ navigation }: SignInScreenProps) => {
         if (appleError) { toast.error(appleError, { position: 'top', duration: 4000 }); clearAppleError(); }
     }, [appleError]);
 
-    const handleLogin = () => {
+    const handleLogin = async () => {
         if (!form.contactOrEmailOrUsername || !form.password) {
             toast.warning('Please fill all fields', { position: 'top' });
             return;
         }
-        login(form);
+        const result: any = await login(form);
+        if (result?.meta?.requestStatus === 'fulfilled') {
+            navigation.reset({ index: 0, routes: [{ name: 'DrawerNavigation' }] });
+        }
     };
 
     return (
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-            <SafeAreaView style={{ backgroundColor: colors.background, flex: 1 }}>
+        <SafeAreaView style={{ backgroundColor: colors.background, flex: 1 }}>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+            >
+            <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                 <View>
                     <View style={{width:600,height:500,backgroundColor:COLORS.primary,borderRadius:250,marginLeft:-95,marginTop:-220,overflow:'hidden'}}>
                         <Image
@@ -180,8 +183,9 @@ const SignIn = ({ navigation }: SignInScreenProps) => {
                         Brightech Software Services Pvt Ltd
                     </Text>
                 </View>
-            </SafeAreaView>
-        </ScrollView>
+            </ScrollView>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 };
 

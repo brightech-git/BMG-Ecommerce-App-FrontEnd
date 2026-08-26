@@ -10,6 +10,8 @@ import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { FONTS, SIZES } from '../../constants/theme';
 import { useTheme } from '../../context/ThemeContext';
 import { useProductDetail, useRelatedProducts } from '../../api/hooks/useProductDetail';
+import { useProductReviews } from '../../api/hooks/useReviews';
+import { Rating } from 'react-native-ratings';
 import { useRecordRecentlyViewed } from '../../api/hooks/useHome';
 import { useCart } from '../../api/hooks/useCart';
 import { useWishlist } from '../../api/hooks/useWishlist';
@@ -44,6 +46,7 @@ const ProductDetails = ({ route, navigation }: Props) => {
   const { isFavorite, toggleFavorite } = useWishlist();
 
   const [activeImg, setActiveImg] = useState(0);
+  const [showAllReviews, setShowAllReviews] = useState(false);
   const { mutate: recordView } = useRecordRecentlyViewed();
 
   const recorded = useRef(false);
@@ -68,6 +71,8 @@ const ProductDetails = ({ route, navigation }: Props) => {
     [relatedRaw, tagKey],
   );
 
+  const { reviews, avgRating, count: reviewCount } = useProductReviews(product?.TAGNO);
+
   const requireAuth = (action: () => string) => {
     const res = action();
     if (res === 'unauth') {
@@ -76,6 +81,22 @@ const ProductDetails = ({ route, navigation }: Props) => {
         { text: 'Sign In', onPress: () => navigation.navigate('SignIn') },
       ]);
     }
+  };
+
+  const handleWriteReview = () => {
+    if (!isAuthenticated) {
+      Alert.alert('Login required', 'Please sign in to write a review.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign In', onPress: () => navigation.navigate('SignIn') },
+      ]);
+      return;
+    }
+    navigation.navigate('WriteReview', {
+      tagNo: product!.TAGNO,
+      itemId: String(product!.ITEMID ?? ''),
+      productName: product!.ITEMNAME,
+      productImage: images[0],
+    });
   };
 
   if (isLoading) {
@@ -213,6 +234,53 @@ const ProductDetails = ({ route, navigation }: Props) => {
               />
             </>
           )}
+
+          <View style={styles.reviewsHeaderRow}>
+            <View>
+              <Text style={[styles.secTitle, { color: C.title, marginTop: 0 }]}>Ratings & Reviews</Text>
+              {reviewCount > 0 && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Rating readonly startingValue={avgRating} imageSize={16} />
+                  <Text style={{ ...FONTS.fontSm, color: C.textLight }}>
+                    {avgRating.toFixed(1)} · {reviewCount} review{reviewCount === 1 ? '' : 's'}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <TouchableOpacity style={[styles.writeReviewBtn, { borderColor: C.primary }]} onPress={handleWriteReview}>
+              <Text style={[styles.writeReviewTxt, { color: C.primary }]}>Write a Review</Text>
+            </TouchableOpacity>
+          </View>
+
+          {reviews.length === 0 ? (
+            <Text style={{ ...FONTS.fontSm, color: C.textLight, marginTop: 4 }}>
+              No reviews yet. Be the first to review this product!
+            </Text>
+          ) : (
+            <>
+              {(showAllReviews ? reviews : reviews.slice(0, 3)).map((r: any, i: number) => (
+                <View key={r.id ?? i} style={[styles.reviewCard, { borderColor: C.borderColor }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Text style={[styles.reviewerName, { color: C.title }]}>{r.reviewerName}</Text>
+                    {!!r.postedAt && (
+                      <Text style={{ ...FONTS.fontXs, color: C.textLight }}>
+                        {new Date(r.postedAt).toLocaleDateString()}
+                      </Text>
+                    )}
+                  </View>
+                  <Rating readonly startingValue={r.rating} imageSize={14} style={{ alignSelf: 'flex-start', marginTop: 4 }} />
+                  <Text style={[styles.reviewComment, { color: C.text }]}>{r.comment}</Text>
+                </View>
+              ))}
+              {reviews.length > 3 && (
+                <TouchableOpacity style={styles.viewMoreBtn} onPress={() => setShowAllReviews(v => !v)}>
+                  <Text style={[styles.viewMoreTxt, { color: C.primary }]}>
+                    {showAllReviews ? 'View Less' : `View More (${reviews.length - 3} more)`}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </>
+          )}
         </View>
       </ScrollView>
 
@@ -284,6 +352,14 @@ const styles = StyleSheet.create({
   cartTxt:    { ...FONTS.font, ...FONTS.fontSemiBold },
   buyBtn:     { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 14 },
   buyTxt:     { ...FONTS.font, ...FONTS.fontSemiBold },
+  reviewsHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 20 },
+  writeReviewBtn:   { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7 },
+  writeReviewTxt:   { ...FONTS.fontSm, ...FONTS.fontSemiBold },
+  reviewCard:       { borderWidth: 1, borderRadius: 12, padding: 12, marginTop: 12 },
+  reviewerName:     { ...FONTS.fontSm, ...FONTS.fontSemiBold },
+  reviewComment:    { ...FONTS.fontSm, lineHeight: 20, marginTop: 6 },
+  viewMoreBtn:      { alignItems: 'center', paddingVertical: 12, marginTop: 4 },
+  viewMoreTxt:      { ...FONTS.fontSm, ...FONTS.fontSemiBold },
 });
 
 export default ProductDetails;

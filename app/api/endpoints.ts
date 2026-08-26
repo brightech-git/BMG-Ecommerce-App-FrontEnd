@@ -142,6 +142,13 @@ export const MISC = {
   NOTIFICATION_LIST: '/notification/list',
 };
 
+// Product reviews
+export const REVIEW = {
+  ALL:        '/reviews',
+  BY_TAG_NO:  '/reviews/product/:tagNo',
+  CREATE:     '/reviews',
+};
+
 export const NOTIF = {
   GET_USER:       (userId: number) => `/notifications/user/${userId}`,
   UNREAD_COUNT:   (userId: number) => `/notifications/user/${userId}/unread-count`,

@@ -66,12 +66,21 @@ const StackNavigator = () => {
         AsyncStorageHelper.getToken(),
         AsyncStorageHelper.getUser(),
       ]);
-      if (token && user) {
+      // A social (Apple/Google) login saves the token as soon as it succeeds,
+      // even before the mandatory contact-number step is completed. If the
+      // app is closed at that point, don't treat the user as fully signed
+      // in on relaunch — otherwise they'd land on Home having skipped it.
+      const hasCompletedProfile = !!(user?.contactNumber && String(user.contactNumber).trim() !== '');
+
+      if (token && user && hasCompletedProfile) {
         dispatch(hydrateAuth({ token, user }));
         setAuthToken(token);
+      } else if (token && user && !hasCompletedProfile) {
+        await AsyncStorageHelper.clearSession();
       }
+
       if (!onboarded) setInitialRoute('Onbording');
-      else if (token)  setInitialRoute('DrawerNavigation');
+      else if (token && hasCompletedProfile) setInitialRoute('DrawerNavigation');
       else             setInitialRoute('SignIn');
     })();
   }, []);

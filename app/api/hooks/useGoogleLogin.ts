@@ -31,7 +31,7 @@ export const useGoogleLogin = () => {
         console.log('Logged User:', JSON.stringify(loggedUser, null, 2));
         console.log('Auth Token:', authToken);
         if (loggedUser?.contactNumber && loggedUser.contactNumber.trim() !== '') {
-          navigation.navigate('DrawerNavigation', { screen: 'BottomNavigation', params: { screen: 'Home' } });
+          navigation.reset({ index: 0, routes: [{ name: 'DrawerNavigation' }] });
         } else {
           navigation.navigate('GoogleContactUpload', { userId: loggedUser.id, token: authToken });
         }

@@ -73,7 +73,6 @@ export interface InvoiceItem {
   netWt?: number | null;
   grsWt?: number | null;
   grsAmt?: number | null;   // grossAmount from API
-  taxType?: string | null;  // gtstype from API
   gstPer?: number | null;
   gstAmount?: number | null;
   price?: number;
@@ -133,7 +132,7 @@ function buildInvoiceHTML(
   const payColor = (() => {
     const s = (paymentStatus ?? '').toUpperCase();
     if (['PAID','SUCCESS','CAPTURED'].includes(s)) return '#065f46';
-    if (['FAILED','DECLINED'].includes(s)) return '#991b1b';
+    if (['FAILED','DECLINED','CANCELLED','CANCELED'].includes(s)) return '#991b1b';
     return '#92400e';
   })();
 
@@ -173,9 +172,6 @@ function buildInvoiceHTML(
       <td style="text-align:right;padding:5px 4px;border-bottom:0.5px solid #e5e7eb;font-size:9px;">
         ${grsAmt > 0 ? grsAmt.toFixed(2) : '-'}
       </td>
-      <td style="text-align:center;padding:5px 3px;border-bottom:0.5px solid #e5e7eb;font-size:8px;">
-        ${it.taxType ?? 'GST'}
-      </td>
       <td style="text-align:center;padding:5px 3px;border-bottom:0.5px solid #e5e7eb;font-size:9px;">
         ${gstPer != null ? gstPer + '%' : '-'}
       </td>
@@ -208,28 +204,19 @@ function buildInvoiceHTML(
     text-rendering: optimizeLegibility;
   }
 
-  /* ─── Background on html = auto-repeats across ALL pages ─────── */
+  /* ─── Flat, print-safe background — repeats naturally across pages ─── */
+  /* Avoid background-attachment:fixed + repeating-gradient here: WebView print
+     engines (esp. Android) often fail to repaint fixed/tiled backgrounds past
+     the first viewport, leaving the page's default dark canvas showing through
+     the low-opacity stripes on later pages. A flat color is always safe. */
   html, body {
     width: 100%;
     min-width: 100%;
     margin: 0;
     padding: 0;
-  }
-
-  html {
+    background-color: #fff9f6;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
-    background-color: #fff9f6;
-    background-image:
-      radial-gradient(ellipse at 2% 2%,   rgba(241,97,55,0.08) 0%, transparent 48%),
-      radial-gradient(ellipse at 98% 98%, rgba(241,97,55,0.06) 0%, transparent 45%),
-      repeating-linear-gradient(
-        -48deg,
-        transparent 0px, transparent 36px,
-        rgba(241,97,55,0.028) 36px, rgba(241,97,55,0.028) 37px
-      );
-    background-size: 100% 100%;
-    background-attachment: fixed;
   }
 
   body {
@@ -237,7 +224,6 @@ function buildInvoiceHTML(
     font-family: Helvetica, Arial, sans-serif;
     font-size: 10px;
     color: #333;
-    background: transparent;   /* let html bg show through */
   }
 
   /* ─── Orange top accent bar (full bleed, no margin) ─── */
@@ -281,11 +267,14 @@ function buildInvoiceHTML(
   .tlbl  { font-size: 9px; font-weight: bold; color: #333;
            padding: 6px 10px 5px; background: #fdf5f2; border-bottom: 1px solid #eee; }
   table  { width: 100%; border-collapse: collapse; table-layout: fixed; }
-  thead tr { background: #2c3e50; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  thead tr {
+    background: linear-gradient(90deg, #f16137 0%, #e04c22 100%);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
   thead th {
     font-size: 8px; font-weight: 600; color: #fff;
     text-align: center; padding: 7px 3px;
-    border-right: 0.5px solid rgba(255,255,255,0.18);
+    border-right: 0.5px solid rgba(255,255,255,0.25);
     overflow: hidden;
   }
   thead th:last-child { border-right: none; }
@@ -405,14 +394,13 @@ function buildInvoiceHTML(
           <col style="width:4%"/>   <!-- S.No  -->
           <col style="width:8%"/>   <!-- Image -->
           <col style="width:9%"/>   <!-- ItemID -->
-          <col style="width:20%"/>  <!-- Name  -->
+          <col style="width:27%"/>  <!-- Name  -->
           <col style="width:4%"/>   <!-- Qty   -->
           <col style="width:9%"/>   <!-- NetWt -->
           <col style="width:10%"/>  <!-- GrsAmt -->
-          <col style="width:7%"/>   <!-- TaxType -->
           <col style="width:6%"/>   <!-- Tax%  -->
           <col style="width:9%"/>   <!-- TaxAmt -->
-          <col style="width:14%"/>  <!-- Total  → 4+8+9+20+4+9+10+7+6+9+14=100 -->
+          <col style="width:14%"/>  <!-- Total  → 4+8+9+27+4+9+10+6+9+14=100 -->
         </colgroup>
         <thead>
           <tr>
@@ -423,7 +411,6 @@ function buildInvoiceHTML(
             <th>Qty</th>
             <th style="text-align:right;padding-right:4px;">Net Wt</th>
             <th style="text-align:right;padding-right:4px;">Gross Amt</th>
-            <th>Tax Type</th>
             <th>Tax %</th>
             <th style="text-align:right;padding-right:4px;">Tax Amt</th>
             <th style="text-align:right;padding-right:6px;">Total</th>

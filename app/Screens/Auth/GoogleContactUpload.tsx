@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme } from '@react-navigation/native';
-import { View, Text, SafeAreaView, Image, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, SafeAreaView, Image, Platform, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Feather } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -50,7 +50,12 @@ const GoogleContactUpload = ({ navigation, route }: Props) => {
 
     return (
         <SafeAreaView style={{ backgroundColor: colors.background, flex: 1 }}>
-            <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+            >
+            <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                 <View>
                     <View style={{ width: 600, height: 500, backgroundColor: COLORS.primary, borderRadius: 250, marginLeft: -95, marginTop: -220, overflow: 'hidden' }}>
                         <Image
@@ -105,6 +110,7 @@ const GoogleContactUpload = ({ navigation, route }: Props) => {
                     </View>
                 </View>
             </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 };

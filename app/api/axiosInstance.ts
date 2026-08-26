@@ -35,11 +35,11 @@ axiosInstance.interceptors.request.use(async (config) => {
   }
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
-    // console.log('[axiosInstance] Authorization header:', config.headers['Authorization']);
+    console.log('[axiosInstance] Authorization header:', config.headers['Authorization']);
   } else {
     console.log('[axiosInstance] No token found — Authorization header not set.');
   }
-  console.log('[axiosInstance] Request URL:', (config.baseURL ?? '') + (config.url ?? ''));
+  // console.log('[axiosInstance] Request URL:', (config.baseURL ?? '') + (config.url ?? ''));
   return config;
 });
 

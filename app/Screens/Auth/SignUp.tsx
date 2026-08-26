@@ -1,13 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useTheme } from '@react-navigation/native';
-import { View, Text, Image, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, Image, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
 import { FONTS, COLORS } from '../../constants/theme';
 import { GlobalStyleSheet } from '../../constants/StyleSheet';
 import CustomInput from '../../components/Input/CustomInput';
 import Button from '../../components/Button/Button';
 import { Feather, FontAwesome } from '@expo/vector-icons';
 import SocialBtn from '../../components/Socials/SocialBtn';
-import { Checkbox } from 'react-native-paper';
 import { ScrollView } from 'react-native-gesture-handler';
 import { IMAGES } from '../../constants/Images';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -88,8 +87,13 @@ const SignUp = ({ navigation } : SignUpScreenProps) => {
     }, [error]);
 
     return (
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-            <SafeAreaView style={{ backgroundColor: colors.background, flex: 1 }}>
+        <SafeAreaView style={{ backgroundColor: colors.background, flex: 1 }}>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+            >
+            <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                 <View>
                     <View style={{width:600,height:500,backgroundColor:COLORS.primary,borderRadius:250,marginLeft:-95,marginTop:-220,overflow:'hidden'}}>
                         <Image
@@ -151,26 +155,23 @@ const SignUp = ({ navigation } : SignUpScreenProps) => {
                                     value={form.password}
                                     onChangeText={(value: string) => setForm(f => ({ ...f, password: value }))}
                                 />
-                                <View>
-                                    <Checkbox.Item
-                                        onPress={() => setisChecked(!isChecked)}
-                                        position='leading'
-                                        label="I agree to all Term, Privacy and Fees"
-                                        color={colors.title}
-                                        uncheckedColor={colors.textLight}
-                                        status={isChecked ? "checked" : "unchecked"}
-                                        style={{
-                                            paddingHorizontal: 0,
-                                            paddingVertical: 5,
-                                        }}
-                                        labelStyle={{
-                                            ...FONTS.fontRegular,
-                                            fontSize: 15,
-                                            color: colors.title,
-                                            textAlign: 'left',
-                                        }}
-                                    />
-                                </View>
+                                <TouchableOpacity
+                                    style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 }}
+                                    onPress={() => setisChecked(!isChecked)}
+                                    activeOpacity={0.7}
+                                >
+                                    <View style={{
+                                        width: 20, height: 20, borderRadius: 4, borderWidth: 1.5,
+                                        alignItems: 'center', justifyContent: 'center',
+                                        borderColor: isChecked ? COLORS.primary : colors.textLight,
+                                        backgroundColor: isChecked ? COLORS.primary : 'transparent',
+                                    }}>
+                                        {isChecked && <Feather name="check" size={12} color={COLORS.white} />}
+                                    </View>
+                                    <Text style={{ ...FONTS.fontRegular, fontSize: 15, color: colors.title, flex: 1 }}>
+                                        I agree to all Term, Privacy and Fees
+                                    </Text>
+                                </TouchableOpacity>
                             </View>
                         </View>
                     </View>
@@ -248,8 +249,9 @@ const SignUp = ({ navigation } : SignUpScreenProps) => {
                         }}>  Sign In</Text>
                     </TouchableOpacity>
                 </View>
-            </SafeAreaView>
-        </ScrollView>
+            </ScrollView>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
     )
 }
 

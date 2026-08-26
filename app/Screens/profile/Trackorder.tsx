@@ -265,12 +265,30 @@ const Trackorder = ({ route, navigation }: Props) => {
     try {
       // Fetch invoice data from /order/invoice/:orderId
       const result: any = await fetchInvoice();
+      console.log('[Invoice] raw fetch result:', JSON.stringify(result, null, 2));
       const inv = result?.data?.data ?? result?.data ?? result;
+      console.log('[Invoice] resolved inv object:', JSON.stringify(inv, null, 2));
+      console.log('[Invoice] paymentMode:', inv?.paymentMode, '| paymentStatus:', inv?.paymentStatus);
 
       if (!inv?.orderId) {
         toastError('Invoice data not available');
         return;
       }
+
+      // The dedicated invoice endpoint often returns literal "N/A" placeholders for
+      // paymentMode/paymentStatus. Fall back to the reliable /order/getOrder fields
+      // (already resolved above as `paymentMode`/`paymentStatus`/`currentStatus`)
+      // when the invoice's own value is missing/blank/"N/A".
+      const cleanVal = (v: any) =>
+        (v === undefined || v === null || v === '' || String(v).toUpperCase() === 'N/A') ? undefined : v;
+
+      const finalPaymentMode   = cleanVal(inv.paymentMode) ?? cleanVal(paymentMode) ?? 'N/A';
+      const finalPaymentStatus = cleanVal(inv.paymentStatus) ?? cleanVal(paymentStatus) ?? cleanVal(currentStatus) ?? 'N/A';
+      console.log('[Invoice] payment field resolution:', {
+        invPaymentMode: inv.paymentMode, orderFallbackPaymentMode: paymentMode,
+        invPaymentStatus: inv.paymentStatus, orderFallbackPaymentStatus: paymentStatus, currentStatus,
+        finalPaymentMode, finalPaymentStatus,
+      });
 
       // origin_address → Shipped From lines
       const origin = inv.origin_address ?? {};
@@ -309,8 +327,8 @@ const Trackorder = ({ route, navigation }: Props) => {
         customerEmail:   inv.email,
         customerAddress: deliveryLines,
         // Payment
-        paymentMode:   inv.paymentMode,
-        paymentStatus: inv.paymentStatus,
+        paymentMode:   finalPaymentMode,
+        paymentStatus: finalPaymentStatus,
         transactionId: inv.transactionId ?? null,
         paidOn:        null,
         // Items — invoice API uses snake_case
@@ -324,7 +342,6 @@ const Trackorder = ({ route, navigation }: Props) => {
           netWt:       it.net_wt  ?? it.netWt  ?? null,
           grsWt:       it.grs_wt  ?? it.grsWt  ?? null,
           grsAmt:      it.gross_amount ?? it.grossAmount ?? null,
-          taxType:     it.gst_type ?? it.gtstype ?? 'GST',
           gstPer:      it.gst_per  ?? it.gstPer  ?? null,
           gstAmount:   it.gst_amount ?? it.gstAmount ?? null,
           price:       it.price,
