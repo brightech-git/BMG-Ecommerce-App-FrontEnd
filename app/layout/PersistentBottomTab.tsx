@@ -26,6 +26,7 @@ const HIDDEN_ROUTES = new Set([
   'Products', 'ProductDetails',
   'Checkout', 'Payment', 'PaymentStatus',
   'WriteReview',        // has its own submit button footer
+  'Maintenance', 'UpdateRequired', // full-screen blocking gates — must not offer a way out
   '',                   // initial empty state
 ]);
 

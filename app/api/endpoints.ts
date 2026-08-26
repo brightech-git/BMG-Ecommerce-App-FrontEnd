@@ -142,6 +142,11 @@ export const MISC = {
   NOTIFICATION_LIST: '/notification/list',
 };
 
+// App version / maintenance gate — checked once on initial app open
+export const APP_CONFIG = {
+  MAINTENANCE: '/app-maintenance',
+};
+
 // Product reviews
 export const REVIEW = {
   ALL:        '/reviews',

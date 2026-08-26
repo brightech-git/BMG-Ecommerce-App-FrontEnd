@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from "react";
+import { Platform } from 'react-native';
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
-import { AsyncStorageHelper } from '../utils/AsyncStorageHelper';
+import * as Application from 'expo-application';
 import { useDispatch } from 'react-redux';
-import { hydrateAuth } from '../redux/reducer/authReducer';
-import { setAuthToken } from '../api/axiosInstance';
+import { resolveInitialRoute } from './resolveInitialRoute';
+import { getAppMaintenanceConfig } from '../api/services/appConfigService';
+import { isVersionOlder } from '../utils/version';
 import Onbording from "../Screens/onbording/Onbording";
+import Maintenance from "../Screens/Maintenance/Maintenance";
+import UpdateRequired from "../Screens/Maintenance/UpdateRequired";
 import { RootStackParamList } from "./RootStackParamList";
 import SignIn from "../Screens/Auth/SignIn";
 import SignUp from "../Screens/Auth/SignUp";
@@ -54,34 +58,47 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
+/** Returns update info when the installed version is older than what the API requires for this platform. */
+function checkForUpdate(cfg: { androidVersion: string; androidStoreUrl: string; iosVersion: string; iosStoreUrl: string }) {
+  try {
+    const currentVersion = Application.nativeApplicationVersion ?? '0.0.0';
+    const latestVersion = Platform.OS === 'ios' ? cfg.iosVersion : cfg.androidVersion;
+    const storeUrl       = Platform.OS === 'ios' ? cfg.iosStoreUrl : cfg.androidStoreUrl;
+    if (!latestVersion || !isVersionOlder(currentVersion, latestVersion)) return null;
+    return { version: latestVersion, storeUrl };
+  } catch {
+    return null; // never block app startup over a broken version check
+  }
+}
+
 const StackNavigator = () => {
   const dispatch = useDispatch<any>();
   const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | null>(null);
- 
+  const [maintenanceMsg, setMaintenanceMsg] = useState<string | undefined>(undefined);
+  const [updateInfo, setUpdateInfo] = useState<{ version?: string; storeUrl?: string } | undefined>(undefined);
+
 //  AsyncStorage.clear()
   useEffect(() => {
     (async () => {
-      const [onboarded, token, user] = await Promise.all([
-        AsyncStorageHelper.isOnboarded(),
-        AsyncStorageHelper.getToken(),
-        AsyncStorageHelper.getUser(),
+      const [route, maintenance] = await Promise.all([
+        resolveInitialRoute(dispatch),
+        getAppMaintenanceConfig().catch(() => null),
       ]);
-      // A social (Apple/Google) login saves the token as soon as it succeeds,
-      // even before the mandatory contact-number step is completed. If the
-      // app is closed at that point, don't treat the user as fully signed
-      // in on relaunch — otherwise they'd land on Home having skipped it.
-      const hasCompletedProfile = !!(user?.contactNumber && String(user.contactNumber).trim() !== '');
 
-      if (token && user && hasCompletedProfile) {
-        dispatch(hydrateAuth({ token, user }));
-        setAuthToken(token);
-      } else if (token && user && !hasCompletedProfile) {
-        await AsyncStorageHelper.clearSession();
+      if (maintenance?.isMaintenance) {
+        setMaintenanceMsg(maintenance.maintenanceMsg || undefined);
+        setInitialRoute('Maintenance');
+        return;
       }
 
-      if (!onboarded) setInitialRoute('Onbording');
-      else if (token && hasCompletedProfile) setInitialRoute('DrawerNavigation');
-      else             setInitialRoute('SignIn');
+      const update = maintenance ? checkForUpdate(maintenance) : null;
+      if (update) {
+        setUpdateInfo(update);
+        setInitialRoute('UpdateRequired');
+        return;
+      }
+
+      setInitialRoute(route);
     })();
   }, []);
 
@@ -98,6 +115,12 @@ const StackNavigator = () => {
     >
       {initialRoute === 'Onbording' && (
         <Stack.Screen name="Onbording" component={Onbording} />
+      )}
+      {initialRoute === 'Maintenance' && (
+        <Stack.Screen name="Maintenance" component={Maintenance} initialParams={{ message: maintenanceMsg }} />
+      )}
+      {initialRoute === 'UpdateRequired' && (
+        <Stack.Screen name="UpdateRequired" component={UpdateRequired} initialParams={updateInfo} />
       )}
       <Stack.Screen name={"SignIn"} component={SignIn} />
       <Stack.Screen name={"SignUp"} component={SignUp} />

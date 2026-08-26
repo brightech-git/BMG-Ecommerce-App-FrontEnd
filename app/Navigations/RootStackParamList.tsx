@@ -3,6 +3,8 @@ import { BottomTabParamList } from "./BottomTabParamList";
 
 export type RootStackParamList = {
     DrawerNavigation: NavigatorScreenParams<BottomTabParamList>;
+    Maintenance: { message?: string } | undefined;
+    UpdateRequired: { version?: string; storeUrl?: string } | undefined;
     Damo: undefined;
     ChooseLanguage: undefined;
     QrCodeScanner: undefined;
