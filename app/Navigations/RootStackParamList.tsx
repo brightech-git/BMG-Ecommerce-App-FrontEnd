@@ -21,6 +21,7 @@ export type RootStackParamList = {
     ResetPassword: undefined;
     Settings: undefined;
     ChangePassword: undefined;
+    DeleteAccount: undefined;
     HelpCenter: undefined;
     TwoStepAuthentication: undefined;
     BottomNavigation: undefined;
@@ -97,4 +98,5 @@ export type RootStackParamList = {
     Swipeable: undefined;
     Tabs: undefined;
     Tables: undefined;
-    Toggles: unde
+    Toggles: undefined;
+};

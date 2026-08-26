@@ -44,6 +44,7 @@ import ContactUs from "../Screens/ContactUs/ContactUs";
 import PolicyScreen from "../Screens/Policy/PolicyScreen";
 import ChangePassword from "../Screens/profile/ChangePassword";
 import HelpCenter from "../Screens/profile/HelpCenter";
+import DeleteAccount from "../Screens/profile/DeleteAccount";
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -127,6 +128,7 @@ const StackNavigator = () => {
       <Stack.Screen name={"PolicyScreen"} component={PolicyScreen} />
       <Stack.Screen name={"ChangePassword"} component={ChangePassword} />
       <Stack.Screen name={"HelpCenter"} component={HelpCenter} />
+      <Stack.Screen name={"DeleteAccount"} component={DeleteAccount} />
     </Stack.Navigator>
   );
 };

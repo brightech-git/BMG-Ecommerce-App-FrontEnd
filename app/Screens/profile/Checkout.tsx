@@ -16,6 +16,7 @@ import { useAddresses } from '../../api/hooks/useAddresses';
 import { useProfile } from '../../api/hooks/useProfile';
 import { createOrder, CreateOrderPayload } from '../../api/services/orderService';
 import { Loader, EmptyState } from '../../components/common/StateViews';
+import WebViewWarmup from '../../components/common/WebViewWarmup';
 import { toastError } from '../../utils/toast';
 import { axiosInstance } from '../../api/axiosInstance';
 import { SHIPPING } from '../../api/endpoints';
@@ -227,8 +228,6 @@ const Checkout = () => {
         return;
       }
 
-      setOrderStep(ORDER_STEPS.length - 1);
-      await new Promise(r => setTimeout(r, 800));
       setShowOrderModal(false);
       fadeAnim.setValue(0);
 
@@ -293,6 +292,7 @@ const ORDER_STEPS = [
   return (
     <View style={[styles.safe, { backgroundColor: C.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <WebViewWarmup />
 
       <Modal transparent visible={showOrderModal} animationType="none">
         <Animated.View style={[styles.modalOverlay, { opacity: fadeAnim }]}>

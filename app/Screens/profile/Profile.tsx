@@ -138,6 +138,7 @@ const Profile = () => {
         <SectionLabel title="Account" />
         <View style={[styles.group, { backgroundColor: C.card }]}>
           <Row icon="log-out" label="Log Out" danger onPress={doLogout} />
+          <Row icon="trash-2" label="Delete Account" danger onPress={() => navigation.navigate('DeleteAccount')} />
         </View>
 
         {/* Powered by */}

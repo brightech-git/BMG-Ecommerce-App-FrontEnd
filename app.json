@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "BMG Jewels Store",
-    "slug": "bmg-jewels-store",
-    "version": "1.0.8",
+    "slug": "bmg-jewel-store",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -34,7 +34,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "062ed53e-33e8-40dd-a27e-49fdb937a0a9"
+        "projectId": "f4c0f283-74ad-41ee-805a-37727160604a"
       }
     },
     "plugins": [
@@ -75,6 +75,6 @@
       "expo-document-picker",
       "expo-apple-authentication"
     ],
-    "owner": "brightechsoftware"
+    "owner": "kiruba08"
   }
 }

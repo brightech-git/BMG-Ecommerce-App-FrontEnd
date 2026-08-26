@@ -62,3 +62,6 @@ export const forgotPassword = (payload: ForgotPasswordPayload) =>
 
 export const resetPassword = (payload: ResetPasswordPayload) =>
   callApi<ResetPasswordPayload, ResetPasswordResponse>({ method: 'post', url: AUTH.VERIFY_OTP, data: payload });
+
+export const deleteUserAccount = (id: string | number) =>
+  callApi<null, string>({ method: 'delete', url: AUTH.DELETE_USER.replace(':id', String(id)) });
