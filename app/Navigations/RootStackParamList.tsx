@@ -67,11 +67,13 @@ export type RootStackParamList = {
       buyNowProduct?: any;
       /** Cart selection flow — only checkout these TAGKEY values */
       selectedTagKeys?: string[];
+      /** Set by SaveAddress after adding a new address from here, so it gets selected. */
+      selectedAddressId?: string | number;
     } | undefined;
     Addcard: undefined;
     Payment: { orderId: string | number; paymentMode: 'ONLINE' | 'COD'; paymentType?: string; totalAmount?: number };
     PaymentStatus: { orderId: string | number; mode?: string };
-    SaveAddress: { id?: string | number } | undefined;
+    SaveAddress: { id?: string | number; returnTo?: 'Checkout' } | undefined;
     Myorder: undefined;
     AddCard: undefined;
     Notification: undefined;

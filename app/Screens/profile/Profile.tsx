@@ -15,6 +15,7 @@ import { useProfile } from '../../api/hooks/useProfile';
 import { useAuthToken } from '../../api/hooks/useAuthToken';
 import { logout } from '../../redux/reducer/authReducer';
 import { EmptyState } from '../../components/common/StateViews';
+import { setPendingAuthRedirect } from '../../utils/authRedirect';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 
@@ -37,7 +38,7 @@ const Profile = () => {
         text: 'Log out', style: 'destructive',
         onPress: () => {
           dispatch(logout());
-          navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'SignIn' }] }));
+          navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'DrawerNavigation' }] }));
         },
       },
     ]);
@@ -68,7 +69,10 @@ const Profile = () => {
         </View>
         <EmptyState icon="user" title="You're not signed in"
           subtitle="Sign in to view your profile, orders and addresses."
-          ctaLabel="Sign In" onCta={() => navigation.navigate('SignIn')} />
+          ctaLabel="Sign In" onCta={() => {
+            setPendingAuthRedirect({ screen: 'Profile' });
+            navigation.navigate('SignIn');
+          }} />
       </View>
     );
   }

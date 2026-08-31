@@ -20,6 +20,7 @@ import { parseImages } from '../../utils/image';
 import { SmartImage } from '../../components/common/SmartImage';
 import { CartWishlistBadge } from '../../components/common/CartWishlistBadge';
 import { Loader, ErrorState } from '../../components/common/StateViews';
+import { setPendingAuthRedirect } from '../../utils/authRedirect';
 
 const { width } = Dimensions.get('window');
 type Props = StackScreenProps<RootStackParamList, 'ProductDetails'>;
@@ -78,7 +79,10 @@ const ProductDetails = ({ route, navigation }: Props) => {
     if (res === 'unauth') {
       Alert.alert('Login required', 'Please sign in to continue.', [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign In', onPress: () => navigation.navigate('SignIn') },
+        { text: 'Sign In', onPress: () => {
+          setPendingAuthRedirect({ screen: 'ProductDetails', params: { tagKey } });
+          navigation.navigate('SignIn');
+        } },
       ]);
     }
   };
@@ -87,7 +91,10 @@ const ProductDetails = ({ route, navigation }: Props) => {
     if (!isAuthenticated) {
       Alert.alert('Login required', 'Please sign in to write a review.', [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign In', onPress: () => navigation.navigate('SignIn') },
+        { text: 'Sign In', onPress: () => {
+          setPendingAuthRedirect({ screen: 'ProductDetails', params: { tagKey } });
+          navigation.navigate('SignIn');
+        } },
       ]);
       return;
     }
@@ -301,7 +308,10 @@ const ProductDetails = ({ route, navigation }: Props) => {
             if (!isAuthenticated) {
               Alert.alert('Login required', 'Please sign in to continue.', [
                 { text: 'Cancel', style: 'cancel' },
-                { text: 'Sign In', onPress: () => navigation.navigate('SignIn') },
+                { text: 'Sign In', onPress: () => {
+                  setPendingAuthRedirect({ screen: 'ProductDetails', params: { tagKey } });
+                  navigation.navigate('SignIn');
+                } },
               ]);
               return;
             }

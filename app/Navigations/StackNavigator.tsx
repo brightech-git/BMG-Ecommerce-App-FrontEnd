@@ -81,6 +81,12 @@ const StackNavigator = () => {
 //  AsyncStorage.clear()
   useEffect(() => {
     (async () => {
+      // if (__DEV__) {
+      //   // Skip maintenance/update gating entirely in development builds.
+      //   setInitialRoute(await resolveInitialRoute(dispatch));
+      //   return;
+      // }
+
       const [route, maintenance] = await Promise.all([
         resolveInitialRoute(dispatch),
         getAppMaintenanceConfig().catch(() => null),

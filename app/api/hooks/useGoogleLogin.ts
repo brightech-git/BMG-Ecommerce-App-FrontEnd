@@ -5,6 +5,7 @@ import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-si
 import { googleLoginThunk, clearAuthError } from '../../redux/reducer/authReducer';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { configureGoogleSignIn } from '../../utils/googleConfig';
+import { finishAuthFlow } from '../../utils/authRedirect';
 
 type NavProp = StackNavigationProp<RootStackParamList>;
 
@@ -31,7 +32,7 @@ export const useGoogleLogin = () => {
         console.log('Logged User:', JSON.stringify(loggedUser, null, 2));
         console.log('Auth Token:', authToken);
         if (loggedUser?.contactNumber && loggedUser.contactNumber.trim() !== '') {
-          navigation.reset({ index: 0, routes: [{ name: 'DrawerNavigation' }] });
+          finishAuthFlow(navigation);
         } else {
           navigation.navigate('GoogleContactUpload', { userId: loggedUser.id, token: authToken });
         }

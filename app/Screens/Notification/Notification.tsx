@@ -19,6 +19,7 @@ import {
   useDeleteAllNotifications,
 } from '../../api/hooks/useNotifications';
 import { Loader, EmptyState, ErrorState } from '../../components/common/StateViews';
+import { setPendingAuthRedirect } from '../../utils/authRedirect';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 
@@ -175,7 +176,10 @@ const Notification = () => {
           title="Sign in to see notifications"
           subtitle="Your personalised alerts and updates will appear here."
           ctaLabel="Sign In"
-          onCta={() => navigation.navigate('SignIn')}
+          onCta={() => {
+            setPendingAuthRedirect({ screen: 'Notification' });
+            navigation.navigate('SignIn');
+          }}
         />
       </View>
     );

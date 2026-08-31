@@ -750,7 +750,7 @@ const Trackorder = ({ route, navigation }: Props) => {
       {/* ── Cancel Remarks Modal ── */}
       <Modal visible={cancelModal} transparent animationType="fade" onRequestClose={() => setCancelModal(false)}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.modalOverlay}
         >
           <View style={[styles.modalBox, { backgroundColor: C.card }]}>
@@ -787,6 +787,16 @@ const Trackorder = ({ route, navigation }: Props) => {
             </View>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ── Cancelling Loader Modal ── */}
+      <Modal visible={cancelling} transparent animationType="fade">
+        <View style={styles.loaderOverlay}>
+          <View style={[styles.loaderBox, { backgroundColor: C.card }]}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={[styles.loaderTxt, { color: C.title }]}>Cancelling your order…</Text>
+          </View>
+        </View>
       </Modal>
     </View>
   );
@@ -929,6 +939,15 @@ const styles = StyleSheet.create({
   modalBtn:       { flex: 1, paddingVertical: 13, borderRadius: 10, alignItems: 'center', borderWidth: 1.5 },
   modalBtnDanger: { backgroundColor: COLORS.danger, borderColor: COLORS.danger },
   modalBtnTxt:    { ...FONTS.fontSm, ...FONTS.fontSemiBold },
+
+  // Cancelling loader modal
+  loaderOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  loaderBox: {
+    borderRadius: 16, paddingVertical: 28, paddingHorizontal: 32,
+    alignItems: 'center', gap: 12, elevation: 8,
+    shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 10, shadowOffset: { width: 0, height: 4 },
+  },
+  loaderTxt: { ...FONTS.fontSm, ...FONTS.fontSemiBold, textAlign: 'center' },
 });
 
 export default Trackorder;

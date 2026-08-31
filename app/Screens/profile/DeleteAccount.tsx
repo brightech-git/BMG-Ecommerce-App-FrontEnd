@@ -51,7 +51,7 @@ const DeleteAccount = ({ navigation }: Props) => {
               await deleteAccount(user.id);
               toastSuccess('Your account has been deleted');
               dispatch(logout());
-              navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'SignIn' }] }));
+              navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'DrawerNavigation' }] }));
             } catch (e: any) {
               toastError('Could not delete account', errMsg(e));
             }

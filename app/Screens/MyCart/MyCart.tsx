@@ -16,6 +16,7 @@ import { firstImage } from '../../utils/image';
 import { SmartImage } from '../../components/common/SmartImage';
 import { CartWishlistBadge } from '../../components/common/CartWishlistBadge';
 import { Loader, EmptyState, ErrorState } from '../../components/common/StateViews';
+import { setPendingAuthRedirect } from '../../utils/authRedirect';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 const num = (v: any) => { const n = parseFloat(String(v ?? '0').replace(/[^0-9.]/g, '')); return isNaN(n) ? 0 : n; };
@@ -105,7 +106,10 @@ const MyCart = () => {
       <View style={[styles.safe, { backgroundColor: C.background }]}>{Header}
         <EmptyState icon="shopping-bag" title="Your cart is empty"
           subtitle="Sign in to start shopping." ctaLabel="Sign In"
-          onCta={() => navigation.navigate('SignIn')} />
+          onCta={() => {
+            setPendingAuthRedirect({ screen: 'MyCart' });
+            navigation.navigate('SignIn');
+          }} />
       </View>
     );
   }

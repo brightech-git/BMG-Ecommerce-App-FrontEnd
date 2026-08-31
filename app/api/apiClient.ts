@@ -12,6 +12,14 @@ export interface ApiOptions<T> {
     isFormData?: boolean;
     /** Overrides axiosInstance's default baseURL for this request (e.g. a service on a different base path). */
     baseURL?: string;
+    /**
+     * Show the global "Login expired" alert + redirect on a 401/403 from this
+     * call. Reserved for calls a user explicitly triggers (add to cart,
+     * favourite, place order, save address, submit review) — background
+     * page-load reads stay silent so browsing isn't interrupted by a stale
+     * token the user never noticed.
+     */
+    alertOnSessionExpired?: boolean;
 }
 
 export interface ApiError {
@@ -29,6 +37,7 @@ export const callApi = async <T, R>({
     headers = {},
     isFormData = false,
     baseURL,
+    alertOnSessionExpired = false,
 }: ApiOptions<T>): Promise<R> => {
     try {
         const response = await axiosInstance.request<R>({
@@ -37,6 +46,7 @@ export const callApi = async <T, R>({
             params,
             data,
             ...(baseURL ? { baseURL } : {}),
+            alertOnSessionExpired,
             headers: {
                 ...headers,
                 ...(isFormData ? { "Content-Type": "multipart/form-data" } : {}),

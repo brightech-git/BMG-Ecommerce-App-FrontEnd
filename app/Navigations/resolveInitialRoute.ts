@@ -26,6 +26,7 @@ export async function resolveInitialRoute(dispatch: any): Promise<ResolvedRoute>
   }
 
   if (!onboarded) return 'Onbording';
-  if (token && hasCompletedProfile) return 'DrawerNavigation';
-  return 'SignIn';
+  // Guests browse Home freely; account-specific actions (cart, wishlist,
+  // address, profile) prompt SignIn at the point of use instead.
+  return 'DrawerNavigation';
 }

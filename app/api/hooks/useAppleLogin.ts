@@ -4,6 +4,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { appleLoginThunk, clearAuthError } from '../../redux/reducer/authReducer';
 import { RootStackParamList } from '../../Navigations/RootStackParamList';
+import { finishAuthFlow } from '../../utils/authRedirect';
 
 type NavProp = StackNavigationProp<RootStackParamList>;
 
@@ -26,7 +27,7 @@ export const useAppleLogin = () => {
       if (appleLoginThunk.fulfilled.match(result)) {
         const { user: loggedUser, token: authToken } = result.payload;
         if (loggedUser?.contactNumber && loggedUser.contactNumber.trim() !== '') {
-          navigation.reset({ index: 0, routes: [{ name: 'DrawerNavigation' }] });
+          finishAuthFlow(navigation);
         } else {
           navigation.navigate('GoogleContactUpload', { userId: loggedUser.id!, token: authToken });
         }

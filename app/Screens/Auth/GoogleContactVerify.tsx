@@ -13,6 +13,7 @@ import { RootStackParamList } from '../../Navigations/RootStackParamList';
 import { verifyGoogleContact, updateGoogleContact } from '../../api/services/authService';
 import { AsyncStorageHelper } from '../../utils/AsyncStorageHelper';
 import { useToast } from '../../components/commoncomponents/Toast';
+import { finishAuthFlow } from '../../utils/authRedirect';
 
 type Props = StackScreenProps<RootStackParamList, 'GoogleContactVerify'>;
 
@@ -45,7 +46,7 @@ const GoogleContactVerify = ({ navigation, route }: Props) => {
             const res = await verifyGoogleContact({ contactNumber, otp: otpCode });
             if (res.user) await AsyncStorageHelper.saveUserSession(res.user);
             toast.success(res.message ?? 'Contact number verified', { position: 'top' });
-            navigation.reset({ index: 0, routes: [{ name: 'DrawerNavigation' }] });
+            finishAuthFlow(navigation);
         } catch (err: any) {
             toast.error(err.message ?? 'Verification failed', { position: 'top', duration: 4000 });
         } finally {

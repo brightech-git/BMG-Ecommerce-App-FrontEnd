@@ -16,4 +16,5 @@ export const createReview = (payload: CreateReviewPayload) =>
     url: REVIEW.CREATE,
     data: payload,
     baseURL: API_BASE_URL_REVIEW,
+    alertOnSessionExpired: true,
   });

@@ -20,7 +20,7 @@ export interface AddressData {
 }
 
 export const createAddress = (data: AddressData) =>
-  callApi<AddressData, any>({ method: 'post', url: ADDRESS.CREATE, data });
+  callApi<AddressData, any>({ method: 'post', url: ADDRESS.CREATE, data, alertOnSessionExpired: true });
 
 export const getAddressesByCustomer = (customerId: string | number) =>
   callApi<null, any>({ method: 'get', url: ADDRESS.BY_CUSTOMER.replace(':customerId', String(customerId)) });
@@ -29,7 +29,7 @@ export const getAddressById = (id: string | number) =>
   callApi<null, any>({ method: 'get', url: ADDRESS.BY_ID.replace(':id', String(id)) });
 
 export const updateAddress = (id: string | number, data: AddressData) =>
-  callApi<AddressData, any>({ method: 'put', url: ADDRESS.UPDATE.replace(':id', String(id)), data });
+  callApi<AddressData, any>({ method: 'put', url: ADDRESS.UPDATE.replace(':id', String(id)), data, alertOnSessionExpired: true });
 
 export const deleteAddress = (id: string | number) =>
-  callApi<null, any>({ method: 'delete', url: ADDRESS.DELETE.replace(':id', String(id)) });
+  callApi<null, any>({ method: 'delete', url: ADDRESS.DELETE.replace(':id', String(id)), alertOnSessionExpired: true });

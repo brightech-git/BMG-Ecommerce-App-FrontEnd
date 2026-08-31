@@ -17,6 +17,7 @@ import { firstImage } from '../../utils/image';
 import { SmartImage } from '../../components/common/SmartImage';
 import { Loader, EmptyState, ErrorState } from '../../components/common/StateViews';
 import { CartWishlistBadge } from '../../components/common/CartWishlistBadge';
+import { setPendingAuthRedirect } from '../../utils/authRedirect';
 
 const { width } = Dimensions.get('window');
 const GAP = 12;
@@ -48,7 +49,10 @@ const Wishlist = () => {
       <View style={[styles.safe, { backgroundColor: C.background }]}>{Header}
         <EmptyState icon="heart" title="Your wishlist is waiting"
           subtitle="Sign in to save your favourite pieces."
-          ctaLabel="Sign In" onCta={() => navigation.navigate('SignIn')} />
+          ctaLabel="Sign In" onCta={() => {
+            setPendingAuthRedirect({ screen: 'Wishlist' });
+            navigation.navigate('SignIn');
+          }} />
       </View>
     );
   }

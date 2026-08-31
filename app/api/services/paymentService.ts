@@ -4,11 +4,11 @@ import { callApi } from '../apiClient';
 import { PAYMENT } from '../endpoints';
 
 export const createPaymentLink = (payload: any) =>
-  callApi<any, any>({ method: 'post', url: PAYMENT.CREATE_LINK, data: payload });
+  callApi<any, any>({ method: 'post', url: PAYMENT.CREATE_LINK, data: payload, alertOnSessionExpired: true });
 
 /** POST /payment/initiate-sale -> { redirectURI, tranCtx } */
 export const initiatePayment = (paymentData: any) =>
-  callApi<any, any>({ method: 'post', url: PAYMENT.INITIATE_SALE, data: paymentData });
+  callApi<any, any>({ method: 'post', url: PAYMENT.INITIATE_SALE, data: paymentData, alertOnSessionExpired: true });
 
 /** POST /payment/redirect-url -> returns the gateway URL as text */
 export const getPaymentRedirectUrl = (redirectURI: string, tranCtx: string) =>

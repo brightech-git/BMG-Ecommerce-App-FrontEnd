@@ -53,9 +53,10 @@ const handleSessionExpired = () => {
   store.dispatch(logout());
 
   // Navigate straight away — don't wait for the alert to be dismissed.
+  // Land on Home (not a forced SignIn wall) so the user can keep browsing as a guest.
   if (navigationRef.isReady()) {
     navigationRef.dispatch(
-      CommonActions.reset({ index: 0, routes: [{ name: 'SignIn' }] })
+      CommonActions.reset({ index: 0, routes: [{ name: 'DrawerNavigation' }] })
     );
   }
 
@@ -73,8 +74,17 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error?.response?.status === 401 || error?.response?.status === 403) {
-      console.log('[axiosInstance] 401/403 response — session expired, logging out.');
-      handleSessionExpired();
+      if (error?.config?.alertOnSessionExpired) {
+        console.log('[axiosInstance] 401/403 on a user action — session expired, logging out.');
+        handleSessionExpired();
+      } else {
+        // A background/page-load read (product detail, rate, reviews, etc.)
+        // hit a stale token. Clear it quietly — don't interrupt browsing
+        // with the "Login expired" alert; the user gets prompted only when
+        // they actually try to do something that needs auth.
+        console.log('[axiosInstance] 401/403 on a background read — clearing stale session silently.');
+        store.dispatch(logout());
+      }
     }
     return Promise.reject(error);
   }

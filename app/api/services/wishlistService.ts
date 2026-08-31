@@ -17,6 +17,7 @@ export const addWishlist = (payload: AddToWishlistPayload) =>
     method: 'post',
     url: WISHLIST.ADD,
     data: payload,
+    alertOnSessionExpired: true,
   });
 
 /** DELETE /wishlist/:tagKey */
@@ -24,4 +25,5 @@ export const removeWishlist = (tagKey: string) =>
   callApi<null, any>({
     method: 'delete',
     url: WISHLIST.DELETE.replace(':tagKey', encodeURIComponent(tagKey)),
+    alertOnSessionExpired: true,
   });

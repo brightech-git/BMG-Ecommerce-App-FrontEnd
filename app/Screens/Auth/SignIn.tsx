@@ -15,6 +15,7 @@ import { useLogin } from '../../api/hooks/useLogin';
 import { useGoogleLogin } from '../../api/hooks/useGoogleLogin';
 import { useAppleLogin } from '../../api/hooks/useAppleLogin';
 import { useToast } from '../../components/commoncomponents/Toast';
+import { finishAuthFlow } from '../../utils/authRedirect';
 
 type SignInScreenProps = StackScreenProps<RootStackParamList, 'SignIn'>;
 
@@ -48,7 +49,7 @@ const SignIn = ({ navigation }: SignInScreenProps) => {
         }
         const result: any = await login(form);
         if (result?.meta?.requestStatus === 'fulfilled') {
-            navigation.reset({ index: 0, routes: [{ name: 'DrawerNavigation' }] });
+            finishAuthFlow(navigation);
         }
     };
 

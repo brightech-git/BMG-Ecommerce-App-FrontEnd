@@ -18,6 +18,7 @@ export const addToCart = (payload: AddToCartPayload) =>
     method: 'post',
     url: CART.ADD,
     data: payload,
+    alertOnSessionExpired: true,
   });
 
 /** DELETE /cart/item/:tagKey */
@@ -25,6 +26,7 @@ export const deleteCartItem = (tagKey: string) =>
   callApi<null, any>({
     method: 'delete',
     url: CART.DELETE.replace(':tagKey', encodeURIComponent(tagKey)),
+    alertOnSessionExpired: true,
   });
 
 /** DELETE /cart/clear */
@@ -32,4 +34,5 @@ export const clearCart = () =>
   callApi<null, any>({
     method: 'delete',
     url: CART.CLEAR,
+    alertOnSessionExpired: true,
   });

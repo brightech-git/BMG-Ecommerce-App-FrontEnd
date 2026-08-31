@@ -77,7 +77,7 @@ const Sidebar = ({ navigation }: any) => {
     await AsyncStorageHelper.clearSession();
     dispatch(logout());
     navigation.dispatch(
-      CommonActions.reset({ index: 0, routes: [{ name: 'SignIn' }] })
+      CommonActions.reset({ index: 0, routes: [{ name: 'DrawerNavigation' }] })
     );
   };
 

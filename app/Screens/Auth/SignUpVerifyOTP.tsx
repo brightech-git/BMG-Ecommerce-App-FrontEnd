@@ -14,6 +14,7 @@ import { resendOtp } from '../../api/services/authService';
 import { verifyOtpThunk } from '../../redux/reducer/authReducer';
 import { useDispatch } from 'react-redux';
 import { useToast } from '../../components/commoncomponents/Toast';
+import { finishAuthFlow } from '../../utils/authRedirect';
 
 type Props = StackScreenProps<RootStackParamList, 'SignUpVerifyOTP'>;
 
@@ -50,7 +51,7 @@ const SignUpVerifyOTP = ({ navigation, route }: Props) => {
                 return;
             }
             toast.success('OTP verified successfully', { position: 'top' });
-            navigation.reset({ index: 0, routes: [{ name: 'DrawerNavigation' }] });
+            finishAuthFlow(navigation);
         } finally {
             setLoading(false);
         }

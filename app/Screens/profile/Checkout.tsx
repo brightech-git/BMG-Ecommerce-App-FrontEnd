@@ -65,6 +65,16 @@ const Checkout = () => {
     }
   }, [addresses, selectedId]);
 
+  // A freshly-added address (from SaveAddress, opened via "+ Add" below)
+  // should become the selected one and be visible without "View more".
+  useEffect(() => {
+    const newId = route.params?.selectedAddressId;
+    if (newId == null) return;
+    setSelectedId(newId);
+    setShowAllAddresses(true);
+    navigation.setParams({ selectedAddressId: undefined });
+  }, [route.params?.selectedAddressId]);
+
   const selected = useMemo(
     () => addresses.find((a: any) => a.id === selectedId),
     [addresses, selectedId]
@@ -266,7 +276,19 @@ const ORDER_STEPS = [
 ];
 
   if ((isLoading && !isBuyNow) || addrLoading) {
-    return <View style={[styles.safe, { backgroundColor: C.background }]}><Loader message="Loading checkout..." /></View>;
+    return (
+      <View style={[styles.safe, { backgroundColor: C.background }]}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+        <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
+          <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
+            <Feather name="arrow-left" size={22} color={C.title} />
+          </TouchableOpacity>
+          <Text style={[styles.hTitle, { color: C.title }]}>Checkout</Text>
+          <View style={styles.hBtn} />
+        </View>
+        <Loader message="Loading checkout..." />
+      </View>
+    );
   }
 
   if (checkoutProducts.length === 0) {
@@ -289,200 +311,716 @@ const ORDER_STEPS = [
     );
   }
 
-  return (
-    <View style={[styles.safe, { backgroundColor: C.background }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <WebViewWarmup />
+return (
+  <View style={[styles.safe, { backgroundColor: C.background }]}>
+    <StatusBar
+      barStyle={isDark ? 'light-content' : 'dark-content'}
+    />
 
-      <Modal transparent visible={showOrderModal} animationType="none">
-        <Animated.View style={[styles.modalOverlay, { opacity: fadeAnim }]}>
-          <View style={[styles.modalCard, { backgroundColor: C.card }]}>
-            <Text style={styles.modalIcon}>{ORDER_STEPS[orderStep]?.icon}</Text>
-            <Text style={[styles.modalLabel, { color: C.title }]}>{ORDER_STEPS[orderStep]?.label}</Text>
-            <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 16 }} />
-          </View>
-        </Animated.View>
-      </Modal>
+    <WebViewWarmup />
 
-      <View style={[styles.header, { backgroundColor: C.card, borderBottomColor: C.borderColor }]}>
-        <TouchableOpacity style={styles.hBtn} onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={22} color={C.title} />
+    {/* ───────────────── Order Progress Modal ───────────────── */}
+    <Modal
+      transparent
+      visible={showOrderModal}
+      animationType="none"
+    >
+      <Animated.View
+        style={[
+          styles.modalOverlay,
+          { opacity: fadeAnim },
+        ]}
+      >
+        <View
+          style={[
+            styles.modalCard,
+            { backgroundColor: C.card },
+          ]}
+        >
+          <Text style={styles.modalIcon}>
+            {ORDER_STEPS[orderStep]?.icon}
+          </Text>
+
+          <Text
+            style={[
+              styles.modalLabel,
+              { color: C.title },
+            ]}
+          >
+            {ORDER_STEPS[orderStep]?.label}
+          </Text>
+
+          <ActivityIndicator
+            size="large"
+            color={COLORS.primary}
+            style={{ marginTop: 16 }}
+          />
+        </View>
+      </Animated.View>
+    </Modal>
+
+    {/* ───────────────── Header ───────────────── */}
+    <View
+      style={[
+        styles.header,
+        {
+          backgroundColor: C.card,
+          borderBottomColor: C.borderColor,
+        },
+      ]}
+    >
+      <TouchableOpacity
+        style={styles.hBtn}
+        onPress={() => navigation.goBack()}
+      >
+        <Feather
+          name="arrow-left"
+          size={22}
+          color={C.title}
+        />
+      </TouchableOpacity>
+
+      <Text
+        style={[
+          styles.hTitle,
+          { color: C.title },
+        ]}
+      >
+        Checkout
+      </Text>
+
+      {/* Keeps title centered */}
+      <View style={styles.hBtn} />
+    </View>
+
+    {/* ───────────────── Checkout Content ───────────────── */}
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={{
+        padding: SIZES.padding,
+        paddingBottom: 24,
+      }}
+    >
+      {/* ───────────── Delivery Address ───────────── */}
+      <View style={styles.secRow}>
+        <Text
+          style={[
+            styles.secTitle,
+            { color: C.title },
+          ]}
+        >
+          Delivery Address
+        </Text>
+
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate('SaveAddress', {
+              returnTo: 'Checkout',
+            })
+          }
+        >
+          <Text style={styles.link}>+ Add</Text>
         </TouchableOpacity>
-        <Text style={[styles.hTitle, { color: C.title }]}>Checkout</Text>
-        <View style={styles.hBtn} />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: SIZES.padding, paddingBottom: 24 }}>
+      {/* No Address */}
+      {addresses.length === 0 ? (
+        <TouchableOpacity
+          style={[
+            styles.addAddr,
+            {
+              backgroundColor: C.card,
+              borderColor: C.borderColor,
+            },
+          ]}
+          onPress={() =>
+            navigation.navigate('SaveAddress', {
+              returnTo: 'Checkout',
+            })
+          }
+        >
+          <Feather
+            name="plus"
+            size={18}
+            color={COLORS.primary}
+          />
 
-        {/* ── Delivery address ── */}
-        <View style={styles.secRow}>
-          <Text style={[styles.secTitle, { color: C.title }]}>Delivery Address</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('SaveAddress', {})}>
-            <Text style={styles.link}>+ Add</Text>
-          </TouchableOpacity>
-        </View>
-        {addresses.length === 0 ? (
-          <TouchableOpacity
-            style={[styles.addAddr, { backgroundColor: C.card, borderColor: C.borderColor }]}
-            onPress={() => navigation.navigate('SaveAddress', {})}
-          >
-            <Feather name="plus" size={18} color={COLORS.primary} />
-            <Text style={styles.link}>Add a delivery address</Text>
-          </TouchableOpacity>
-        ) : (() => {
-          const defaultAddr = addresses.find((a: any) => a.isDefault) ?? addresses[0];
-          const otherAddresses = addresses.filter((a: any) => a.id !== defaultAddr?.id);
-          const visibleAddresses = showAllAddresses ? addresses : [defaultAddr];
+          <Text style={styles.link}>
+            Add a delivery address
+          </Text>
+        </TouchableOpacity>
+      ) : (
+        (() => {
+          const defaultAddr =
+            addresses.find(
+              (a: any) => a.isDefault
+            ) ?? addresses[0];
+
+          const otherAddresses =
+            addresses.filter(
+              (a: any) =>
+                a.id !== defaultAddr?.id
+            );
+
+          const visibleAddresses =
+            showAllAddresses
+              ? addresses
+              : [defaultAddr];
+
           return (
             <>
+              {/* Address Cards */}
               {visibleAddresses.map((a: any) => (
                 <TouchableOpacity
                   key={a.id}
-                  style={[styles.addrCard, { backgroundColor: C.card, borderColor: C.borderColor }, selectedId === a.id && styles.addrCardActive]}
-                  onPress={() => setSelectedId(a.id)}
+                  style={[
+                    styles.addrCard,
+                    {
+                      backgroundColor: C.card,
+                      borderColor: C.borderColor,
+                    },
+                    selectedId === a.id &&
+                      styles.addrCardActive,
+                  ]}
+                  onPress={() =>
+                    setSelectedId(a.id)
+                  }
+                  activeOpacity={0.8}
                 >
-                  <Feather name={selectedId === a.id ? 'check-circle' : 'circle'} size={18} color={selectedId === a.id ? COLORS.primary : C.textLight} />
+                  {/* Selection Icon */}
+                  <Feather
+                    name={
+                      selectedId === a.id
+                        ? 'check-circle'
+                        : 'circle'
+                    }
+                    size={18}
+                    color={
+                      selectedId === a.id
+                        ? COLORS.primary
+                        : C.textLight
+                    }
+                  />
+
+                  {/* Address Content */}
                   <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={[styles.addrName, { color: C.title }]}>
-                        {a.name}{a.addressType ? ` · ${a.addressType}` : ''}
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.addrName,
+                          { color: C.title },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {a.name}
+                        {a.addressType
+                          ? ` · ${a.addressType}`
+                          : ''}
                       </Text>
+
                       {a.isDefault && (
-                        <View style={styles.defaultBadge}>
-                          <Text style={styles.defaultBadgeTxt}>Default</Text>
+                        <View
+                          style={styles.defaultBadge}
+                        >
+                          <Text
+                            style={
+                              styles.defaultBadgeTxt
+                            }
+                          >
+                            Default
+                          </Text>
                         </View>
                       )}
                     </View>
-                    <Text style={[styles.addrLine, { color: C.text }]}>
-                      {[a.addressLine, a.locality, a.city, a.state, a.pincode].filter(Boolean).join(', ')}
+
+                    <Text
+                      style={[
+                        styles.addrLine,
+                        { color: C.text },
+                      ]}
+                    >
+                      {[
+                        a.addressLine,
+                        a.locality,
+                        a.city,
+                        a.state,
+                        a.pincode,
+                      ]
+                        .filter(Boolean)
+                        .join(', ')}
                     </Text>
-                    {!!a.phone && <Text style={[styles.addrPhone, { color: C.textLight }]}>{a.phone}</Text>}
+
+                    {!!a.phone && (
+                      <Text
+                        style={[
+                          styles.addrPhone,
+                          { color: C.textLight },
+                        ]}
+                      >
+                        {a.phone}
+                      </Text>
+                    )}
                   </View>
-                  <TouchableOpacity onPress={() => navigation.navigate('SaveAddress', { id: a.id })} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <Feather name="edit-2" size={16} color={COLORS.primary} />
+
+                  {/* Edit */}
+                  <TouchableOpacity
+                    onPress={() =>
+                      navigation.navigate(
+                        'SaveAddress',
+                        { id: a.id }
+                      )
+                    }
+                    hitSlop={{
+                      top: 8,
+                      bottom: 8,
+                      left: 8,
+                      right: 8,
+                    }}
+                  >
+                    <Feather
+                      name="edit-2"
+                      size={16}
+                      color={COLORS.primary}
+                    />
                   </TouchableOpacity>
                 </TouchableOpacity>
               ))}
+
+              {/* View More / Show Less */}
               {otherAddresses.length > 0 && (
-                <TouchableOpacity style={styles.viewMoreBtn} onPress={() => setShowAllAddresses(v => !v)}>
+                <TouchableOpacity
+                  style={styles.viewMoreBtn}
+                  onPress={() =>
+                    setShowAllAddresses(
+                      v => !v
+                    )
+                  }
+                >
                   <Text style={styles.link}>
-                    {showAllAddresses ? 'Show less' : `View ${otherAddresses.length} more address${otherAddresses.length > 1 ? 'es' : ''}`}
+                    {showAllAddresses
+                      ? 'Show less'
+                      : `View ${
+                          otherAddresses.length
+                        } more address${
+                          otherAddresses.length >
+                          1
+                            ? 'es'
+                            : ''
+                        }`}
                   </Text>
-                  <Feather name={showAllAddresses ? 'chevron-up' : 'chevron-down'} size={14} color={COLORS.primary} />
+
+                  <Feather
+                    name={
+                      showAllAddresses
+                        ? 'chevron-up'
+                        : 'chevron-down'
+                    }
+                    size={14}
+                    color={COLORS.primary}
+                  />
                 </TouchableOpacity>
               )}
             </>
           );
-        })()}
+        })()
+      )}
 
-        {/* ── Items ── */}
-        <Text style={[styles.secTitle, { marginTop: 20, color: C.title }]}>
-          Items ({checkoutProducts.length}){isBuyNow ? ' · Buy Now' : ''}
-        </Text>
-        {checkoutProducts.map((p: any, i: number) => {
-          const discounted = itemPrice(p);
-          const original = originalPrice(p);
-          const hasDiscount = original > 0 && original > discounted;
+      {/* ───────────── Items ───────────── */}
+      <Text
+        style={[
+          styles.secTitle,
+          {
+            marginTop: 20,
+            color: C.title,
+          },
+        ]}
+      >
+        Items ({checkoutProducts.length})
+        {isBuyNow ? ' · Buy Now' : ''}
+      </Text>
+
+      {checkoutProducts.map(
+        (p: any, i: number) => {
+          const discounted =
+            itemPrice(p);
+
+          const original =
+            originalPrice(p);
+
+          const hasDiscount =
+            original > 0 &&
+            original > discounted;
+
           return (
-            <View key={i} style={[styles.itemRow, { backgroundColor: C.card }]}>
-              <Text style={[styles.itemName, { color: C.title }]} numberOfLines={1}>
-                {p.ITEMNAME ?? p.SUBITEMNAME}
+            <View
+              key={i}
+              style={[
+                styles.itemRow,
+                {
+                  backgroundColor: C.card,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.itemName,
+                  { color: C.title },
+                ]}
+                numberOfLines={1}
+              >
+                {p.ITEMNAME ??
+                  p.SUBITEMNAME}
               </Text>
-              <Text style={[styles.itemQty, { color: C.textLight }]}>x{p.quantity ?? 1}</Text>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={[styles.itemPrice, { color: C.title }]}>₹{discounted.toLocaleString('en-IN')}</Text>
+
+              <Text
+                style={[
+                  styles.itemQty,
+                  { color: C.textLight },
+                ]}
+              >
+                x{p.quantity ?? 1}
+              </Text>
+
+              <View
+                style={{
+                  alignItems: 'flex-end',
+                }}
+              >
+                <Text
+                  style={[
+                    styles.itemPrice,
+                    { color: C.title },
+                  ]}
+                >
+                  ₹
+                  {discounted.toLocaleString(
+                    'en-IN'
+                  )}
+                </Text>
+
                 {hasDiscount && (
-                  <Text style={[styles.itemOriginal, { color: C.textLight }]}>₹{original.toLocaleString('en-IN')}</Text>
+                  <Text
+                    style={[
+                      styles.itemOriginal,
+                      {
+                        color: C.textLight,
+                      },
+                    ]}
+                  >
+                    ₹
+                    {original.toLocaleString(
+                      'en-IN'
+                    )}
+                  </Text>
                 )}
               </View>
             </View>
           );
-        })}
+        }
+      )}
 
-        {/* ── Payment method ── */}
-        <Text style={[styles.secTitle, { marginTop: 20, color: C.title }]}>Payment Method</Text>
-        {/* Cash on Delivery commented out — Online Payment only */}
-        <View style={[styles.dropdownCard, { backgroundColor: C.card, borderColor: COLORS.primary }]}>
-          {/* Header row */}
-          <View style={styles.dropdownHeader}>
-            <Feather name="check-circle" size={18} color={COLORS.primary} />
-            <Text style={[styles.payLabel, { color: C.title, flex: 1 }]}>Online Payment</Text>
-            <Text style={[styles.dropdownSub, { color: C.textLight }]}>{paymentType === 'NETBANKING' ? 'Net Banking' : paymentType}</Text>
-          </View>
-          {/* Sub-options */}
-          <View style={[styles.dropdownDivider, { borderTopColor: C.borderColor }]} />
-          {(['CARD', 'UPI', 'NETBANKING'] as const).map((t, idx, arr) => (
-            <TouchableOpacity
-              key={t}
-              style={[styles.dropdownOption, idx < arr.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.borderColor }]}
-              onPress={() => setPaymentType(t)}
-            >
-              <View style={[styles.radioCircle, { borderColor: paymentType === t ? COLORS.primary : C.textLight }]}>
-                {paymentType === t && <View style={styles.radioDot} />}
-              </View>
-              <Text style={[styles.dropdownOptionTxt, { color: C.title }]}>
-                {t === 'CARD' ? '💳  Credit / Debit Card' : t === 'UPI' ? '📲  UPI' : '🏦  Net Banking'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
+      {/* ───────────── Payment Method ───────────── */}
+      <Text
+        style={[
+          styles.secTitle,
+          {
+            marginTop: 20,
+            color: C.title,
+          },
+        ]}
+      >
+        Payment Method
+      </Text>
 
-      {/* ── Summary + Place Order ── */}
-      <View style={[styles.summary, { backgroundColor: C.card, borderTopColor: C.borderColor }]}>
-        {fullAmount > 0 && (
-          <View style={styles.sumRow}>
-            <Text style={[styles.sumLabel, { color: C.text }]}>Full Amount</Text>
-            <Text style={[styles.sumAmt, { color: C.title }]}>₹{fullAmount.toLocaleString('en-IN')}</Text>
-          </View>
-        )}
-        {discountAmount > 0 && (
-          <View style={styles.sumRow}>
-            <Text style={[styles.sumLabel, { color: C.text }]}>Discount</Text>
-            <Text style={styles.sumDiscount}>− ₹{discountAmount.toLocaleString('en-IN')}</Text>
-          </View>
-        )}
-        <View style={styles.sumRow}>
-          <Text style={[styles.sumLabel, { color: C.text }]}>Sub Total</Text>
-          <Text style={[styles.sumAmt, { color: C.title }]}>₹{subtotal.toLocaleString('en-IN')}</Text>
-        </View>
-        <View style={styles.sumRow}>
-          <Text style={[styles.sumLabel, { color: C.text }]}>Shipping</Text>
-          {shippingLoading
-            ? <ActivityIndicator size="small" color={COLORS.primary} />
-            : <Text style={[styles.sumAmt, { color: C.title }]}>
-              {shippingFee > 0 ? `₹${shippingFee.toLocaleString('en-IN')}` : 'FREE'}
-            </Text>
-          }
-        </View>
-        <View style={[styles.sumRow, styles.totalRow, { borderTopColor: C.borderColor }]}>
-          <Text style={[styles.totalLabel, { color: C.title }]}>Total</Text>
-          <Text style={[styles.sumValue, { color: C.title }]}>₹{grandTotal.toLocaleString('en-IN')}</Text>
-        </View>
-        <TouchableOpacity
-          style={[styles.placeBtn, (placing || shippingLoading) && styles.placeBtnDisabled]}
-          disabled={placing || shippingLoading}
-          onPress={placeOrder}
-        >
-          <Text style={styles.placeTxt}>
-            {placing
-              ? 'Placing order…'
-              : shippingLoading
-                ? 'Calculating shipping…'
-                : 'Pay & Place Order'}
-            {/* : paymentMode === 'ONLINE'
-                  ? 'Pay & Place Order'
-                  : 'Place Order (COD)' */}
+      <View
+        style={[
+          styles.dropdownCard,
+          {
+            backgroundColor: C.card,
+            borderColor: COLORS.primary,
+          },
+        ]}
+      >
+        {/* Payment Header */}
+        <View style={styles.dropdownHeader}>
+          <Feather
+            name="check-circle"
+            size={18}
+            color={COLORS.primary}
+          />
+
+          <Text
+            style={[
+              styles.payLabel,
+              {
+                color: C.title,
+                flex: 1,
+              },
+            ]}
+          >
+            Online Payment
           </Text>
-        </TouchableOpacity>
+
+          <Text
+            style={[
+              styles.dropdownSub,
+              { color: C.textLight },
+            ]}
+          >
+            {paymentType === 'NETBANKING'
+              ? 'Net Banking'
+              : paymentType}
+          </Text>
+        </View>
+
+        <View
+          style={[
+            styles.dropdownDivider,
+            {
+              borderTopColor:
+                C.borderColor,
+            },
+          ]}
+        />
+
+        {/* Payment Options */}
+        {(
+          [
+            'CARD',
+            'UPI',
+            'NETBANKING',
+          ] as const
+        ).map((t, idx, arr) => (
+          <TouchableOpacity
+            key={t}
+            style={[
+              styles.dropdownOption,
+              idx < arr.length - 1 && {
+                borderBottomWidth:
+                  StyleSheet.hairlineWidth,
+                borderBottomColor:
+                  C.borderColor,
+              },
+            ]}
+            onPress={() =>
+              setPaymentType(t)
+            }
+          >
+            <View
+              style={[
+                styles.radioCircle,
+                {
+                  borderColor:
+                    paymentType === t
+                      ? COLORS.primary
+                      : C.textLight,
+                },
+              ]}
+            >
+              {paymentType === t && (
+                <View
+                  style={styles.radioDot}
+                />
+              )}
+            </View>
+
+            <Text
+              style={[
+                styles.dropdownOptionTxt,
+                { color: C.title },
+              ]}
+            >
+              {t === 'CARD'
+                ? '💳  Credit / Debit Card'
+                : t === 'UPI'
+                  ? '📲  UPI'
+                  : '🏦  Net Banking'}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
+    </ScrollView>
+
+    {/* ───────────────── Summary ───────────────── */}
+    <View
+      style={[
+        styles.summary,
+        {
+          backgroundColor: C.card,
+          borderTopColor: C.borderColor,
+        },
+      ]}
+    >
+      {fullAmount > 0 && (
+        <View style={styles.sumRow}>
+          <Text
+            style={[
+              styles.sumLabel,
+              { color: C.text },
+            ]}
+          >
+            Full Amount
+          </Text>
+
+          <Text
+            style={[
+              styles.sumAmt,
+              { color: C.title },
+            ]}
+          >
+            ₹
+            {fullAmount.toLocaleString(
+              'en-IN'
+            )}
+          </Text>
+        </View>
+      )}
+
+      {discountAmount > 0 && (
+        <View style={styles.sumRow}>
+          <Text
+            style={[
+              styles.sumLabel,
+              { color: C.text },
+            ]}
+          >
+            Discount
+          </Text>
+
+          <Text style={styles.sumDiscount}>
+            − ₹
+            {discountAmount.toLocaleString(
+              'en-IN'
+            )}
+          </Text>
+        </View>
+      )}
+
+      <View style={styles.sumRow}>
+        <Text
+          style={[
+            styles.sumLabel,
+            { color: C.text },
+          ]}
+        >
+          Sub Total
+        </Text>
+
+        <Text
+          style={[
+            styles.sumAmt,
+            { color: C.title },
+          ]}
+        >
+          ₹
+          {subtotal.toLocaleString(
+            'en-IN'
+          )}
+        </Text>
+      </View>
+
+      <View style={styles.sumRow}>
+        <Text
+          style={[
+            styles.sumLabel,
+            { color: C.text },
+          ]}
+        >
+          Shipping
+        </Text>
+
+        {shippingLoading ? (
+          <ActivityIndicator
+            size="small"
+            color={COLORS.primary}
+          />
+        ) : (
+          <Text
+            style={[
+              styles.sumAmt,
+              { color: C.title },
+            ]}
+          >
+            {shippingFee > 0
+              ? `₹${shippingFee.toLocaleString(
+                  'en-IN'
+                )}`
+              : 'FREE'}
+          </Text>
+        )}
+      </View>
+
+      {/* Total */}
+      <View
+        style={[
+          styles.sumRow,
+          styles.totalRow,
+          {
+            borderTopColor:
+              C.borderColor,
+          },
+        ]}
+      >
+        <Text
+          style={[
+            styles.totalLabel,
+            { color: C.title },
+          ]}
+        >
+          Total
+        </Text>
+
+        <Text
+          style={[
+            styles.sumValue,
+            { color: C.title },
+          ]}
+        >
+          ₹
+          {grandTotal.toLocaleString(
+            'en-IN'
+          )}
+        </Text>
+      </View>
+
+      {/* Place Order */}
+      <TouchableOpacity
+        style={[
+          styles.placeBtn,
+          (placing ||
+            shippingLoading) &&
+            styles.placeBtnDisabled,
+        ]}
+        disabled={
+          placing ||
+          shippingLoading
+        }
+        onPress={placeOrder}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.placeTxt}>
+          {placing
+            ? 'Placing order…'
+            : shippingLoading
+              ? 'Calculating shipping…'
+              : 'Pay & Place Order'}
+        </Text>
+      </TouchableOpacity>
     </View>
-  );
+  </View>
+);
 };
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1, },
   hBtn: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
   hTitle: { flex: 1, ...FONTS.h5, ...FONTS.fontSemiBold },
   secRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

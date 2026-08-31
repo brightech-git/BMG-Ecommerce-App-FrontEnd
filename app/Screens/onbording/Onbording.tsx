@@ -63,7 +63,7 @@ const Onbording = ({ navigation }: Props) => {
 
   const handleSkip = async () => {
     await AsyncStorageHelper.setOnboarded();
-    navigation.navigate('SignIn');
+    navigation.reset({ index: 0, routes: [{ name: 'DrawerNavigation' }] });
   };
 
   const handleNext = async () => {
@@ -91,7 +91,9 @@ const Onbording = ({ navigation }: Props) => {
   }
 
   if (!isLoading && banners.length === 0) {
-    AsyncStorageHelper.setOnboarded().then(() => navigation.navigate('SignIn'));
+    AsyncStorageHelper.setOnboarded().then(() =>
+      navigation.reset({ index: 0, routes: [{ name: 'DrawerNavigation' }] })
+    );
     return null;
   }
 

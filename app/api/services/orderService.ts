@@ -49,7 +49,7 @@ export interface CreateOrderPayload {
 }
 
 export const createOrder = (payload: CreateOrderPayload) =>
-  callApi<CreateOrderPayload, any>({ method: 'post', url: ORDER.CREATE, data: payload });
+  callApi<CreateOrderPayload, any>({ method: 'post', url: ORDER.CREATE, data: payload, alertOnSessionExpired: true });
 
 export const getOrderHistory = (params?: Record<string, any>) =>
   callApi<null, any>({ method: 'get', url: ORDER.HISTORY, params });
